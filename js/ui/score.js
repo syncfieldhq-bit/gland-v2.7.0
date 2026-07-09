@@ -79,21 +79,41 @@
     document.head.appendChild(style);
   }
 
-  function _renderTable() {
+    function _renderTable() {
     const players = window.glState.get('players') || [];
     const scores = window.glState.get('scores') || {};
     const myUserId = window.glProfile.getUserId();
     const currentHole = window.glState.get('currentHole') || 1;
 
-    const rows = players.map((p) => {
+    // ⭐【修正】プレイヤーが1人もいない場合、自分をフォールバック追加
+    //    サーバから取得失敗しても、少なくとも自分の行と入力パネルは表示する
+    let effectivePlayers = players;
+    if (effectivePlayers.length === 0 && myUserId) {
+      const myProfile = window.glProfile.getStored();
+      effectivePlayers = [{
+        userId: myUserId,
+        displayName: myProfile.name || myProfile.familyName || 'あなた',
+        name: myProfile.name || myProfile.familyName || 'あなた',
+        familyName: myProfile.familyName || '',
+        familyKana: myProfile.familyKana || '',
+        role: 'host',
+      }];
+      // state にも反映（次回描画から正しくなる）
+      window.glState.set('players', effectivePlayers);
+    }
+
+    const rows = effectivePlayers.map((p) => {
       const isMe = p.userId === myUserId;
       const strokes = scores?.[p.userId]?.['hole' + currentHole] ?? '';
       const cellClass = isMe ? 'gl-score__cell gl-score__cell--mine' : 'gl-score__cell gl-score__cell--peer';
       const disabledAttr = isMe ? '' : 'readonly';
 
+      // ⭐【修正】表示名は統一ヘルパーで解決
+      const dispName = window.glProfile.getDisplayName(p);
+
       return `
         <tr>
-          <td class="gl-name">${p.displayName || p.familyName || 'プレイヤー'}${isMe ? ' (あなた)' : ''}</td>
+          <td class="gl-name">${dispName}${isMe ? ' (あなた)' : ''}</td>
           <td>
             <input type="number" min="1" max="20" inputmode="numeric"
               class="${cellClass}" data-player-id="${p.userId}"

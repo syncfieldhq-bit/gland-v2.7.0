@@ -1,11 +1,9 @@
 /**
- * G-LAND v2.7.0 - Profile Domain
- * ==============================
- * 楽観的UI: 入力→即localStorage保存→UI遷移→バックグラウンドでGAS登録
- * ゲスト合流時 (?join=) のみ userId 発行を同期待ちする
- *
- * 必須項目: familyName（漢字）+ familyKana（ひらがな） 2項目のみ
- * 任意項目: firstName, firstKana, courseAdjust
+ * G-LAND v2.7.0 - Profile Domain (修正版: name 互換フィールド追加)
+ * ==============================================================
+ * 修正点:
+ *   - getStored() に name (= familyName) を自動付与
+ *   - buildDisplayName() ヘルパーを追加して他モジュールから利用可能に
  */
 (function () {
   'use strict';
@@ -19,16 +17,43 @@
     courseAdjust: 'gl_profile_courseAdjust',
   };
 
+  /**
+   * ⭐【新規】表示名を統一的に構築するヘルパー
+   * 優先順: displayName > familyName+firstName > familyName > name > 'プレイヤー'
+   * この関数を全モジュールで共通利用することで名前解決の食い違いを根絶
+   */
+  function _buildDisplayName(obj) {
+    if (!obj) return 'プレイヤー';
+    if (obj.displayName && String(obj.displayName).trim()) return String(obj.displayName).trim();
+
+    const fn = (obj.familyName || '').trim();
+    const gn = (obj.firstName || '').trim();
+    if (fn && gn) return `${fn} ${gn}`;
+    if (fn) return fn;
+
+    if (obj.name && String(obj.name).trim()) return String(obj.name).trim();
+    return 'プレイヤー';
+  }
+
   function _getStored() {
     const s = window.glStorage;
-    return {
+    const familyName = s.readTriple(KEYS.familyName);
+    const familyKana = s.readTriple(KEYS.familyKana);
+    const firstName = s.readTriple(KEYS.firstName);
+    const firstKana = s.readTriple(KEYS.firstKana);
+
+    const stored = {
       userId: s.readTriple(KEYS.userId),
-      familyName: s.readTriple(KEYS.familyName),
-      familyKana: s.readTriple(KEYS.familyKana),
-      firstName: s.readTriple(KEYS.firstName),
-      firstKana: s.readTriple(KEYS.firstKana),
+      familyName: familyName,
+      familyKana: familyKana,
+      firstName: firstName,
+      firstKana: firstKana,
       courseAdjust: s.readTriple(KEYS.courseAdjust),
     };
+    // ⭐【修正】name 互換フィールドを自動付与
+    stored.name = _buildDisplayName(stored);
+    stored.displayName = stored.name;
+    return stored;
   }
 
   function _saveToStorage(profile) {
@@ -41,12 +66,6 @@
   }
 
   const glProfile = {
-    /**
-     * 初回登録（楽観的UI）
-     * @param {Object} data - {familyName, familyKana}
-     * @param {Object} opts - {syncWait: boolean} ゲスト合流時はtrue
-     * @returns {Promise<{userId, optimistic}>}
-     */
     async register({ familyName, familyKana }, opts = {}) {
       const fn = (familyName || '').trim();
       const fk = (familyKana || '').trim();
@@ -57,16 +76,21 @@
         throw e;
       }
 
-      // 1. 即座にlocalStorageへ保存（楽観的UI）
       _saveToStorage({ familyName: fn, familyKana: fk });
-      window.glState.set('profile', { familyName: fn, familyKana: fk });
-      window.glEvents.emit('profile:updated', { familyName: fn, familyKana: fk });
 
-      // 2. GAS登録
+      // ⭐【修正】state.profile にも name/displayName を含めて保存（下位互換）
+      const profileForState = {
+        familyName: fn,
+        familyKana: fk,
+        name: fn,
+        displayName: fn,
+      };
+      window.glState.set('profile', profileForState);
+      window.glEvents.emit('profile:updated', profileForState);
+
       const existingUserId = window.glStorage.readTriple(KEYS.userId);
 
       if (opts.syncWait) {
-        // ゲスト合流フロー: userId 発行を同期待ち
         try {
           const result = await window.glandApi.registerUser({ familyName: fn, familyKana: fk });
           const userId = result?.userId || existingUserId;
@@ -82,7 +106,6 @@
         }
       }
 
-      // 通常フロー: バックグラウンド登録
       (async () => {
         try {
           const result = await window.glandApi.registerUser({ familyName: fn, familyKana: fk });
@@ -93,7 +116,6 @@
             window.glEvents.emit('profile:registered', { userId });
           }
         } catch (err) {
-          // バックグラウンド失敗時はキューへ
           window.glErrors.handle(err, { silent: true, context: 'register.bg' });
           window.glQueue.enqueue('updateUser', { familyName: fn, familyKana: fk });
         }
@@ -102,25 +124,23 @@
       return { userId: existingUserId, optimistic: true };
     },
 
-    /**
-     * プロフィール更新（既存ユーザー）
-     */
     async update(profile) {
       const stored = _getStored();
       const merged = { ...stored, ...profile };
 
-      // 即localStorage反映
       _saveToStorage(profile);
+      // ⭐ name フィールド再構築
+      merged.name = _buildDisplayName(merged);
+      merged.displayName = merged.name;
+
       window.glState.set('profile', merged);
       window.glEvents.emit('profile:updated', merged);
 
       const userId = stored.userId;
       if (!userId) {
-        // userId未発行なら登録扱いに切替
         return this.register({ familyName: merged.familyName, familyKana: merged.familyKana });
       }
 
-      // バックグラウンド送信 or キュー
       try {
         await window.glandApi.updateUser({ userId, ...profile });
         return { ok: true };
@@ -131,17 +151,11 @@
       }
     },
 
-    /**
-     * 最低限の必須項目が揃っているか（合流可否判定）
-     */
     isMinimum() {
       const s = _getStored();
       return !!(s.familyName && s.familyKana);
     },
 
-    /**
-     * 5項目全て揃っているか（ラウンド保存時の判定）
-     */
     isFull() {
       const s = _getStored();
       return !!(s.familyName && s.familyKana && s.firstName && s.firstKana && s.courseAdjust);
@@ -153,6 +167,14 @@
 
     getUserId() {
       return window.glStorage.readTriple(KEYS.userId);
+    },
+
+    /**
+     * ⭐【新規公開API】表示名を統一的に取得
+     * 他モジュールから window.glProfile.getDisplayName(playerObj) で使う
+     */
+    getDisplayName(obj) {
+      return _buildDisplayName(obj);
     },
   };
 

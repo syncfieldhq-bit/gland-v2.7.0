@@ -1,14 +1,16 @@
 /**
- * G-LAND v2.7.0 - Service Worker
+ * G-LAND v2.7.1 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * バージョン更新時に旧キャッシュを自動削除。
+ * manifest.json + icons を明示的にキャッシュ対象へ追加
  */
-const CACHE_VERSION = 'gland-v2.7.0';
+const CACHE_VERSION = 'gland-v2.7.1';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   './js/api.js',
   './js/boot.js',
   './js/core/events.js',
@@ -38,7 +40,17 @@ const CORE_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
-      .then((cache) => cache.addAll(CORE_ASSETS))
+      .then((cache) => {
+        // ⭐ 個別追加でエラー耐性確保
+        //    icon-512.png が未配置の環境でも他のアセットは正しくキャッシュされる
+        return Promise.all(
+          CORE_ASSETS.map((url) =>
+            cache.add(url).catch((err) => {
+              console.warn('[SW] cache add failed:', url, err.message);
+            })
+          )
+        );
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -55,9 +67,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // GAS通信はキャッシュしない
-  if (url.hostname.includes('script.google.com')) {
-    return; // ネットワーク直行
-  }
+  if (url.hostname.includes('script.google.com')) return;
 
   // GET のみキャッシュ対象
   if (event.request.method !== 'GET') return;
@@ -66,7 +76,6 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
       return fetch(event.request).then((res) => {
-        // 成功時のみキャッシュに追加
         if (res && res.status === 200 && res.type === 'basic') {
           const clone = res.clone();
           caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, clone));

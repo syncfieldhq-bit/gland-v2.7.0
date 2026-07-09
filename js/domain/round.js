@@ -158,8 +158,8 @@
       }
     },
 
-    /**
-     * 現在のメンバー一覧を再取得
+        /**
+     * 現在のメンバー一覧を再取得（修正版: 名前フィールド正規化）
      */
     async refreshMembers() {
       const roundId = window.glState.get('roundId');
@@ -169,9 +169,21 @@
         const result = await window.glandApi.listRoundMembers({ roundId });
         const members = result?.members || result || [];
 
+        // ⭐【修正】各メンバーの名前フィールドを正規化
+        //    displayName / familyName / name のどれかが必ず入るように補正
+        const normalized = members.map((m) => {
+          const displayName = window.glProfile.getDisplayName(m);
+          return {
+            ...m,
+            displayName: displayName,
+            name: displayName, // 下位互換
+            familyName: m.familyName || displayName,
+          };
+        });
+
         // 自分を先頭にソート
         const myUserId = window.glProfile.getUserId();
-        const sorted = [...members].sort((a, b) => {
+        const sorted = [...normalized].sort((a, b) => {
           if (a.userId === myUserId) return -1;
           if (b.userId === myUserId) return 1;
           return 0;
@@ -185,6 +197,7 @@
         return window.glState.get('players') || [];
       }
     },
+
 
     /**
      * ラウンド離脱
