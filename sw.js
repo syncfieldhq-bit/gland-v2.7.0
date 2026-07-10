@@ -1,10 +1,10 @@
 /**
- * G-LAND v2.7.9 - Service Worker
+ * G-LAND v2.7.10 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * v2.7.9: クラシックテーマ完全版、入力パネル自動切替、午後スタート/ロッカー/LINE共有対応
+ * v2.7.10: クラシックテーマ完全版、入力パネル自動切替、午後スタート/ロッカー/LINE共有対応
  */
-const CACHE_VERSION = 'gland-v2.7.9';
+const CACHE_VERSION = 'gland-v2.7.10';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -32,6 +32,7 @@ const CORE_ASSETS = [
   './js/ui/home.js',
   './js/ui/round.js',
   './js/ui/score.js',
+  './js/ui/score/_panel.js',
   './js/ui/score/simple.js',
   './js/ui/score/classic.js',
   './js/ui/history.js',

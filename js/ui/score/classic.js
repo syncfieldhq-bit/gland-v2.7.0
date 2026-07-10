@@ -374,34 +374,7 @@
       .gl-cls-btn-line { background: #06c755; color: #fff; }
       .gl-cls-btn-finish { background: #1a5f3f; color: #fff; }
 
-      /* ===== 入力パネル ===== */
-      .gl-cls-panel-overlay {
-        position: fixed; inset: 0; z-index: 8999;
-        background: rgba(0,0,0,.35);
-        opacity: 0; transition: opacity .2s;
-      }
-      .gl-cls-panel-overlay.show { opacity: 1; }
-      .gl-cls-input-panel {
-        position: fixed; left: 0; right: 0;
-        bottom: 0;
-        background: #fff; padding: 16px;
-        box-shadow: 0 -4px 16px rgba(0,0,0,.15);
-        z-index: 9000;
-        transform: translateY(100%);
-        -webkit-transform: translateY(100%);
-        will-change: transform;
-        transition: transform .28s cubic-bezier(.2,.8,.2,1);
-        -webkit-transition: -webkit-transform .28s cubic-bezier(.2,.8,.2,1);
-        border-radius: 16px 16px 0 0;
-        max-height: 75vh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
-      }
-      .gl-cls-input-panel.show {
-        transform: translateY(0) !important;
-        -webkit-transform: translateY(0) !important;
-      }
+      /* ===== 入力パネル内部スタイルのみ（外枠は共通 _panel.js が提供）===== */
       .gl-cls-panel-header {
         display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 12px; padding-bottom: 8px;
@@ -1227,60 +1200,29 @@
     inputSession.selectedPutts = _getPutts(p.userId, inputSession.hole);
   }
 
+  // ==== 入力パネル（共通モジュール glScorePanel を利用）====
+
   function _showInputPanel() {
-    _closeInputPanel(true); // 既存を即時除去
-
-    const overlay = document.createElement('div');
-    overlay.id = 'gl-cls-panel-overlay';
-    overlay.className = 'gl-cls-panel-overlay';
-    document.body.appendChild(overlay);
-
-    const panel = document.createElement('div');
-    panel.id = 'gl-cls-input-panel';
-    panel.className = 'gl-cls-input-panel';
-    // 初期状態を明示（iOS Safari対策）
-    panel.style.transform = 'translateY(100%)';
-    panel.style.webkitTransform = 'translateY(100%)';
-    document.body.appendChild(panel);
-
-    _renderInputPanel();
-
-    // 強制リフロー → 次フレームで .show を付与
-    // これでトランジションが確実に発火する
-    void panel.offsetHeight;
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        overlay.classList.add('show');
-        panel.classList.add('show');
-        // インラインスタイルを解除（.show が効くように）
-        panel.style.transform = '';
-        panel.style.webkitTransform = '';
-      });
+    // 共通パネルを開く（アニメなし、display切替のみ）
+    window.glScorePanel.open({
+      content: _buildPanelHTML(),
+      onBind: _bindPanelEvents,
+      onClose: () => {
+        // 背景タップや close で閉じられたとき
+        inputSession = null;
+      },
     });
-
-    // フェイルセーフ：400ms 経ってもトップが画面外なら強制表示
-    setTimeout(() => {
-      const p = document.getElementById('gl-cls-input-panel');
-      if (!p) return;
-      const rect = p.getBoundingClientRect();
-      if (rect.top >= window.innerHeight - 20) {
-        console.warn('[classic] panel stuck offscreen, forcing show');
-        p.style.transform = 'translateY(0)';
-        p.style.webkitTransform = 'translateY(0)';
-        p.style.transition = 'none';
-      }
-    }, 400);
-
-    overlay.addEventListener('click', _cancelInputPanel);
   }
 
   function _renderInputPanel() {
-    const panel = document.getElementById('gl-cls-input-panel');
-    if (!panel || !inputSession) return;
+    // セッション進行時に中身を差し替え
+    window.glScorePanel.rerender(_buildPanelHTML(), _bindPanelEvents);
+  }
 
+  function _buildPanelHTML() {
+    if (!inputSession) return '';
     const p = _loCurrentPlayer();
-    if (!p) return;
+    if (!p) return '';
 
     const isSelf = _getPlayerType(p) === 'self';
     const total = inputSession.queue.length;
@@ -1316,7 +1258,7 @@
       ? '✓ 保存'
       : (inputSession.currentIdx < total - 1 ? '✓ 保存 → 次の人' : '✓ 保存 → 次ホール');
 
-    panel.innerHTML = `
+    return `
       <div class="gl-cls-panel-header">
         <div class="gl-cls-panel-hole">HOLE ${inputSession.hole}${inputSession.isEditingPast ? ' <span style="font-size:12px;color:#ff9800;">修正</span>' : ''}</div>
         ${!inputSession.isEditingPast ? `<div class="gl-cls-panel-progress">${idx} / ${total} 人目</div>` : ''}
@@ -1333,30 +1275,29 @@
         <button class="gl-cls-panel-btn-save" data-panel-save ${inputSession.selectedStrokes === null ? 'disabled' : ''}>${saveLabel}</button>
       </div>
     `;
-
-    _bindPanelEvents();
   }
 
-  function _bindPanelEvents() {
-    const panel = document.getElementById('gl-cls-input-panel');
-    if (!panel) return;
+  function _bindPanelEvents(panelEl) {
+    if (!panelEl) return;
 
-    panel.querySelectorAll('[data-stroke]').forEach((btn) => {
+    panelEl.querySelectorAll('[data-stroke]').forEach((btn) => {
       btn.addEventListener('click', () => {
+        if (!inputSession) return;
         inputSession.selectedStrokes = parseInt(btn.dataset.stroke, 10);
         _renderInputPanel();
       });
     });
 
-    panel.querySelectorAll('[data-putt]').forEach((btn) => {
+    panelEl.querySelectorAll('[data-putt]').forEach((btn) => {
       btn.addEventListener('click', () => {
+        if (!inputSession) return;
         inputSession.selectedPutts = parseInt(btn.dataset.putt, 10);
         _renderInputPanel();
       });
     });
 
-    panel.querySelector('[data-panel-cancel]')?.addEventListener('click', _cancelInputPanel);
-    panel.querySelector('[data-panel-save]')?.addEventListener('click', _saveAndProceed);
+    panelEl.querySelector('[data-panel-cancel]')?.addEventListener('click', _cancelInputPanel);
+    panelEl.querySelector('[data-panel-save]')?.addEventListener('click', _saveAndProceed);
   }
 
   function _saveAndProceed() {
@@ -1367,7 +1308,6 @@
     // 保存
     window.glScore.save(p.userId, inputSession.hole, inputSession.selectedStrokes);
     if (_getPlayerType(p) === 'self' && inputSession.selectedPutts !== null) {
-      // パット数を state に反映（scoresマップに直接）
       const scores = window.glState.get('scores') || {};
       if (!scores[p.userId]) scores[p.userId] = {};
       scores[p.userId]['putt' + inputSession.hole] = inputSession.selectedPutts;
@@ -1390,26 +1330,13 @@
     _closeInputPanel();
   }
 
-  function _closeInputPanel(immediate) {
-    const panel = document.getElementById('gl-cls-input-panel');
-    const overlay = document.getElementById('gl-cls-panel-overlay');
-    if (panel) {
-      if (immediate) {
-        panel.remove();
-      } else {
-        panel.classList.remove('show');
-        setTimeout(() => panel.remove(), 280);
-      }
+  function _closeInputPanel() {
+    // 共通パネルを閉じる（onClose で inputSession = null になる）
+    if (window.glScorePanel && window.glScorePanel.isOpen && window.glScorePanel.isOpen()) {
+      window.glScorePanel.close();
+    } else {
+      inputSession = null;
     }
-    if (overlay) {
-      if (immediate) {
-        overlay.remove();
-      } else {
-        overlay.classList.remove('show');
-        setTimeout(() => overlay.remove(), 280);
-      }
-    }
-    inputSession = null;
   }
 
   // ==== プレイヤー名タップハンドラ ====
