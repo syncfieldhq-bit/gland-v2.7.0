@@ -12,19 +12,30 @@
     style.id = 'gl-round-styles';
     style.textContent = `
       #view-golf {
-        min-height: 100vh; padding: 16px; box-sizing: border-box;
+        min-height: 100vh;
+        padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+        box-sizing: border-box;
         background: #f8f9fa; display: none;
       }
       #view-golf.show { display: block; }
-      .gl-round__back { background: none; border: none; color: #1a5f3f; font-size: 16px; cursor: pointer; padding: 8px 0; margin-bottom: 12px; }
+      .gl-round__back {
+        background: none; border: none; color: #1a5f3f; font-size: 16px;
+        cursor: pointer; padding: 8px 4px; margin-bottom: 12px;
+        -webkit-tap-highlight-color: rgba(0,0,0,.1);
+        touch-action: manipulation;
+      }
       .gl-round__title { font-size: 22px; font-weight: 700; color: #1a5f3f; margin: 0 0 16px; }
       .gl-round__actions { display: flex; flex-direction: column; gap: 12px; }
       .gl-round__card {
         background: #fff; padding: 20px 18px; border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,.08); cursor: pointer;
+        -webkit-tap-highlight-color: rgba(26,95,63,.1);
+        touch-action: manipulation;
+        transition: transform .1s;
       }
-      .gl-round__card h3 { margin: 0 0 6px; color: #1a5f3f; font-size: 17px; }
-      .gl-round__card p { margin: 0; color: #666; font-size: 13px; }
+      .gl-round__card:active { transform: scale(.98); }
+      .gl-round__card h3 { margin: 0 0 6px; color: #1a5f3f; font-size: 17px; pointer-events: none; }
+      .gl-round__card p { margin: 0; color: #666; font-size: 13px; pointer-events: none; }
       .gl-invite-box {
         background: linear-gradient(135deg, #1a5f3f, #2d7a56);
         color: #fff; padding: 24px 20px; border-radius: 14px; text-align: center;
@@ -95,20 +106,87 @@
       </div>
     `;
 
-    view.querySelector('[data-back]').addEventListener('click', () => {
-      window.glEvents.emit('ui:navigate', { view: 'home' });
-    });
+    // イベント委任 + touchend/click ハイブリッド（iOS Safari 対応）
+    let _lastTouchTime = 0;
 
-    view.querySelectorAll('[data-action]').forEach((el) => {
-      el.addEventListener('click', () => _handleAction(el.dataset.action));
+    const handleTap = (target) => {
+      const backBtn = target.closest('[data-back]');
+      if (backBtn) {
+        _navHome();
+        return;
+      }
+      const card = target.closest('[data-action]');
+      if (card) {
+        _handleAction(card.dataset.action);
+      }
+    };
+
+    view.addEventListener('touchend', (e) => {
+      const target = e.target;
+      if (!target.closest('[data-back],[data-action]')) return;
+      _lastTouchTime = Date.now();
+      e.preventDefault();
+      handleTap(target);
+    }, { passive: false });
+
+    view.addEventListener('click', (e) => {
+      if (Date.now() - _lastTouchTime < 500) return;
+      handleTap(e.target);
     });
   }
 
+  function _navHome() {
+    console.log('[round] navigate: home');
+    try {
+      window.glEvents.emit('ui:navigate', { view: 'home' });
+    } catch (err) {
+      console.warn('[round] emit failed:', err);
+    }
+    setTimeout(() => {
+      const homeShown = document.getElementById('view-home')?.classList.contains('show');
+      if (!homeShown) {
+        console.warn('[round] fallback direct home');
+        _directNavigate('home');
+      }
+    }, 500);
+  }
+
+  function _navScore() {
+    console.log('[round] navigate: score');
+    try {
+      window.glEvents.emit('ui:navigate', { view: 'score' });
+    } catch (err) {
+      console.warn('[round] emit failed:', err);
+    }
+    setTimeout(() => {
+      const scoreShown = document.getElementById('view-score')?.classList.contains('show');
+      if (!scoreShown) {
+        console.warn('[round] fallback direct score');
+        _directNavigate('score');
+      }
+    }, 500);
+  }
+
+  function _directNavigate(view) {
+    ['home', 'golf', 'score', 'history', 'mypage'].forEach((v) => {
+      const el = document.getElementById('view-' + v);
+      if (el) el.classList.remove('show');
+    });
+    switch (view) {
+      case 'home': return window.glHome && window.glHome.show();
+      case 'score': return window.glScoreUI && window.glScoreUI.show();
+      case 'history': return window.glHistoryUI && window.glHistoryUI.show();
+      case 'mypage': return window.glMyPageUI && window.glMyPageUI.show();
+      default: return window.glHome && window.glHome.show();
+    }
+  }
+
   async function _handleAction(action) {
+    console.log('[round] action:', action);
     if (action === 'start') return _showStartConfirm();
     if (action === 'join') return _showJoinModal();
     if (action === 'invite') return _showInviteModal();
-    if (action === 'score') return window.glEvents.emit('ui:navigate', { view: 'score' });
+    if (action === 'score') return _navScore();
     if (action === 'leave') return _confirmLeave();
     if (action === 'proxy') return _showProxyManagerModal();
   }
