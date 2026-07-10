@@ -46,6 +46,10 @@
 
     // Proxy players (代理入力プレイヤー)
     proxyPlayers: [],
+
+    // ラウンド補助情報 (v2.7.2)
+    afternoonStart: null,   // '12:30' 形式の文字列 or null
+    lockerNumber: null,     // 貴重品ロッカー番号
   };
 
   const glState = {
@@ -130,6 +134,12 @@
       // 代理入力プレイヤー復元
       const proxies = s.readLocalJSON('gl_proxy_players_v1');
       if (Array.isArray(proxies)) state.proxyPlayers = proxies;
+
+      // ラウンド補助情報復元 (v2.7.2)
+      const afternoon = s.readLocal('gl_afternoon_start_v1');
+      if (afternoon) state.afternoonStart = afternoon;
+      const locker = s.readLocal('gl_locker_number_v1');
+      if (locker) state.lockerNumber = locker;
 
       state.online = navigator.onLine;
 
