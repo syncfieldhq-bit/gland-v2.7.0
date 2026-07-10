@@ -52,6 +52,18 @@
     return s;
   }
 
+  // ★ v2.7.14：入力済みホールだけの Par 合計（トータルの±Par 計算用）
+  function _parSumForPlayed(pars, playerId, from, to) {
+    let s = 0;
+    for (let i = from; i <= to; i++) {
+      const v = _getStrokes(playerId, i);
+      if (v !== null && v !== undefined) {
+        s += pars[i - 1];
+      }
+    }
+    return s;
+  }
+
   function _getStrokes(playerId, hole) {
     const scores = window.glState.get('scores') || {};
     return scores?.[playerId]?.['hole' + hole] ?? null;
@@ -938,7 +950,8 @@
 
     // OUT
     const outStrokes = _sumStrokes(player.userId, 1, 9);
-    const outParSum = _parSum(pars, 1, 9);
+    // ★ v2.7.14：入力済みホールの Par だけを合計
+    const outParSum = _parSumForPlayed(pars, player.userId, 1, 9);
     scoreRow += `
       <div class="gl-cls-cell gl-cls-cell--sum">
         <div>${outStrokes !== null ? outStrokes : '·'}</div>
@@ -983,7 +996,8 @@
 
     // IN
     const inStrokes = _sumStrokes(player.userId, 10, 18);
-    const inParSum = _parSum(pars, 10, 18);
+    // ★ v2.7.14：入力済みホールの Par だけを合計
+    const inParSum = _parSumForPlayed(pars, player.userId, 10, 18);
     scoreRow += `
       <div class="gl-cls-cell gl-cls-cell--sum">
         <div>${inStrokes !== null ? inStrokes : '·'}</div>
@@ -997,7 +1011,8 @@
 
     // TOTAL
     const totalStrokes = _sumStrokes(player.userId, 1, 18);
-    const totalParSum = _parSum(pars, 1, 18);
+    // ★ v2.7.14：入力済みホールの Par だけを合計
+    const totalParSum = _parSumForPlayed(pars, player.userId, 1, 18);
     let right = `
       <div class="gl-cls-cell gl-cls-cell--sum">
         <div>${totalStrokes !== null ? totalStrokes : '·'}</div>
