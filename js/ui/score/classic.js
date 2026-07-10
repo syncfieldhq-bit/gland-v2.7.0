@@ -663,11 +663,55 @@
     if (current) {
       [defaultH, defaultM] = current.split(':').map(Number);
     } else {
-      // 現在時刻 + 45分をデフォルトに
       const now = new Date();
       now.setMinutes(now.getMinutes() + 45);
       defaultH = now.getHours();
       defaultM = now.getMinutes();
+    }
+
+    // スタイル注入（1回のみ）
+    if (!document.getElementById('gl-cls-wheel-styles')) {
+      const style = document.createElement('style');
+      style.id = 'gl-cls-wheel-styles';
+      style.textContent = `
+        .gl-wheel-wrap {
+          display: flex; justify-content: center; gap: 16px;
+          margin: 20px 0; padding: 0 10px;
+        }
+        .gl-wheel-col {
+          flex: 1; max-width: 120px; text-align: center;
+        }
+        .gl-wheel-label {
+          font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 600;
+        }
+        .gl-wheel {
+          position: relative; height: 180px; overflow: hidden;
+          background: linear-gradient(180deg, #f5f0e1 0%, #fff 50%, #f5f0e1 100%);
+          border-radius: 12px; border: 1px solid #e0d5b8;
+          -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%);
+        }
+        .gl-wheel::before {
+          content: ''; position: absolute; left: 8px; right: 8px;
+          top: 50%; height: 44px; transform: translateY(-50%);
+          border-top: 2px solid #1a5f3f; border-bottom: 2px solid #1a5f3f;
+          pointer-events: none; z-index: 2;
+        }
+        .gl-wheel-scroller {
+          height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+        .gl-wheel-scroller::-webkit-scrollbar { display: none; }
+        .gl-wheel-item {
+          height: 44px; display: flex; align-items: center; justify-content: center;
+          scroll-snap-align: center;
+          font-size: 26px; font-weight: 700; color: #333;
+          font-variant-numeric: tabular-nums;
+        }
+        .gl-wheel-item--active { color: #1a5f3f; font-size: 32px; }
+      `;
+      document.head.appendChild(style);
     }
 
     const modal = document.createElement('div');
@@ -675,15 +719,19 @@
     modal.innerHTML = `
       <div class="gl-cls-modal__body">
         <h2 class="gl-cls-modal__title">⏰ 午後スタート時刻</h2>
-        <p style="font-size:13px;color:#666;">マスター室で言われた時刻を設定します</p>
-        <div class="gl-cls-timepicker">
-          <div class="gl-cls-timepicker-col">
-            <div class="gl-cls-timepicker-label">時</div>
-            <input type="number" class="gl-cls-timepicker-input" id="tp-hour" min="0" max="23" value="${defaultH}">
+        <p style="font-size:13px;color:#666;">上下にスワイプして選択</p>
+        <div class="gl-wheel-wrap">
+          <div class="gl-wheel-col">
+            <div class="gl-wheel-label">時</div>
+            <div class="gl-wheel" id="wheel-hour">
+              <div class="gl-wheel-scroller" id="wheel-hour-scroller"></div>
+            </div>
           </div>
-          <div class="gl-cls-timepicker-col">
-            <div class="gl-cls-timepicker-label">分</div>
-            <input type="number" class="gl-cls-timepicker-input" id="tp-min" min="0" max="59" value="${defaultM}">
+          <div class="gl-wheel-col">
+            <div class="gl-wheel-label">分</div>
+            <div class="gl-wheel" id="wheel-min">
+              <div class="gl-wheel-scroller" id="wheel-min-scroller"></div>
+            </div>
           </div>
         </div>
         <div class="gl-cls-modal__actions">
@@ -694,6 +742,59 @@
       </div>
     `;
     document.body.appendChild(modal);
+
+    // ホイール構築
+    const ITEM_H = 44;
+    const hourScroller = modal.querySelector('#wheel-hour-scroller');
+    const minScroller = modal.querySelector('#wheel-min-scroller');
+
+    function buildWheel(scroller, max) {
+      // 上下にスペーサー(上3つ、下3つ)を入れて中心揃え
+      const items = [];
+      for (let i = 0; i < 3; i++) items.push('<div class="gl-wheel-item">&nbsp;</div>');
+      for (let i = 0; i <= max; i++) {
+        items.push(`<div class="gl-wheel-item" data-val="${i}">${String(i).padStart(2, '0')}</div>`);
+      }
+      for (let i = 0; i < 3; i++) items.push('<div class="gl-wheel-item">&nbsp;</div>');
+      scroller.innerHTML = items.join('');
+    }
+
+    buildWheel(hourScroller, 23);
+    buildWheel(minScroller, 59);
+
+    // 初期スクロール位置（選択値を中央ラインに）
+    setTimeout(() => {
+      hourScroller.scrollTop = defaultH * ITEM_H;
+      minScroller.scrollTop = defaultM * ITEM_H;
+      updateActive(hourScroller);
+      updateActive(minScroller);
+    }, 30);
+
+    function updateActive(scroller) {
+      const centerIdx = Math.round(scroller.scrollTop / ITEM_H);
+      scroller.querySelectorAll('.gl-wheel-item').forEach((el, i) => {
+        el.classList.toggle('gl-wheel-item--active', i - 3 === centerIdx);
+      });
+    }
+
+    let hScrollTO, mScrollTO;
+    hourScroller.addEventListener('scroll', () => {
+      clearTimeout(hScrollTO);
+      hScrollTO = setTimeout(() => {
+        const idx = Math.round(hourScroller.scrollTop / ITEM_H);
+        hourScroller.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' });
+        updateActive(hourScroller);
+      }, 100);
+    });
+    minScroller.addEventListener('scroll', () => {
+      clearTimeout(mScrollTO);
+      mScrollTO = setTimeout(() => {
+        const idx = Math.round(minScroller.scrollTop / ITEM_H);
+        minScroller.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' });
+        updateActive(minScroller);
+      }, 100);
+    });
+
     const close = () => modal.remove();
     modal.querySelector('[data-cancel]')?.addEventListener('click', close);
     modal.querySelector('[data-clear]')?.addEventListener('click', () => {
@@ -704,8 +805,8 @@
       _render();
     });
     modal.querySelector('[data-save]').addEventListener('click', () => {
-      const h = Math.max(0, Math.min(23, parseInt(document.getElementById('tp-hour').value, 10) || 0));
-      const m = Math.max(0, Math.min(59, parseInt(document.getElementById('tp-min').value, 10) || 0));
+      const h = Math.max(0, Math.min(23, Math.round(hourScroller.scrollTop / ITEM_H)));
+      const m = Math.max(0, Math.min(59, Math.round(minScroller.scrollTop / ITEM_H)));
       const timeStr = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
       window.glState.set('afternoonStart', timeStr);
       window.glStorage.writeLocal(STORAGE_KEYS.afternoon, timeStr);
@@ -723,7 +824,7 @@
       <div class="gl-cls-modal__body">
         <h2 class="gl-cls-modal__title">🔑 貴重品ロッカー番号</h2>
         <p style="font-size:13px;color:#666;">ラウンド後に戻る貴重品ロッカーの番号</p>
-        <input type="text" id="locker-input" value="${current}" placeholder="例: 127" style="text-align:center;font-size:24px;font-weight:700;">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="locker-input" value="${current}" placeholder="例: 127" style="text-align:center;font-size:24px;font-weight:700;letter-spacing:4px;">
         <div class="gl-cls-modal__actions">
           ${current ? '<button class="gl-cls-modal__btn-cancel" data-clear>クリア</button>' : ''}
           <button class="gl-cls-modal__btn-cancel" data-cancel>閉じる</button>
@@ -1036,14 +1137,18 @@
       });
     });
 
-    // スコアセルタップ
-    view.querySelectorAll('[data-player][data-hole]').forEach((cell) => {
-      cell.addEventListener('click', () => {
-        if (cell.dataset.editable !== '1') return;
-        const playerId = cell.dataset.player;
-        const hole = parseInt(cell.dataset.hole, 10);
-        _startInputSession(hole, playerId);
-      });
+    // スコアセルタップ（イベント委任に変更→セル内子要素タップにも確実に反応）
+    view.addEventListener('click', (e) => {
+      const cell = e.target.closest('[data-player][data-hole]');
+      if (!cell) return;
+      console.log('[classic] cell tap:', cell.dataset.player, 'hole:', cell.dataset.hole, 'editable:', cell.dataset.editable);
+      if (cell.dataset.editable !== '1') {
+        console.warn('[classic] cell not editable');
+        return;
+      }
+      const playerId = cell.dataset.player;
+      const hole = parseInt(cell.dataset.hole, 10);
+      _startInputSession(hole, playerId);
     });
 
     // プレイヤー名タップ
