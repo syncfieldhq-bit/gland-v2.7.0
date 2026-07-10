@@ -106,79 +106,18 @@
       </div>
     `;
 
-    // イベント委任 + touchend/click ハイブリッド（iOS Safari 対応）
-    let _lastTouchTime = 0;
-
-    const handleTap = (target) => {
-      const backBtn = target.closest('[data-back]');
+    // シンプルなクリック委任（子要素 pointer-events:none で target=カード保証）
+    view.addEventListener('click', (e) => {
+      const backBtn = e.target.closest('[data-back]');
       if (backBtn) {
-        _navHome();
+        window.glEvents.emit('ui:navigate', { view: 'home' });
         return;
       }
-      const card = target.closest('[data-action]');
+      const card = e.target.closest('[data-action]');
       if (card) {
         _handleAction(card.dataset.action);
       }
-    };
-
-    view.addEventListener('touchend', (e) => {
-      const target = e.target;
-      if (!target.closest('[data-back],[data-action]')) return;
-      _lastTouchTime = Date.now();
-      e.preventDefault();
-      handleTap(target);
-    }, { passive: false });
-
-    view.addEventListener('click', (e) => {
-      if (Date.now() - _lastTouchTime < 500) return;
-      handleTap(e.target);
     });
-  }
-
-  function _navHome() {
-    console.log('[round] navigate: home');
-    try {
-      window.glEvents.emit('ui:navigate', { view: 'home' });
-    } catch (err) {
-      console.warn('[round] emit failed:', err);
-    }
-    setTimeout(() => {
-      const homeShown = document.getElementById('view-home')?.classList.contains('show');
-      if (!homeShown) {
-        console.warn('[round] fallback direct home');
-        _directNavigate('home');
-      }
-    }, 500);
-  }
-
-  function _navScore() {
-    console.log('[round] navigate: score');
-    try {
-      window.glEvents.emit('ui:navigate', { view: 'score' });
-    } catch (err) {
-      console.warn('[round] emit failed:', err);
-    }
-    setTimeout(() => {
-      const scoreShown = document.getElementById('view-score')?.classList.contains('show');
-      if (!scoreShown) {
-        console.warn('[round] fallback direct score');
-        _directNavigate('score');
-      }
-    }, 500);
-  }
-
-  function _directNavigate(view) {
-    ['home', 'golf', 'score', 'history', 'mypage'].forEach((v) => {
-      const el = document.getElementById('view-' + v);
-      if (el) el.classList.remove('show');
-    });
-    switch (view) {
-      case 'home': return window.glHome && window.glHome.show();
-      case 'score': return window.glScoreUI && window.glScoreUI.show();
-      case 'history': return window.glHistoryUI && window.glHistoryUI.show();
-      case 'mypage': return window.glMyPageUI && window.glMyPageUI.show();
-      default: return window.glHome && window.glHome.show();
-    }
   }
 
   async function _handleAction(action) {
@@ -186,7 +125,7 @@
     if (action === 'start') return _showStartConfirm();
     if (action === 'join') return _showJoinModal();
     if (action === 'invite') return _showInviteModal();
-    if (action === 'score') return _navScore();
+    if (action === 'score') return window.glEvents.emit('ui:navigate', { view: 'score' });
     if (action === 'leave') return _confirmLeave();
     if (action === 'proxy') return _showProxyManagerModal();
   }

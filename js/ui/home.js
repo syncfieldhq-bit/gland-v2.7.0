@@ -162,76 +162,25 @@
       </div>
     `;
 
-    // イベント委任: メニュー全体で1つのリスナー（buttonの子要素タップも捕捉）
+    // シンプルなクリック委任（子要素は pointer-events:none で target=ボタン保証）
     const menu = view.querySelector('.gl-home__menu');
     if (menu) {
-      menu.addEventListener('click', _onMenuClick);
-      // iOS Safari の click 遅延回避
-      menu.addEventListener('touchend', _onMenuTouch, { passive: false });
+      menu.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-nav]');
+        if (!btn) return;
+        const nav = btn.dataset.nav;
+        console.log('[home] nav click:', nav);
+        if (nav === 'distqr') {
+          _openDistributionQR();
+        } else {
+          window.glEvents.emit('ui:navigate', { view: nav });
+        }
+      });
     }
 
     // 広告カルーセルをマウント
     const adSlot = document.getElementById('ad-slot-home');
     if (adSlot && window.glAdsUI) window.glAdsUI.mount(adSlot, 'home');
-  }
-
-  let _lastTouchTime = 0;
-
-  function _onMenuTouch(e) {
-    const btn = e.target.closest('[data-nav]');
-    if (!btn) return;
-    _lastTouchTime = Date.now();
-    // touchend で先に処理して、後続 click は無視
-    e.preventDefault();
-    _handleNav(btn.dataset.nav);
-  }
-
-  function _onMenuClick(e) {
-    // touchend の直後の合成 click は無視
-    if (Date.now() - _lastTouchTime < 500) return;
-    const btn = e.target.closest('[data-nav]');
-    if (!btn) return;
-    _handleNav(btn.dataset.nav);
-  }
-
-  function _handleNav(nav) {
-    console.log('[home] nav click:', nav);
-    if (nav === 'distqr') {
-      _openDistributionQR();
-      return;
-    }
-    // ハイブリッド: PubSub + 直接呼出フォールバック
-    try {
-      if (window.glEvents && typeof window.glEvents.emit === 'function') {
-        window.glEvents.emit('ui:navigate', { view: nav });
-      }
-    } catch (err) {
-      console.warn('[home] emit failed, using direct call:', err);
-    }
-    // フォールバック: 500ms待って画面が切り替わっていなければ直接呼ぶ
-    setTimeout(() => {
-      const homeStill = document.getElementById('view-home')?.classList.contains('show');
-      const targetView = document.getElementById('view-' + nav);
-      const targetShown = targetView?.classList.contains('show');
-      if (homeStill && !targetShown) {
-        console.warn('[home] fallback direct navigation to:', nav);
-        _directNavigate(nav);
-      }
-    }, 500);
-  }
-
-  function _directNavigate(view) {
-    ['home', 'golf', 'score', 'history', 'mypage'].forEach((v) => {
-      const el = document.getElementById('view-' + v);
-      if (el) el.classList.remove('show');
-    });
-    switch (view) {
-      case 'golf': return window.glRoundUI && window.glRoundUI.show();
-      case 'history': return window.glHistoryUI && window.glHistoryUI.show();
-      case 'mypage': return window.glMyPageUI && window.glMyPageUI.show();
-      case 'score': return window.glScoreUI && window.glScoreUI.show();
-      default: return glHome.show();
-    }
   }
 
   /**
