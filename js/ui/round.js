@@ -246,7 +246,8 @@
   function _showInviteModal() {
     const groupCode = window.glState.get('groupCode');
     const roundId = window.glState.get('roundId');
-    const joinUrl = location.origin + location.pathname + '?join=' + (roundId || '');
+    // QRには groupCode（4桁）を埋め込む → join() とパラメータを揃えてサーバエラー回避
+    const joinUrl = location.origin + location.pathname + '?join=' + encodeURIComponent(groupCode || '');
 
     _modalPrompt({
       title: '📤 招待',

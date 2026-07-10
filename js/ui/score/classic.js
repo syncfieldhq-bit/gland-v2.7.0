@@ -382,16 +382,26 @@
       }
       .gl-cls-panel-overlay.show { opacity: 1; }
       .gl-cls-input-panel {
-        position: fixed; left: 0; right: 0; bottom: 0;
+        position: fixed; left: 0; right: 0;
+        bottom: 0;
         background: #fff; padding: 16px;
         box-shadow: 0 -4px 16px rgba(0,0,0,.15);
-        z-index: 9000; transform: translateY(100%);
-        transition: transform .25s ease-out;
+        z-index: 9000;
+        transform: translateY(100%);
+        -webkit-transform: translateY(100%);
+        will-change: transform;
+        transition: transform .28s cubic-bezier(.2,.8,.2,1);
+        -webkit-transition: -webkit-transform .28s cubic-bezier(.2,.8,.2,1);
         border-radius: 16px 16px 0 0;
-        max-height: 85vh; overflow-y: auto;
-        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+        max-height: 75vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
       }
-      .gl-cls-input-panel.show { transform: translateY(0); }
+      .gl-cls-input-panel.show {
+        transform: translateY(0) !important;
+        -webkit-transform: translateY(0) !important;
+      }
       .gl-cls-panel-header {
         display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 12px; padding-bottom: 8px;
@@ -1113,7 +1123,7 @@
   }
 
   function _showInputPanel() {
-    _closeInputPanel(); // 既存を除去
+    _closeInputPanel(true); // 既存を即時除去
 
     const overlay = document.createElement('div');
     overlay.id = 'gl-cls-panel-overlay';
@@ -1123,14 +1133,39 @@
     const panel = document.createElement('div');
     panel.id = 'gl-cls-input-panel';
     panel.className = 'gl-cls-input-panel';
+    // 初期状態を明示（iOS Safari対策）
+    panel.style.transform = 'translateY(100%)';
+    panel.style.webkitTransform = 'translateY(100%)';
     document.body.appendChild(panel);
 
     _renderInputPanel();
 
+    // 強制リフロー → 次フレームで .show を付与
+    // これでトランジションが確実に発火する
+    void panel.offsetHeight;
+
     requestAnimationFrame(() => {
-      overlay.classList.add('show');
-      panel.classList.add('show');
+      requestAnimationFrame(() => {
+        overlay.classList.add('show');
+        panel.classList.add('show');
+        // インラインスタイルを解除（.show が効くように）
+        panel.style.transform = '';
+        panel.style.webkitTransform = '';
+      });
     });
+
+    // フェイルセーフ：400ms 経ってもトップが画面外なら強制表示
+    setTimeout(() => {
+      const p = document.getElementById('gl-cls-input-panel');
+      if (!p) return;
+      const rect = p.getBoundingClientRect();
+      if (rect.top >= window.innerHeight - 20) {
+        console.warn('[classic] panel stuck offscreen, forcing show');
+        p.style.transform = 'translateY(0)';
+        p.style.webkitTransform = 'translateY(0)';
+        p.style.transition = 'none';
+      }
+    }, 400);
 
     overlay.addEventListener('click', _cancelInputPanel);
   }
@@ -1250,16 +1285,24 @@
     _closeInputPanel();
   }
 
-  function _closeInputPanel() {
+  function _closeInputPanel(immediate) {
     const panel = document.getElementById('gl-cls-input-panel');
     const overlay = document.getElementById('gl-cls-panel-overlay');
     if (panel) {
-      panel.classList.remove('show');
-      setTimeout(() => panel.remove(), 250);
+      if (immediate) {
+        panel.remove();
+      } else {
+        panel.classList.remove('show');
+        setTimeout(() => panel.remove(), 280);
+      }
     }
     if (overlay) {
-      overlay.classList.remove('show');
-      setTimeout(() => overlay.remove(), 250);
+      if (immediate) {
+        overlay.remove();
+      } else {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 280);
+      }
     }
     inputSession = null;
   }

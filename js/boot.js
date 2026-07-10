@@ -1,14 +1,14 @@
 /**
- * G-LAND v2.7.0 - Bootstrap (修正版: onboarding後の遷移バグ解消)
- * ==============================================================
- * 修正点:
- *   - ui:navigate 購読を最初期に設定（onboarding return前）
- *   - 全ビューの初期非表示化を保証
- *   - 起動失敗時はフォールバックUI
+ * G-LAND v2.7.0 - Bootstrap
+ * =========================
+ * 起動シーケンスと画面遷移ルーター。
+ * 初期化失敗時はフォールバックUI（ロゴ+再読み込みボタン）を表示。
  */
 (function () {
   'use strict';
 
+  // ===== GAS URL 設定 =====
+  // ⚠️ 本番デプロイ時は index.html 内の window.GLAND_GAS_URL を更新
   window.GLAND_GAS_URL = window.GLAND_GAS_URL || '';
 
   function _showFallbackUI(errorMsg) {
@@ -23,7 +23,8 @@
         <div style="font-size:14px;opacity:.9;margin-bottom:32px;">ゴルフスコア共有アプリ</div>
         <div style="background:rgba(255,255,255,.15);padding:20px;border-radius:12px;max-width:340px;margin-bottom:24px;">
           <div style="font-size:15px;line-height:1.6;">
-            起動時にエラーが発生しました。<br>再読み込みしてください。
+            起動時にエラーが発生しました。<br>
+            再読み込みしてください。
           </div>
           ${errorMsg ? `<div style="font-size:11px;opacity:.7;margin-top:12px;font-family:monospace;">${errorMsg}</div>` : ''}
         </div>
@@ -36,33 +37,22 @@
     `;
   }
 
-  /**
-   * ビュー切替（グローバル公開: onboarding.js からもフォールバックで直呼び可能）
-   */
   function _navigate(view) {
+    // 全ビュー非表示
     ['home', 'golf', 'score', 'history', 'mypage'].forEach((v) => {
       const el = document.getElementById('view-' + v);
       if (el) el.classList.remove('show');
     });
 
-    try {
-      switch (view) {
-        case 'home':    return window.glHome?.show();
-        case 'golf':    return window.glRoundUI?.show();
-        case 'score':   return window.glScoreUI?.show();
-        case 'history': return window.glHistoryUI?.show();
-        case 'mypage':  return window.glMyPageUI?.show();
-        default:        return window.glHome?.show();
-      }
-    } catch (err) {
-      console.error('[boot._navigate] view failed:', view, err);
-      // フォールバック: home へ
-      if (view !== 'home' && window.glHome) window.glHome.show();
+    switch (view) {
+      case 'home': return window.glHome.show();
+      case 'golf': return window.glRoundUI.show();
+      case 'score': return window.glScoreUI.show();
+      case 'history': return window.glHistoryUI.show();
+      case 'mypage': return window.glMyPageUI.show();
+      default: return window.glHome.show();
     }
   }
-
-  // ⭐ 直接呼出用にグローバル公開（onboarding.js の緊急フォールバック用）
-  window.__glNavigate = _navigate;
 
   async function _boot() {
     try {
@@ -89,12 +79,6 @@
       // 5. Queue 自動flush開始
       window.glQueue._startAutoFlush();
 
-      // ⭐【修正】ui:navigate 購読を「onboarding判定より前」に設定
-      //    onboarding が完了して emit されたときに購読者がいる状態を保証する
-      window.glEvents.on('ui:navigate', (data) => {
-        _navigate(data?.view || 'home');
-      });
-
       // 6. ?join= 検出
       const params = new URLSearchParams(location.search);
       const joinCode = params.get('join');
@@ -105,15 +89,13 @@
       // 7. Install Gate 判定
       const gateShown = window.glGate.show();
       if (gateShown) {
-        return; // gate表示中は停止（後続処理はappinstalled後に）
+        return; // gate表示中はここで停止
       }
 
       // 8. Onboarding 判定
       const onboardingShown = window.glOnboarding.check();
       if (onboardingShown) {
-        // ⭐【修正】return する前に、購読は既に設定済みなので安心
-        //         onboarding 完了時の emit('ui:navigate') が確実に受信される
-        return;
+        return; // 登録待ち
       }
 
       // 9. 履歴同期（起動時のみ・バックグラウンド）
@@ -121,7 +103,12 @@
         window.glHistory.syncFromServer();
       }
 
-      // 10. Keep-alive（3分毎の ping）
+      // 10. ナビゲーション購読
+      window.glEvents.on('ui:navigate', (data) => {
+        _navigate(data?.view || 'home');
+      });
+
+      // 11. Keep-alive（3分毎の ping）
       if (window.GLAND_GAS_URL) {
         setInterval(() => {
           if (navigator.onLine) {
@@ -130,8 +117,41 @@
         }, 180000);
       }
 
-      // 11. 初期画面表示
+      // 12. 初期画面表示
       _navigate('home');
+
+      // 13. ?join= からの自動合流（QRコード対応）
+      const pending = window.glRound.getPendingJoin && window.glRound.getPendingJoin();
+      if (pending && window.glProfile.getUserId()) {
+        // 既にラウンド中でない場合のみ実行
+        const currentRound = window.glState.get('roundId');
+        if (!currentRound) {
+          setTimeout(async () => {
+            try {
+              console.log('[boot] auto-joining with code:', pending);
+              await window.glRound.join(pending);
+              window.glToast?.success('ラウンドに合流しました');
+            } catch (err) {
+              console.error('[boot] auto-join failed:', err);
+              const msg = (err && err.message) ? err.message : '不明なエラー';
+              window.glToast?.error('合流に失敗しました: ' + msg);
+              // 失敗時は pendingJoin をクリアして再試行を防ぐ
+              window.glRound.clearPendingJoin && window.glRound.clearPendingJoin();
+            } finally {
+              // URL からパラメータを除去（履歴汚染防止）
+              if (window.history && window.history.replaceState) {
+                window.history.replaceState({}, '', location.pathname);
+              }
+            }
+          }, 500);
+        } else {
+          // 既にラウンド中なら pendingJoin だけクリア
+          window.glRound.clearPendingJoin && window.glRound.clearPendingJoin();
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, '', location.pathname);
+          }
+        }
+      }
 
       console.log('[boot] G-LAND v2.7.0 ready');
     } catch (err) {
@@ -140,12 +160,14 @@
     }
   }
 
+  // DOMContentLoaded 待機
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _boot);
   } else {
     _boot();
   }
 
+  // 全体エラーハンドラ
   window.addEventListener('error', (e) => {
     console.error('[global error]', e.error);
   });
