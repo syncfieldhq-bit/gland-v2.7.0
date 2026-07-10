@@ -71,6 +71,11 @@
       // 3. Storage → State 復元
       window.glState.hydrate();
 
+      // 3.5. ナビゲーション購読（最優先：Gate/Onboardingで return しても確実に登録される）
+      window.glEvents.on('ui:navigate', (data) => {
+        _navigate(data?.view || 'home');
+      });
+
       // 4. GAS URL 設定
       if (window.GLAND_GAS_URL) {
         window.glandApi._setUrl(window.GLAND_GAS_URL);
@@ -103,10 +108,7 @@
         window.glHistory.syncFromServer();
       }
 
-      // 10. ナビゲーション購読
-      window.glEvents.on('ui:navigate', (data) => {
-        _navigate(data?.view || 'home');
-      });
+      // 10. （旧）ナビゲーション購読→ 3.5 へ移動済み
 
       // 11. Keep-alive（3分毎の ping）
       if (window.GLAND_GAS_URL) {
