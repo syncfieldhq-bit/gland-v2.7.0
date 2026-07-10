@@ -183,18 +183,26 @@
 
     if (canAdd) {
       wrap.querySelector('[data-add]')?.addEventListener('click', () => {
-        const name = document.getElementById('proxy-add-name').value.trim();
-        const kana = document.getElementById('proxy-add-kana').value.trim();
+        // ★ wrap スコープに限定して取得（id重複対策）
+        const nameEl = wrap.querySelector('#proxy-add-name');
+        const kanaEl = wrap.querySelector('#proxy-add-kana');
+        const name = (nameEl?.value || '').trim();
+        const kana = (kanaEl?.value || '').trim();
+        console.log('[proxy] add attempt: name=', name, 'kana=', kana);
         if (!name) {
           window.glToast.warn('名前は必須です');
+          nameEl?.focus();
           return;
         }
         const player = window.glRound.addProxyPlayer({ familyName: name, familyKana: kana });
         if (player) {
           window.glToast.success(`${name} さんを追加しました`);
           close();
-          _showProxyManagerModal(); // 再描画
-          _renderIndex(); // 一覧カードのカウンタ更新
+          // ★ 完全に DOM から消えるのを待ってから再描画（id重複回避）
+          setTimeout(() => {
+            _showProxyManagerModal();
+            _renderIndex();
+          }, 50);
         }
       });
     }

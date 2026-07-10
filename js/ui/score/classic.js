@@ -836,7 +836,8 @@
       const strokes = _getStrokes(player.userId, h);
       const par = pars[h - 1];
       const cur = h === currentHole ? ' gl-cls-cell--current' : '';
-      const editable = isSelf || type === 'proxy';
+      // ★ ローカル運用方針：全プレイヤーのセルを編集可能に（共有プレイヤーも代理入力可）
+      const editable = true;
       const readonlyCls = editable ? '' : ' gl-cls-cell--score--readonly';
       const emptyCls = strokes === null ? ' gl-cls-cell--score--empty' : '';
       const display = _cellDisplay(strokes, par);
@@ -880,7 +881,8 @@
       const strokes = _getStrokes(player.userId, h);
       const par = pars[h - 1];
       const cur = h === currentHole ? ' gl-cls-cell--current' : '';
-      const editable = isSelf || type === 'proxy';
+      // ★ ローカル運用方針：全プレイヤー編集可
+      const editable = true;
       const readonlyCls = editable ? '' : ' gl-cls-cell--score--readonly';
       const emptyCls = strokes === null ? ' gl-cls-cell--score--empty' : '';
       const display = _cellDisplay(strokes, par);
@@ -1074,10 +1076,8 @@
     const isEditingPast = hole < currentHole;
 
     const players = _getPlayers();
-    const editablePlayers = players.filter((p) => {
-      const t = _getPlayerType(p);
-      return t === 'self' || t === 'proxy';
-    });
+    // ★ ローカル運用：共有プレイヤーも含めて全員編集可能
+    const editablePlayers = players.filter((p) => !!p);
 
     let queue;
     if (isEditingPast) {
