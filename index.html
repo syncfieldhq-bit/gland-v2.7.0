@@ -29,10 +29,25 @@
     input, textarea { font-family: inherit; -webkit-appearance: none; }
   </style>
 
-  <!-- GAS URL 設定（デプロイ時に更新） -->
+  <!-- ⬇️⬇️⬇️ GAS URL 設定（デプロイ時に必ず埋める！）⬇️⬇️⬇️ -->
   <script>
-    // ⚠️ 本番デプロイ時: 下記に GAS デプロイURL を設定
-    window.GLAND_GAS_URL = '';
+    // ================================================================
+    // ⚠️⚠️⚠️ 重要 ⚠️⚠️⚠️
+    // 下記の '' に必ず GAS デプロイURL を入れてください
+    // 例: window.GLAND_GAS_URL = 'https://script.google.com/macros/s/AKfyc.../exec';
+    // ここが空のままだとユーザー登録・ラウンド保存が全て失敗します
+    // ================================================================
+    window.GLAND_GAS_URL = 'https://script.google.com/macros/s/AKfycbz3XtpkVhh_kA2YAzT2K3ujyzHWFwNZcmDX8SoP3ULiPqwMHRs7U0Q_618ODPlsns37/exec';
+
+    // GAS URL 未設定時の警告表示（デプロイミス防止）
+    if (!window.GLAND_GAS_URL) {
+      document.addEventListener('DOMContentLoaded', function () {
+        var warn = document.createElement('div');
+        warn.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#d32f2f;color:#fff;padding:12px 16px;font-size:13px;line-height:1.5;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,.3);font-family:sans-serif;';
+        warn.innerHTML = '⚠️ <b>GAS URL 未設定</b><br>index.html の <code>window.GLAND_GAS_URL</code> に GAS デプロイURL を埋め込んでください。<br>設定しないとユーザー登録やスコア保存はできません。';
+        document.body.appendChild(warn);
+      });
+    }
   </script>
 
   <!-- QRコード生成ライブラリ（招待用） -->
