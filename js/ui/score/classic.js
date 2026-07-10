@@ -910,8 +910,8 @@
       const strokes = _getStrokes(player.userId, h);
       const par = pars[h - 1];
       const cur = h === currentHole ? ' gl-cls-cell--current' : '';
-      // ★ ローカル運用方針：全プレイヤーのセルを編集可能に（共有プレイヤーも代理入力可）
-      const editable = true;
+      // ★ v2.7.13：共有プレイヤーは入力不可（相手のスマホで入力）
+      const editable = isSelf || type === 'proxy';
       const readonlyCls = editable ? '' : ' gl-cls-cell--score--readonly';
       const emptyCls = strokes === null ? ' gl-cls-cell--score--empty' : '';
       const display = _cellDisplay(strokes, par);
@@ -955,8 +955,8 @@
       const strokes = _getStrokes(player.userId, h);
       const par = pars[h - 1];
       const cur = h === currentHole ? ' gl-cls-cell--current' : '';
-      // ★ ローカル運用方針：全プレイヤー編集可
-      const editable = true;
+      // ★ v2.7.13：共有プレイヤーは入力不可
+      const editable = isSelf || type === 'proxy';
       const readonlyCls = editable ? '' : ' gl-cls-cell--score--readonly';
       const emptyCls = strokes === null ? ' gl-cls-cell--score--empty' : '';
       const display = _cellDisplay(strokes, par);
@@ -1122,6 +1122,10 @@
       window.glDebug && glDebug.log('[classic] cell tap p=' + cell.dataset.player + ' h=' + cell.dataset.hole + ' edit=' + cell.dataset.editable);
       if (cell.dataset.editable !== '1') {
         window.glDebug && glDebug.warn('[classic] cell not editable');
+        // 共有プレイヤーの場合はトーストで知らせる
+        if (window.glToast) {
+          window.glToast.info('このプレイヤーのスコアは本人のスマホで入力してください');
+        }
         return;
       }
       const playerId = cell.dataset.player;
