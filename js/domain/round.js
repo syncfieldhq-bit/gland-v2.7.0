@@ -11,7 +11,10 @@
     roundId: 'gl_round_id_v1',
     groupCode: 'gl_group_code_v1',
     pendingJoin: 'gl_pending_join_v1',
+    proxyPlayers: 'gl_proxy_players_v1',
   };
+
+  const MAX_PROXY = 3; // 代理入力プレイヤーの上限（ホスト + 代理最大3人 = 最大4人）
 
   let _startInProgress = false;
   let _joinInProgress = false;
@@ -158,8 +161,8 @@
       }
     },
 
-        /**
-     * 現在のメンバー一覧を再取得（修正版: 名前フィールド正規化）
+    /**
+     * 現在のメンバー一覧を再取得
      */
     async refreshMembers() {
       const roundId = window.glState.get('roundId');
@@ -169,21 +172,9 @@
         const result = await window.glandApi.listRoundMembers({ roundId });
         const members = result?.members || result || [];
 
-        // ⭐【修正】各メンバーの名前フィールドを正規化
-        //    displayName / familyName / name のどれかが必ず入るように補正
-        const normalized = members.map((m) => {
-          const displayName = window.glProfile.getDisplayName(m);
-          return {
-            ...m,
-            displayName: displayName,
-            name: displayName, // 下位互換
-            familyName: m.familyName || displayName,
-          };
-        });
-
         // 自分を先頭にソート
         const myUserId = window.glProfile.getUserId();
-        const sorted = [...normalized].sort((a, b) => {
+        const sorted = [...members].sort((a, b) => {
           if (a.userId === myUserId) return -1;
           if (b.userId === myUserId) return 1;
           return 0;
@@ -197,7 +188,6 @@
         return window.glState.get('players') || [];
       }
     },
-
 
     /**
      * ラウンド離脱
@@ -225,14 +215,94 @@
     _clearLocal() {
       window.glStorage.removeAll(KEYS.roundId);
       window.glStorage.removeAll(KEYS.groupCode);
+      window.glStorage.writeLocal(KEYS.proxyPlayers, null);
       window.glState.patch({
         roundId: null,
         groupCode: null,
         players: [],
+        proxyPlayers: [],
         currentHole: 1,
         scores: {},
         hostUserId: null,
       });
+    },
+
+    // ==== 代理入力プレイヤー管理 ====
+
+    /**
+     * 代理入力プレイヤーを追加
+     * @param {Object} p - {familyName, familyKana}
+     * @returns {Object|null} 追加されたプレイヤー情報 or null
+     */
+    addProxyPlayer({ familyName, familyKana }) {
+      const name = (familyName || '').trim();
+      if (!name) {
+        window.glErrors?.handle({ code: 'U5' });
+        return null;
+      }
+
+      const proxies = window.glState.get('proxyPlayers') || [];
+      if (proxies.length >= MAX_PROXY) {
+        window.glToast?.warn(`代理入力は最大${MAX_PROXY}名までです`);
+        return null;
+      }
+
+      const player = {
+        userId: 'PROXY-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 6),
+        familyName: name,
+        familyKana: (familyKana || '').trim(),
+        displayName: name,
+        role: 'proxy',
+        isProxy: true,
+        addedAt: new Date().toISOString(),
+      };
+
+      const updated = [...proxies, player];
+      window.glState.set('proxyPlayers', updated);
+      window.glStorage.writeLocal(KEYS.proxyPlayers, updated);
+      window.glEvents?.emit('round:proxy-added', player);
+      return player;
+    },
+
+    /**
+     * 代理プレイヤーを削除
+     */
+    removeProxyPlayer(proxyUserId) {
+      const proxies = window.glState.get('proxyPlayers') || [];
+      const filtered = proxies.filter((p) => p.userId !== proxyUserId);
+      window.glState.set('proxyPlayers', filtered);
+      window.glStorage.writeLocal(KEYS.proxyPlayers, filtered);
+      window.glEvents?.emit('round:proxy-removed', { proxyUserId });
+    },
+
+    /**
+     * 代理プレイヤーの情報を更新
+     */
+    updateProxyPlayer(proxyUserId, patch) {
+      const proxies = window.glState.get('proxyPlayers') || [];
+      const idx = proxies.findIndex((p) => p.userId === proxyUserId);
+      if (idx < 0) return false;
+      const updated = proxies.map((p, i) =>
+        i === idx ? { ...p, ...patch, displayName: patch.familyName || p.displayName } : p
+      );
+      window.glState.set('proxyPlayers', updated);
+      window.glStorage.writeLocal(KEYS.proxyPlayers, updated);
+      window.glEvents?.emit('round:proxy-updated', { proxyUserId });
+      return true;
+    },
+
+    /**
+     * 代理プレイヤー一覧取得
+     */
+    listProxyPlayers() {
+      return window.glState.get('proxyPlayers') || [];
+    },
+
+    /**
+     * 代理プレイヤーの上限値
+     */
+    getMaxProxy() {
+      return MAX_PROXY;
     },
 
     getCurrent() {

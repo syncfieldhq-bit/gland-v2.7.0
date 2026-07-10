@@ -13,6 +13,34 @@
     const style = document.createElement('style');
     style.id = 'gl-mypage-styles';
     style.textContent = `
+      /* テーマ切替セクション */
+      .gl-mypage__theme-card { padding: 16px 18px; }
+      .gl-mypage__theme-title {
+        font-size: 15px; font-weight: 700; color: #1a5f3f; margin-bottom: 4px;
+      }
+      .gl-mypage__theme-hint {
+        font-size: 12px; color: #888; margin-bottom: 12px;
+      }
+      .gl-mypage__theme-option {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+        margin-bottom: 8px; cursor: pointer; transition: all .15s;
+      }
+      .gl-mypage__theme-option:hover { background: #fafafa; }
+      .gl-mypage__theme-option.active {
+        border-color: #1a5f3f; background: #f0f7f2;
+      }
+      .gl-mypage__theme-option input[type="radio"] {
+        margin-top: 2px; accent-color: #1a5f3f;
+      }
+      .gl-mypage__theme-option-body { flex: 1; }
+      .gl-mypage__theme-option-name {
+        font-size: 15px; font-weight: 700; color: #222; margin-bottom: 2px;
+      }
+      .gl-mypage__theme-option-desc {
+        font-size: 12px; color: #666;
+      }
+
       #view-mypage {
         min-height: 100vh; padding: 16px; box-sizing: border-box;
         background: #f8f9fa; display: none; flex-direction: column;
@@ -65,6 +93,12 @@
 
       <button class="gl-btn-primary" data-edit>✏️ プロフィールを編集</button>
 
+      <div class="gl-mypage__card gl-mypage__theme-card" style="margin-top:18px;">
+        <div class="gl-mypage__theme-title">🎨 スコアカード デザイン</div>
+        <div class="gl-mypage__theme-hint">お好みのスコアカードを選べます（いつでも変更可能）</div>
+        <div id="gl-theme-options"></div>
+      </div>
+
       <div class="gl-mypage__card" style="margin-top:14px;font-size:12px;color:#888;">
         <div>ユーザーID: <span style="font-family:monospace;">${userId}</span></div>
       </div>
@@ -79,8 +113,41 @@
     });
     view.querySelector('[data-edit]').addEventListener('click', () => _showEditModal());
 
+    _renderThemeOptions();
+
     const adSlot = document.getElementById('ad-slot-mypage');
     if (adSlot) window.glAdsUI.mount(adSlot, 'mypage');
+  }
+
+  /**
+   * ⭐ スコアカード テーマ切替 UI
+   */
+  function _renderThemeOptions() {
+    const container = document.getElementById('gl-theme-options');
+    if (!container || !window.glScoreUI) return;
+
+    const themes = window.glScoreUI.listAvailable();
+    const currentId = window.glScoreUI.getCurrentThemeId();
+
+    container.innerHTML = themes.map((t) => `
+      <label class="gl-mypage__theme-option ${t.id === currentId ? 'active' : ''}">
+        <input type="radio" name="gl-theme" value="${t.id}" ${t.id === currentId ? 'checked' : ''}>
+        <div class="gl-mypage__theme-option-body">
+          <div class="gl-mypage__theme-option-name">${t.name}</div>
+          <div class="gl-mypage__theme-option-desc">${t.description || ''}</div>
+        </div>
+      </label>
+    `).join('');
+
+    container.querySelectorAll('input[name="gl-theme"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        const themeId = radio.value;
+        if (window.glScoreUI.setTheme(themeId)) {
+          window.glToast?.success(`テーマを「${themes.find(t => t.id === themeId)?.name}」に変更しました`);
+          _renderThemeOptions(); // activeクラス更新
+        }
+      });
+    });
   }
 
   function _showEditModal() {

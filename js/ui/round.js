@@ -58,6 +58,9 @@
     if (!view) return;
 
     const inRound = !!window.glState.get('roundId');
+    const proxies = window.glRound.listProxyPlayers ? window.glRound.listProxyPlayers() : [];
+    const maxProxy = window.glRound.getMaxProxy ? window.glRound.getMaxProxy() : 3;
+
     view.innerHTML = `
       <button class="gl-round__back" data-back>← ホームへ戻る</button>
       <h1 class="gl-round__title">🏌️ ラウンド</h1>
@@ -70,6 +73,10 @@
           <div class="gl-round__card" data-action="invite">
             <h3>📤 招待</h3>
             <p>QRコード・4桁コードで仲間を呼ぶ</p>
+          </div>
+          <div class="gl-round__card" data-action="proxy">
+            <h3>🧍 代理入力プレイヤー (${proxies.length}/${maxProxy})</h3>
+            <p>スマホを使わない人の分を代打で入力</p>
           </div>
           <div class="gl-round__card" data-action="leave">
             <h3>🚪 ラウンドを終了</h3>
@@ -103,6 +110,88 @@
     if (action === 'invite') return _showInviteModal();
     if (action === 'score') return window.glEvents.emit('ui:navigate', { view: 'score' });
     if (action === 'leave') return _confirmLeave();
+    if (action === 'proxy') return _showProxyManagerModal();
+  }
+
+  /**
+   * 代理入力プレイヤー管理モーダル
+   */
+  function _showProxyManagerModal() {
+    const proxies = window.glRound.listProxyPlayers();
+    const max = window.glRound.getMaxProxy();
+    const canAdd = proxies.length < max;
+
+    const list = proxies.length === 0
+      ? '<p style="color:#999;text-align:center;padding:16px 0;">まだ代理プレイヤーはいません</p>'
+      : proxies.map((p) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#faf6ec;border-radius:6px;margin-bottom:6px;">
+            <div>
+              <div style="font-weight:700;">${p.familyName || p.displayName}</div>
+              ${p.familyKana ? `<div style="font-size:11px;color:#888;">${p.familyKana}</div>` : ''}
+            </div>
+            <button style="background:#f44336;color:#fff;border:none;padding:6px 10px;border-radius:4px;font-size:12px;cursor:pointer;" data-remove="${p.userId}">削除</button>
+          </div>
+        `).join('');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'gl-modal show';
+    wrap.innerHTML = `
+      <div class="gl-modal__backdrop"></div>
+      <div class="gl-modal__body">
+        <h2 class="gl-modal__title">🧍 代理入力プレイヤー</h2>
+        <p style="font-size:13px;color:#666;">スマホを使わない人のスコアを代わりに入力できます（最大${max}名）</p>
+        <div style="margin:12px 0;">${list}</div>
+        ${canAdd ? `
+          <h3 style="font-size:14px;color:#1a5f3f;margin:16px 0 8px;">新規追加</h3>
+          <div class="gl-form__group">
+            <label class="gl-form__label">名前 <span style="color:#f44336;">*</span></label>
+            <input class="gl-form__input" id="proxy-add-name" placeholder="例: 田中">
+          </div>
+          <div class="gl-form__group">
+            <label class="gl-form__label">ふりがな（任意）</label>
+            <input class="gl-form__input" id="proxy-add-kana" placeholder="例: たなか">
+          </div>
+          <button class="gl-btn-primary" data-add>➕ 追加する</button>
+        ` : `
+          <p style="text-align:center;color:#ff9800;padding:12px;background:#fff8e1;border-radius:6px;font-size:13px;">上限に達しています</p>
+        `}
+        <button style="width:100%;padding:12px;margin-top:10px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer;" data-close>閉じる</button>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+
+    const close = () => wrap.remove();
+    wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
+    wrap.querySelector('[data-close]').addEventListener('click', close);
+
+    if (canAdd) {
+      wrap.querySelector('[data-add]')?.addEventListener('click', () => {
+        const name = document.getElementById('proxy-add-name').value.trim();
+        const kana = document.getElementById('proxy-add-kana').value.trim();
+        if (!name) {
+          window.glToast.warn('名前は必須です');
+          return;
+        }
+        const player = window.glRound.addProxyPlayer({ familyName: name, familyKana: kana });
+        if (player) {
+          window.glToast.success(`${name} さんを追加しました`);
+          close();
+          _showProxyManagerModal(); // 再描画
+          _renderIndex(); // 一覧カードのカウンタ更新
+        }
+      });
+    }
+
+    wrap.querySelectorAll('[data-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (!confirm('この代理プレイヤーを削除しますか？')) return;
+        window.glRound.removeProxyPlayer(btn.dataset.remove);
+        window.glToast.info('削除しました');
+        close();
+        _showProxyManagerModal();
+        _renderIndex();
+      });
+    });
   }
 
   function _showStartConfirm() {

@@ -1,130 +1,177 @@
-# G-LAND v2.7.0 — 完全実装パッケージ
+# G-LAND v2.7.1 — スコアカードテーマ切替対応版
 
-ゴルフスコア共有 PWA アプリ（モジュール化リアーキテクチャ完成版）
+ゴルフスコア共有 PWA アプリ  
+**v2.7.1 の目玉: 「スコアカードテーマ切替」システムを実装**
+
+---
+
+## 🎨 v2.7.1 の新機能
+
+### スコアカードテーマ切替システム
+
+マイページから「スコアカード デザイン」を選択すると、スコア入力画面の見た目が丸ごと切り替わります。
+
+| テーマ | 説明 | 対象 |
+|---|---|---|
+| **シンプル** (`simple.js`) | 1ホールずつ1人分を大きく表示。超シンプル | 初心者・老眼配慮 |
+| **クラシック** (`classic.js`) | 昔ながらの紙スコアカード風。18ホール横スクロール | 本格派・全員一覧派 |
+
+### クラシックテーマの特徴
+
+- **22列レイアウト**: Player + H1〜H9 + OUT + H10〜H18 + IN + TOTAL
+- **3つの表示モード**: 
+  - ストローク（打数）
+  - `-` `E` `+`（Par からの差）
+  - `○` `─` `△`（記号）
+- **色分け**: バーディー以下=赤 / Par=黒 / ボギー以上=青
+- **左右固定列**: プレイヤー名 & TOTAL は常時表示、中央のみスクロール
+- **現在ホールハイライト**: 黄色背景 + 少し拡大
+- **セル直接タップ入力**: タップで下部から数字パネルがせり出す
+- **代理入力プレイヤー**: スマホを持たない同伴者を最大3名まで登録可能
+- **共有プレイヤー**: 招待コードで参加した人は自動同期、名前タップでふりがな表示
+- **横画面**: 閲覧専用、9ホールずつ横スクロール、老眼配慮の大きめ文字
 
 ---
 
 ## 📁 ディレクトリ構成
 
 ```
-gland-v2.7.0/
-├── README.md                 (本ファイル)
-├── index.html                (DOM骨格 + script読込)
-├── sw.js                     (Service Worker / CACHE_VERSION='gland-v2.7.0')
+gland-v2.7.1/
+├── README.md
+├── index.html
+├── sw.js                        (CACHE_VERSION='gland-v2.7.1')
+├── manifest.json                (PWA拡張版・maskable/512px対応)
 │
-├── gas/                      (Google Apps Script 用)
-│   ├── main.gs               (doPost + initSetup + LockService)
-│   ├── schema.gs             (SCHEMA定義 + _colIdx ヘルパー)
-│   ├── api.gs                (全16アクションハンドラ)
-│   └── db.gs                 (シートI/O層)
+├── gas/                         (Google Apps Script)
+│   ├── main.gs
+│   ├── schema.gs
+│   ├── api.gs
+│   └── db.gs
 │
-└── js/                       (フロントエンド JS モジュール)
-    ├── api.js                (GAS通信の唯一の窓口)
-    ├── boot.js               (起動シーケンス + フォールバックUI)
+└── js/
+    ├── api.js
+    ├── boot.js
+    ├── core/                    (Layer 2: 基盤層)
+    │   ├── events.js
+    │   ├── storage.js           (⭐ proxyPlayers 復元対応)
+    │   ├── state.js             (⭐ proxyPlayers ハイドレーション追加)
+    │   ├── net.js
+    │   ├── errors.js
+    │   └── queue.js
     │
-    ├── core/                 (Layer 2: 基盤層)
-    │   ├── events.js         (PubSub基盤)
-    │   ├── storage.js        (三重ストレージ / iOS Safari対策)
-    │   ├── state.js          (中央状態管理)
-    │   ├── net.js            (タイムアウトfetch + オンライン監視)
-    │   ├── errors.js         (N1-N6 / A1-A10 / U1-U5)
-    │   └── queue.js          (永続化リトライキュー / 指数バックオフ)
+    ├── domain/                  (Layer 3: ビジネスロジック)
+    │   ├── profile.js
+    │   ├── round.js             (⭐ 代理入力プレイヤー管理機能追加)
+    │   ├── score.js
+    │   ├── history.js
+    │   ├── course.js
+    │   └── ads.js
     │
-    ├── domain/               (Layer 3: ビジネスロジック)
-    │   ├── profile.js        (楽観的UI プロフィール)
-    │   ├── round.js          (ラウンド開始/合流/離脱)
-    │   ├── score.js          (楽観的UIスコア入力 / 15秒ポーリング)
-    │   ├── history.js        (起動時同期 + キャッシュ)
-    │   ├── course.js         (マイコース + 検索 + 依頼)
-    │   └── ads.js            (広告MVP + Stripe拡張基盤)
-    │
-    └── ui/                   (Layer 4: 表示・コントローラー)
-        ├── toast.js          (alert代替 / オフラインバッジ)
-        ├── gate.js           (install-gate / 端末別UX)
-        ├── onboarding.js     (2項目登録 / ?join= 強制表示)
-        ├── ads.js            (5秒自動カルーセル / 4枚ローテ)
-        ├── home.js           (2x2メニュー + 広告特等席)
-        ├── round.js          (ラウンド開始/合流/招待QR+A123)
-        ├── score.js          (スコア入力 / 横向き広告マージン)
-        ├── history.js        (履歴一覧)
-        ├── mypage.js         (プロフィール編集 + バージョン表示)
-        └── course.js         (マイコース/検索/運営依頼)
+    └── ui/                      (Layer 4: 表示層)
+        ├── toast.js
+        ├── gate.js
+        ├── onboarding.js
+        ├── ads.js
+        ├── home.js
+        ├── round.js             (⭐ 代理入力管理モーダル追加)
+        ├── score.js             (⭐ テーマローダーに書換)
+        ├── score/               (⭐ NEW: テーマ本体フォルダ)
+        │   ├── simple.js        (⭐ 旧 score.js を移動)
+        │   └── classic.js       (⭐ NEW: 紙スコアカード風)
+        ├── history.js
+        ├── mypage.js            (⭐ テーマ切替 UI 追加)
+        └── course.js
 ```
 
-**総ファイル数**: 26（フロント22 + GAS 4）
+**⭐ = v2.7.1 で新規/修正されたファイル**
 
 ---
 
-## 🚀 デプロイ手順
+## 🚀 デプロイ手順（v2.7.0 からの差分）
 
-### 1️⃣ GAS バックエンド
+### 既に v2.7.0 をデプロイ済みの場合
 
-1. Google スプレッドシートを新規作成
-2. 拡張機能 → Apps Script
-3. `gas/` 配下の 4ファイルをそれぞれコピペで作成:
-   - `schema.gs`
-   - `main.gs`
-   - `api.gs`
-   - `db.gs`
-4. **プロジェクトの設定 → スクリプトプロパティ**
-   - `ADMIN_EMAIL` = 管理者メールアドレス（コース追加依頼の通知先）
-5. **`initSetup()` を1回実行** ← 10シートが自動生成される
-6. デプロイ → 新しいデプロイ → ウェブアプリ
-   - 実行するユーザー: 自分
-   - アクセス権限: 全員
-7. デプロイ URL をコピー（`https://script.google.com/macros/s/xxxxx/exec`）
+**フロントエンド差分適用のみで済みます:**
 
-### 2️⃣ フロントエンド
+1. 以下ファイルを上書き:
+   - `index.html`
+   - `sw.js`
+   - `manifest.json`
+   - `js/core/state.js`
+   - `js/domain/round.js`
+   - `js/ui/round.js`
+   - `js/ui/mypage.js`
 
-1. GitHub リポジトリにファイル一式を配置
-2. **`index.html` の `window.GLAND_GAS_URL = '';` に GAS URL を貼付**
-   ```javascript
-   window.GLAND_GAS_URL = 'https://script.google.com/macros/s/xxxxx/exec';
-   ```
-3. `manifest.json` と `icons/icon-192.png` を配置（PWA用）
-4. GitHub Pages で公開
-5. iPhone/Android で PWA インストール
+2. 以下ファイルを新規追加:
+   - `js/ui/score/simple.js`（旧 `js/ui/score.js` の内容をリネーム保存したもの）
+   - `js/ui/score/classic.js`
+
+3. 以下ファイルを書換:
+   - `js/ui/score.js` → 薄いテーマローダーに書き換わっている
+
+4. **GAS 側は変更なし**（DB/API 拡張なし、フロントエンドのみで完結）
+
+5. アイコン `icons/icon-512.png` を追加（Android PWA インストール性向上のため推奨）
+
+6. iPhone/Android で PWA 再インストール、または既存 SW を更新
 
 ---
 
 ## ✅ 動作確認チェックリスト
 
-- [ ] `initSetup()` 実行後、10シート (Users/Rounds/RoundMembers/PlayerScores/Courses/MyCourses/CourseRequests/Ads/AdImpressions/AdClicks) が生成される
-- [ ] ホーム画面: 2x2 メニュー + 下半分に広告カルーセル
-- [ ] 広告が5秒毎に自動スライド
-- [ ] ラウンド開始 → 招待 QR + A123形式コード表示
-- [ ] 別端末で ?join= リンクを開く → 苗字2項目登録 → 自動合流
-- [ ] スコア入力 → 即UI反映（楽観的UI）
-- [ ] オフライン → キューに積まれる（gl_score_queue_v1）
-- [ ] オンライン復帰 → 自動送信
-- [ ] 横向き回転 → スコア表下部に広告バナー
-- [ ] マイページ最下部: `v2.7.0 (build: 20260709)` 表示
-- [ ] エラー時: トースト + 振動（音なし）
+- [ ] マイページに「🎨 スコアカード デザイン」セクションが表示される
+- [ ] 「シンプル」「クラシック」のラジオボタンで切替できる
+- [ ] クラシック選択後、ラウンドを開始してスコア画面が紙スコアカード風になる
+- [ ] 3つのモードタブ（ストローク / -E+ / ○─△）で表示が切り替わる
+- [ ] 現在ホールが黄色ハイライトで表示される
+- [ ] セルをタップすると下から数字入力パネルが出る
+- [ ] 数字を選ぶと入力され、次ホールに自動移動する（自分の入力時）
+- [ ] 左右にスクロールしてもプレイヤー名と TOTAL は固定
+- [ ] 横画面にすると閲覧専用モードに切り替わる
+- [ ] ラウンド管理画面に「🧍 代理入力プレイヤー」カードが表示される
+- [ ] 代理入力プレイヤーを追加できる（最大3名）
+- [ ] 代理プレイヤーのセルも自分がタップして入力できる
+- [ ] 共有プレイヤーの名前をタップするとふりがなが大きく表示される
 
 ---
 
-## 🎯 アーキテクチャ原則
+## 🎯 アーキテクチャ原則（v2.7.0 から継承）
 
 1. **5層レイヤー構造** — External / Infrastructure / Domain / UI / Bootstrap
-2. **PubSub 疎結合** — 全モジュール間通信は `glEvents` 経由（循環依存禁止）
+2. **PubSub 疎結合** — 全モジュール間通信は `glEvents` 経由
 3. **楽観的UI** — スコア入力は state 即反映 → キュー永続化 → 非同期API
-4. **三重ストレージ** — localStorage + Cookie + sessionStorage（iOS Safari対策）
-5. **alert 完全撲滅** — toast + 振動で代替、音は絶対に鳴らさない
+4. **三重ストレージ** — localStorage + Cookie + sessionStorage
+5. **alert 完全撲滅** — toast + 振動で代替
 6. **スキーマ自動生成** — GAS 側 `initSetup()` で全シート・全列を冪等生成
-7. **DOM 骨格のみ** — index.html は script 読込のみ、機能は全て JS モジュール
+7. **DOM 骨格のみ** — index.html は script 読込のみ
+
+## 🎨 v2.7.1 で追加された原則
+
+8. **UI テーマ交換可能** — `js/ui/score/` にファイルを追加するだけで新テーマが増やせる
+9. **既存モジュールは不変** — テーマ追加時に core / domain 層は一切触らない
 
 ---
 
-## 🔮 将来の拡張ポイント
+## 🔮 今後のテーマ追加ロードマップ
 
-- **S7b 完全実装** — ラウンド保存モーダル内アコーディオン式プロフィール補完
-- **AdImpressions/AdClicks GAS 記録** — 広告効果測定
-- **Stripe 連携** — `ads-bidding.js` を後付けで bidAmount 有料化
-- **Firebase 移行** — 15秒ポーリングから数百msリアルタイム同期へ
-- **G シリーズ連携** — G Town / G Pro で userId・profile 共有
+現状 2テーマですが、以下のようなテーマを追加可能です：
+
+| # | テーマ | 概要 |
+|---|---|---|
+| 3 | senior.js | シニア向け特大ボタン |
+| 4 | pro.js | パット/OB/FW キープ率も記録する本格派 |
+| 5 | grid.js | Excel 風グリッド |
+| 6 | match.js | マッチプレー専用 |
+| 7 | team.js | チーム戦・ペア戦 |
+| 8 | colorful.js | カラフルポップ |
+| 9 | seasonal.js | 季節限定（桜/夏/クリスマス等） |
+| 10 | brand.js | ゴルフブランドコラボ |
+
+**新テーマは `js/ui/score/xxx.js` を追加し、`window.glScoreThemes.xxx = {...}` として登録するだけで完成。他のファイルは一切触らない。**
 
 ---
 
-**Version**: v2.7.0 (build: 20260709)  
-**Status**: FIX — 実機テストフェーズ  
+**Version**: v2.7.1 (build: 20260709)  
+**Status**: FIX — スコアカードテーマ切替システム完成  
+**Base Version**: v2.7.0  
 **Repository**: https://github.com/syncfieldhq-bit/gland-v1.0.0

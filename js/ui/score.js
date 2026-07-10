@@ -1,285 +1,111 @@
 /**
- * G-LAND v2.7.0 - Score Input UI
- * ==============================
- * 楽観的UIスコア入力（保存はglScore.save経由）
- * 横向き時: コア機能を絶対に隠さず、下部マージンに広告バナー
+ * G-LAND v2.7.1 - Score Theme Loader (テーマローダー)
+ * ==================================================
+ * localStorage の 'gl_score_theme_v1' を読み、該当テーマの show/hide を呼ぶ薄いラッパー。
+ * テーマ本体は js/ui/score/*.js に配置。
+ *
+ * 使用可能テーマ:
+ *   - simple  (js/ui/score/simple.js) 1ホール1画面のミニマル
+ *   - classic (js/ui/score/classic.js) 本物のスコアカード風・横スクロール
+ *
+ * テーマは実行時に切替可能。マイページの「スコアカード テーマ切替」から選択。
  */
 (function () {
   'use strict';
 
-  const HOLES = 18;
-  let orientationMedia = null;
+  const THEME_KEY = 'gl_score_theme_v1';
+  const DEFAULT_THEME = 'classic'; // v2.7.1 デフォルトはクラシック
+  const AVAILABLE_THEMES = ['simple', 'classic'];
 
-  function _injectStyles() {
-    if (document.getElementById('gl-score-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-score-styles';
-    style.textContent = `
-      #view-score {
-        min-height: 100vh; padding: 12px 12px 16px; box-sizing: border-box;
-        background: #f8f9fa; display: none; flex-direction: column;
-      }
-      #view-score.show { display: flex; }
-      .gl-score__topbar {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 10px;
-      }
-      .gl-score__back { background: none; border: none; color: #1a5f3f; font-size: 15px; cursor: pointer; padding: 6px 0; }
-      .gl-score__code { font-size: 13px; color: #666; }
-      .gl-score__code b { color: #1a5f3f; font-family: monospace; font-size: 16px; }
-      .gl-score__table-wrap {
-        background: #fff; border-radius: 10px; overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,.08);
-        flex-shrink: 0;
-      }
-      .gl-score__table { width: 100%; border-collapse: collapse; font-size: 13px; }
-      .gl-score__table th, .gl-score__table td {
-        padding: 8px 4px; text-align: center; border-bottom: 1px solid #eee;
-      }
-      .gl-score__table th { background: #1a5f3f; color: #fff; font-weight: 600; font-size: 12px; }
-      .gl-score__table td.gl-name {
-        text-align: left; padding-left: 10px; font-weight: 600; color: #333;
-        max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      }
-      .gl-score__cell {
-        width: 32px; height: 32px; padding: 0; text-align: center;
-        border: 1px solid #ddd; border-radius: 6px; font-size: 15px;
-        background: #fff;
-      }
-      .gl-score__cell:focus { border-color: #1a5f3f; outline: none; background: #fffdf0; }
-      .gl-score__cell--mine { background: #f0f8f4; font-weight: 700; }
-      .gl-score__cell--peer { background: #fafafa; color: #666; }
-      .gl-score__hole-nav {
-        display: flex; justify-content: space-between; align-items: center;
-        background: #fff; padding: 12px; border-radius: 10px; margin-top: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.06);
-      }
-      .gl-score__hole-nav button {
-        padding: 10px 18px; background: #1a5f3f; color: #fff;
-        border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
-      }
-      .gl-score__hole-nav button:disabled { background: #ccc; }
-      .gl-score__hole-current { font-size: 20px; font-weight: 700; color: #1a5f3f; }
-      .gl-score__bottom-actions {
-        margin-top: 12px; display: flex; gap: 8px;
-      }
-      .gl-score__bottom-actions button {
-        flex: 1; padding: 12px; border-radius: 8px; border: none;
-        font-size: 14px; font-weight: 600; cursor: pointer;
-      }
-      .gl-score__btn-invite { background: #fff; color: #1a5f3f; border: 2px solid #1a5f3f; }
-      .gl-score__btn-finish { background: #1a5f3f; color: #fff; }
+  let currentThemeId = null;
+  let currentTheme = null;
 
-      /* 横向き時: 下部マージン活用 */
-      #ad-slot-score-landscape { display: none; margin-top: 12px; }
-      @media (orientation: landscape) and (min-height: 500px) {
-        #ad-slot-score-landscape { display: block; }
-      }
-    `;
-    document.head.appendChild(style);
+  function _getStoredTheme() {
+    if (!window.glStorage) return DEFAULT_THEME;
+    const t = window.glStorage.readTriple(THEME_KEY);
+    if (t && AVAILABLE_THEMES.includes(t)) return t;
+    return DEFAULT_THEME;
   }
 
-    function _renderTable() {
-    const players = window.glState.get('players') || [];
-    const scores = window.glState.get('scores') || {};
-    const myUserId = window.glProfile.getUserId();
-    const currentHole = window.glState.get('currentHole') || 1;
-
-    // ⭐【修正】プレイヤーが1人もいない場合、自分をフォールバック追加
-    //    サーバから取得失敗しても、少なくとも自分の行と入力パネルは表示する
-    let effectivePlayers = players;
-    if (effectivePlayers.length === 0 && myUserId) {
-      const myProfile = window.glProfile.getStored();
-      effectivePlayers = [{
-        userId: myUserId,
-        displayName: myProfile.name || myProfile.familyName || 'あなた',
-        name: myProfile.name || myProfile.familyName || 'あなた',
-        familyName: myProfile.familyName || '',
-        familyKana: myProfile.familyKana || '',
-        role: 'host',
-      }];
-      // state にも反映（次回描画から正しくなる）
-      window.glState.set('players', effectivePlayers);
-    }
-
-    const rows = effectivePlayers.map((p) => {
-      const isMe = p.userId === myUserId;
-      const strokes = scores?.[p.userId]?.['hole' + currentHole] ?? '';
-      const cellClass = isMe ? 'gl-score__cell gl-score__cell--mine' : 'gl-score__cell gl-score__cell--peer';
-      const disabledAttr = isMe ? '' : 'readonly';
-
-      // ⭐【修正】表示名は統一ヘルパーで解決
-      const dispName = window.glProfile.getDisplayName(p);
-
-      return `
-        <tr>
-          <td class="gl-name">${dispName}${isMe ? ' (あなた)' : ''}</td>
-          <td>
-            <input type="number" min="1" max="20" inputmode="numeric"
-              class="${cellClass}" data-player-id="${p.userId}"
-              value="${strokes}" ${disabledAttr}>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    return `
-      <div class="gl-score__table-wrap">
-        <table class="gl-score__table">
-          <thead>
-            <tr><th style="text-align:left;padding-left:10px;">プレイヤー</th><th>スコア</th></tr>
-          </thead>
-          <tbody>${rows || '<tr><td colspan="2" style="padding:20px;color:#999;">メンバーを読み込み中...</td></tr>'}</tbody>
-        </table>
-      </div>
-    `;
+  function _saveTheme(themeId) {
+    if (!AVAILABLE_THEMES.includes(themeId)) return;
+    window.glStorage.writeTriple(THEME_KEY, themeId);
   }
 
-  function _render() {
-    _injectStyles();
-    const view = document.getElementById('view-score');
-    if (!view) return;
-
-    const groupCode = window.glState.get('groupCode') || '- - - -';
-    const currentHole = window.glState.get('currentHole') || 1;
-
-    view.innerHTML = `
-      <div class="gl-score__topbar">
-        <button class="gl-score__back" data-back>← 戻る</button>
-        <div class="gl-score__code">コード: <b>${groupCode}</b></div>
-      </div>
-
-      ${_renderTable()}
-
-      <div class="gl-score__hole-nav">
-        <button data-hole-prev ${currentHole <= 1 ? 'disabled' : ''}>← 前</button>
-        <div class="gl-score__hole-current">HOLE ${currentHole}</div>
-        <button data-hole-next ${currentHole >= HOLES ? 'disabled' : ''}>次 →</button>
-      </div>
-
-      <div class="gl-score__bottom-actions">
-        <button class="gl-score__btn-invite" data-invite>📤 招待</button>
-        <button class="gl-score__btn-finish" data-finish>🏁 終了・保存</button>
-      </div>
-
-      <div id="ad-slot-score-landscape"></div>
-    `;
-
-    _bindEvents();
-    _mountLandscapeAds();
-  }
-
-  function _bindEvents() {
-    const view = document.getElementById('view-score');
-    if (!view) return;
-
-    view.querySelector('[data-back]').addEventListener('click', () => {
-      // S6 離脱確認
-      if (confirm('スコア入力を中断してホームに戻りますか？（入力済みスコアは保持されます）')) {
-        window.glEvents.emit('ui:navigate', { view: 'home' });
-      }
-    });
-
-    view.querySelector('[data-hole-prev]')?.addEventListener('click', () => {
-      const h = window.glState.get('currentHole') || 1;
-      if (h > 1) {
-        window.glState.set('currentHole', h - 1);
-        _render();
-      }
-    });
-
-    view.querySelector('[data-hole-next]')?.addEventListener('click', () => {
-      const h = window.glState.get('currentHole') || 1;
-      if (h < HOLES) {
-        window.glState.set('currentHole', h + 1);
-        _render();
-      }
-    });
-
-    view.querySelectorAll('input[data-player-id]').forEach((input) => {
-      input.addEventListener('change', () => {
-        const playerId = input.dataset.playerId;
-        const hole = window.glState.get('currentHole') || 1;
-        const val = parseInt(input.value, 10);
-        if (isNaN(val) || val < 1) {
-          input.value = '';
-          return;
-        }
-        window.glScore.save(playerId, hole, val);
-      });
-    });
-
-    view.querySelector('[data-invite]')?.addEventListener('click', () => {
-      window.glEvents.emit('ui:navigate', { view: 'golf' });
-      setTimeout(() => {
-        window.glEvents.emit('round:show-invite', {});
-      }, 100);
-    });
-
-    view.querySelector('[data-finish]').addEventListener('click', () => _finishRound());
-  }
-
-  function _mountLandscapeAds() {
-    if (!orientationMedia) {
-      orientationMedia = window.matchMedia('(orientation: landscape) and (min-height: 500px)');
-      orientationMedia.addEventListener('change', () => _mountLandscapeAds());
-    }
-
-    const slot = document.getElementById('ad-slot-score-landscape');
-    if (!slot) return;
-
-    if (orientationMedia.matches) {
-      window.glAdsUI.mount(slot, 'score-landscape');
-    } else {
-      window.glAdsUI.destroy(slot, 'score-landscape');
-    }
-  }
-
-  function _finishRound() {
-    if (!confirm('このラウンドを終了・保存しますか？')) return;
-
-    const roundId = window.glState.get('roundId');
-    const players = window.glState.get('players') || [];
-    const scores = window.glState.get('scores') || {};
-
-    const roundData = {
-      roundId,
-      endedAt: new Date().toISOString(),
-      players,
-      scores,
-    };
-    window.glHistory.saveRound(roundData);
-
-    // プロフィール未完全なら S7b（次フェーズで拡張）
-    if (!window.glProfile.isFull()) {
-      window.glToast.info('プロフィールを完成させると詳細分析が使えます');
-    }
-
-    window.glRound.leave();
-    window.glToast.success('ラウンドを保存しました');
-    window.glEvents.emit('ui:navigate', { view: 'history' });
+  function _resolveTheme(themeId) {
+    const themes = window.glScoreThemes || {};
+    if (themes[themeId]) return themes[themeId];
+    // フォールバック
+    if (themes[DEFAULT_THEME]) return themes[DEFAULT_THEME];
+    return null;
   }
 
   const glScoreUI = {
-    show() {
-      _render();
-      document.getElementById('view-score')?.classList.add('show');
-      window.glState.set('phase', 'S6');
-
-      // スコア変更に応じてUI更新
-      this._unsubState = window.glState.subscribe('scores', () => {
-        // フォーカス中の要素は書き換えない
-        if (document.activeElement?.tagName === 'INPUT') return;
-        _render();
-      });
-      this._unsubPlayers = window.glState.subscribe('players', () => _render());
+    /**
+     * 現在テーマの ID を取得
+     */
+    getCurrentThemeId() {
+      return currentThemeId || _getStoredTheme();
     },
+
+    /**
+     * 利用可能なテーマ一覧を取得（マイページの選択肢用）
+     */
+    listAvailable() {
+      const themes = window.glScoreThemes || {};
+      return AVAILABLE_THEMES
+        .filter((id) => themes[id])
+        .map((id) => ({
+          id,
+          name: themes[id].name || id,
+          description: themes[id].description || '',
+        }));
+    },
+
+    /**
+     * テーマ切替（次回 show() から反映）
+     */
+    setTheme(themeId) {
+      if (!AVAILABLE_THEMES.includes(themeId)) {
+        console.warn('[glScoreUI] unknown theme:', themeId);
+        return false;
+      }
+      _saveTheme(themeId);
+      window.glEvents?.emit('score:theme-changed', { themeId });
+
+      // 現在スコア画面を表示中なら即再表示
+      const view = document.getElementById('view-score');
+      if (view && view.classList.contains('show')) {
+        this.hide();
+        this.show();
+      }
+      return true;
+    },
+
+    /**
+     * スコア画面表示（現在テーマの show() を呼ぶ）
+     */
+    show() {
+      const themeId = _getStoredTheme();
+      const theme = _resolveTheme(themeId);
+      if (!theme) {
+        console.error('[glScoreUI] no theme available');
+        return;
+      }
+      currentThemeId = themeId;
+      currentTheme = theme;
+      theme.show();
+    },
+
+    /**
+     * スコア画面非表示（現在テーマの hide() を呼ぶ）
+     */
     hide() {
-      document.getElementById('view-score')?.classList.remove('show');
-      const slot = document.getElementById('ad-slot-score-landscape');
-      if (slot) window.glAdsUI.destroy(slot, 'score-landscape');
-      if (this._unsubState) this._unsubState();
-      if (this._unsubPlayers) this._unsubPlayers();
+      if (currentTheme) {
+        currentTheme.hide();
+      }
+      currentTheme = null;
+      currentThemeId = null;
     },
   };
 

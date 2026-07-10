@@ -2,7 +2,7 @@
  * G-LAND v2.7.1 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * manifest.json + icons を明示的にキャッシュ対象へ追加
+ * v2.7.1: スコアカードテーマ切替システム対応
  */
 const CACHE_VERSION = 'gland-v2.7.1';
 const CORE_ASSETS = [
@@ -32,6 +32,8 @@ const CORE_ASSETS = [
   './js/ui/home.js',
   './js/ui/round.js',
   './js/ui/score.js',
+  './js/ui/score/simple.js',
+  './js/ui/score/classic.js',
   './js/ui/history.js',
   './js/ui/mypage.js',
   './js/ui/course.js',
@@ -41,8 +43,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
       .then((cache) => {
-        // ⭐ 個別追加でエラー耐性確保
-        //    icon-512.png が未配置の環境でも他のアセットは正しくキャッシュされる
+        // 個別追加でエラー耐性確保
+        // icon-512.png が未配置の環境でも他のアセットは正しくキャッシュされる
         return Promise.all(
           CORE_ASSETS.map((url) =>
             cache.add(url).catch((err) => {

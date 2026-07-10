@@ -43,6 +43,9 @@
 
     // Ads
     adsRotation: { home: [], score: [], mypage: [] },
+
+    // Proxy players (代理入力プレイヤー)
+    proxyPlayers: [],
   };
 
   const glState = {
@@ -123,6 +126,10 @@
 
       const pendingJoin = s.readLocal('gl_pending_join_v1');
       if (pendingJoin) state.pendingJoinRoundId = pendingJoin;
+
+      // 代理入力プレイヤー復元
+      const proxies = s.readLocalJSON('gl_proxy_players_v1');
+      if (Array.isArray(proxies)) state.proxyPlayers = proxies;
 
       state.online = navigator.onLine;
 
