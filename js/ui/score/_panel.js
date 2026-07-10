@@ -102,23 +102,32 @@
      * @param {Function} [opts.onClose] - 閉じられたときに呼ばれる
      */
     open(opts) {
+      window.glDebug && glDebug.log('[glScorePanel] open() called');
       const { overlay, panel } = _ensureDom();
+      window.glDebug && glDebug.log('[glScorePanel] DOM ready, panel el=' + !!panel);
       panel.innerHTML = opts.content || '';
       _onCloseCallback = typeof opts.onClose === 'function' ? opts.onClose : null;
 
       // 表示（display 切替のみ、アニメなし）
       overlay.classList.add('gl-panel-open');
       panel.classList.add('gl-panel-open');
-      // スクロール位置をリセット
       panel.scrollTop = 0;
+
+      // 実際の display 状態を確認
+      setTimeout(function () {
+        const cs = window.getComputedStyle(panel);
+        window.glDebug && glDebug.log('[glScorePanel] display=' + cs.display + ' pos=' + cs.position + ' bottom=' + cs.bottom + ' zi=' + cs.zIndex);
+        const rect = panel.getBoundingClientRect();
+        window.glDebug && glDebug.log('[glScorePanel] rect top=' + Math.round(rect.top) + ' bottom=' + Math.round(rect.bottom) + ' h=' + Math.round(rect.height));
+      }, 50);
 
       if (typeof opts.onBind === 'function') {
         try { opts.onBind(panel); } catch (err) {
-          console.error('[glScorePanel] onBind error:', err);
+          window.glDebug && glDebug.err('[glScorePanel] onBind error: ' + err.message);
         }
       }
 
-      console.log('[glScorePanel] opened');
+      window.glDebug && glDebug.log('[glScorePanel] opened');
     },
 
     /**

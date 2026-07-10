@@ -1110,17 +1110,23 @@
       });
     });
 
-    // スコアセルタップ（イベント委任に変更→セル内子要素タップにも確実に反応）
+    // スコアセルタップ（イベント委任）+ 実機デバッグログ
+    window.glDebug && glDebug.log('[classic] cell listener attached');
     view.addEventListener('click', (e) => {
+      window.glDebug && glDebug.log('[classic] click event fired, target=' + (e.target.tagName || '?') + '.' + (e.target.className || ''));
       const cell = e.target.closest('[data-player][data-hole]');
-      if (!cell) return;
-      console.log('[classic] cell tap:', cell.dataset.player, 'hole:', cell.dataset.hole, 'editable:', cell.dataset.editable);
+      if (!cell) {
+        window.glDebug && glDebug.warn('[classic] no cell found from target');
+        return;
+      }
+      window.glDebug && glDebug.log('[classic] cell tap p=' + cell.dataset.player + ' h=' + cell.dataset.hole + ' edit=' + cell.dataset.editable);
       if (cell.dataset.editable !== '1') {
-        console.warn('[classic] cell not editable');
+        window.glDebug && glDebug.warn('[classic] cell not editable');
         return;
       }
       const playerId = cell.dataset.player;
       const hole = parseInt(cell.dataset.hole, 10);
+      window.glDebug && glDebug.log('[classic] starting input session hole=' + hole);
       _startInputSession(hole, playerId);
     });
 
@@ -1149,11 +1155,13 @@
    * @param {string} tappedPlayerId - タップしたプレイヤー(初期表示用)
    */
   function _startInputSession(hole, tappedPlayerId) {
+    window.glDebug && glDebug.log('[startSession] hole=' + hole + ' tapped=' + tappedPlayerId);
     // 現在ホール判定
     const currentHole = _computeCurrentHole();
     const isEditingPast = hole < currentHole;
 
     const players = _getPlayers();
+    window.glDebug && glDebug.log('[startSession] players count=' + players.length);
     // ★ ローカル運用：共有プレイヤーも含めて全員編集可能
     const editablePlayers = players.filter((p) => !!p);
 
@@ -1203,15 +1211,21 @@
   // ==== 入力パネル（共通モジュール glScorePanel を利用）====
 
   function _showInputPanel() {
+    window.glDebug && glDebug.log('[showPanel] glScorePanel exists=' + !!window.glScorePanel);
+    if (!window.glScorePanel) {
+      window.glDebug && glDebug.err('[showPanel] glScorePanel is UNDEFINED - _panel.js not loaded!');
+      return;
+    }
     // 共通パネルを開く（アニメなし、display切替のみ）
     window.glScorePanel.open({
       content: _buildPanelHTML(),
       onBind: _bindPanelEvents,
       onClose: () => {
-        // 背景タップや close で閉じられたとき
+        window.glDebug && glDebug.log('[panel] closed');
         inputSession = null;
       },
     });
+    window.glDebug && glDebug.log('[showPanel] panel.open() called');
   }
 
   function _renderInputPanel() {
