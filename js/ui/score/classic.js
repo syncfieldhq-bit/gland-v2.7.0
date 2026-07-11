@@ -670,15 +670,16 @@
           font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 600;
         }
         .gl-wheel {
-          position: relative; height: 180px; overflow: hidden;
+          position: relative; height: 220px; overflow: hidden;
           background: linear-gradient(180deg, #f5f0e1 0%, #fff 50%, #f5f0e1 100%);
           border-radius: 12px; border: 1px solid #e0d5b8;
           -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%);
           mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%);
         }
         .gl-wheel::before {
+          /* v2.7.16：高さ220pxで1アイテム44px → 中央は3番目（上から 88〜132px） */
           content: ''; position: absolute; left: 8px; right: 8px;
-          top: 50%; height: 44px; transform: translateY(-50%);
+          top: 88px; height: 44px;
           border-top: 2px solid #1a5f3f; border-bottom: 2px solid #1a5f3f;
           pointer-events: none; z-index: 2;
         }
@@ -734,13 +735,13 @@
     const minScroller = modal.querySelector('#wheel-min-scroller');
 
     function buildWheel(scroller, max) {
-      // 上下にスペーサー(上3つ、下3つ)を入れて中心揃え
+      // v2.7.16：高さ220pxで5アイテム見える、中央が選択値 → 上下スペーサー2個ずつ
       const items = [];
-      for (let i = 0; i < 3; i++) items.push('<div class="gl-wheel-item">&nbsp;</div>');
+      for (let i = 0; i < 2; i++) items.push('<div class="gl-wheel-item">&nbsp;</div>');
       for (let i = 0; i <= max; i++) {
         items.push(`<div class="gl-wheel-item" data-val="${i}">${String(i).padStart(2, '0')}</div>`);
       }
-      for (let i = 0; i < 3; i++) items.push('<div class="gl-wheel-item">&nbsp;</div>');
+      for (let i = 0; i < 2; i++) items.push('<div class="gl-wheel-item">&nbsp;</div>');
       scroller.innerHTML = items.join('');
     }
 
@@ -756,9 +757,10 @@
     }, 30);
 
     function updateActive(scroller) {
+      // v2.7.16：スペーサー2個なので i - 2 で判定
       const centerIdx = Math.round(scroller.scrollTop / ITEM_H);
       scroller.querySelectorAll('.gl-wheel-item').forEach((el, i) => {
-        el.classList.toggle('gl-wheel-item--active', i - 3 === centerIdx);
+        el.classList.toggle('gl-wheel-item--active', i - 2 === centerIdx);
       });
     }
 
