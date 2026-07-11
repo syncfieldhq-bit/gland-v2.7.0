@@ -15,9 +15,11 @@
 
   const DEFAULT_DURATION_MS = 3000;
   const ERROR_DURATION_MS = 5000;
+  const DEDUP_MS = 2000; // 同じメッセージは2秒内は重複させない
 
   let toastRoot = null;
   let offlineBadge = null;
+  const recentMessages = new Map(); // msg -> timestamp
 
   function _injectStyles() {
     if (document.getElementById('gl-toast-styles')) return;
@@ -107,6 +109,23 @@
 
   function _show(msg, variant, durationMs) {
     if (!msg) return;
+
+    // ★ v2.7.15：重複メッセージの連発を防ぐ
+    const key = variant + '::' + msg;
+    const now = Date.now();
+    const lastTime = recentMessages.get(key);
+    if (lastTime && now - lastTime < DEDUP_MS) {
+      return; // 短時間に同じメッセージが来たら無視
+    }
+    recentMessages.set(key, now);
+    // 古いエントリを掎除（メモリリーク回避）
+    if (recentMessages.size > 50) {
+      const cutoff = now - DEDUP_MS;
+      for (const [k, t] of recentMessages) {
+        if (t < cutoff) recentMessages.delete(k);
+      }
+    }
+
     const root = _ensureRoot();
     const el = document.createElement('div');
     el.className = `gl-toast gl-toast--${variant}`;

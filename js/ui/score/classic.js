@@ -1181,8 +1181,12 @@
 
     const players = _getPlayers();
     window.glDebug && glDebug.log('[startSession] players count=' + players.length);
-    // ★ ローカル運用：共有プレイヤーも含めて全員編集可能
-    const editablePlayers = players.filter((p) => !!p);
+    // ★ v2.7.15：自分と代理のみ（共有プレイヤーはローテーションから除外）
+    const editablePlayers = players.filter((p) => {
+      const t = _getPlayerType(p);
+      return t === 'self' || t === 'proxy';
+    });
+    window.glDebug && glDebug.log('[startSession] editable count=' + editablePlayers.length);
 
     let queue;
     if (isEditingPast) {
