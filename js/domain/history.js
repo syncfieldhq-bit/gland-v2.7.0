@@ -97,7 +97,10 @@
 
     const totalDiff = totalStrokes - totalPar;
 
-    // 同伴者のスナップショット（打数合計 + ±Par）
+    // v2.7.19: 同伴者のスナップショット（A案改良版 + パターン1）
+    //   - 全同伴者を必ず保存（スコアなしでも名前だけは残す）
+    //   - スコアあり: totalStrokes / totalDiff あり
+    //   - スコアなし: totalStrokes = 0（UI側で「参加のみ」表示）
     const companions = players
       .filter((p) => p.userId !== userId)
       .map((p) => {
@@ -116,7 +119,7 @@
           displayName: p.displayName || p.familyName || '?',
           type: p.type || 'self',
           totalStrokes: cTotal,
-          totalDiff: cTotal - cPar,
+          totalDiff: cTotal > 0 ? cTotal - cPar : 0,
         };
       });
 
