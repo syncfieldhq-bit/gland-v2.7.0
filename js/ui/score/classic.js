@@ -1535,35 +1535,61 @@
     return msg;
   }
 
-  // ==== ラウンド終了 ====
+  // ==== ラウンド終了（v2.7.17: Y案 - 各自の端末で確定・保存） ====
 
-  function _finishRound() {
-    if (!confirm('このラウンドを終了・保存しますか？')) return;
+  async function _finishRound() {
+    if (!confirm('このラウンドを終了して\n自分のスコアを保存しますか？\n\n※各プレイヤーが個別に保存する仕様です')) return;
 
-    const roundId = window.glState.get('roundId');
-    const players = _getPlayers();
-    const scores = window.glState.get('scores') || {};
-
-    window.glHistory.saveRound({
-      roundId,
-      endedAt: new Date().toISOString(),
-      players,
-      scores,
-      theme: 'classic',
-      lockerNumber: window.glState.get('lockerNumber') || null,
-    });
-
-    if (!window.glProfile.isFull()) {
-      window.glToast.info('プロフィールを完成させると詳細分析が使えます');
+    const finishBtn = document.querySelector('[data-finish]');
+    if (finishBtn) {
+      finishBtn.disabled = true;
+      finishBtn.textContent = '💾 保存中...';
     }
 
-    // クリア
-    window.glState.set('afternoonStart', null);
-    window.glStorage.writeLocal(STORAGE_KEYS.afternoon, null);
+    try {
+      const roundId = window.glState.get('roundId');
+      const players = _getPlayers();
 
-    window.glRound.leave();
-    window.glToast.success('ラウンドを保存しました');
-    window.glEvents.emit('ui:navigate', { view: 'history' });
+      // Y案: 自分のスコアだけをスナップショット化してGAS送信＋ローカル保存
+      const snapshot = await window.glHistory.finishAndSave({
+        roundId,
+        players,
+        theme: 'classic',
+        lockerNumber: window.glState.get('lockerNumber') || '',
+        courseName: window.glState.get('courseName') || '',
+        courseId: window.glState.get('courseId') || '',
+        startedAt: window.glState.get('startedAt') || null,
+      });
+
+      // ローカル状態クリア
+      window.glState.set('afternoonStart', null);
+      window.glStorage.writeLocal(STORAGE_KEYS.afternoon, null);
+
+      // ラウンドから離脱
+      try { window.glRound.leave(); } catch (e) { /* ignore */ }
+
+      // 完了トースト
+      window.glToast.success('あなたのスコアを保存しました');
+
+      // BEST 更新演出（該当時のみ）
+      if (snapshot && snapshot.isBest && window.glHistoryUI && window.glHistoryUI.celebrateBest) {
+        setTimeout(() => window.glHistoryUI.celebrateBest(snapshot), 400);
+      }
+
+      // 履歴画面に遷移
+      window.glEvents.emit('ui:navigate', { view: 'history' });
+
+      if (!window.glProfile.isFull()) {
+        setTimeout(() => window.glToast.info('プロフィールを完成させると詳細分析が使えます'), 1200);
+      }
+    } catch (err) {
+      window.glErrors && window.glErrors.handle(err, { context: 'classic._finishRound' });
+      window.glToast.error('保存に失敗しました。もう一度お試しください');
+      if (finishBtn) {
+        finishBtn.disabled = false;
+        finishBtn.textContent = '🏁 終了・保存';
+      }
+    }
   }
 
   // ==== ライフサイクル ====

@@ -1,8 +1,14 @@
 /**
- * G-LAND v2.7.0 - History Domain
+ * G-LAND v2.7.17 - History Domain
  * ==============================
- * サーバーがマスター、localStorageはキャッシュ。
- * 起動時に一度だけ apiSyncHistory() でサーバから引き込む。
+ * サーバー(History シート)がマスター、localStorage はキャッシュ。
+ *
+ * v2.7.17 変更点（Y案採用）:
+ *   - finishAndSave(): 各プレイヤーが自端末で自分のスコアを確定→GAS 送信
+ *   - 保存前にスコアから TOTAL/OUT/IN/±Par を計算しスナップショット化
+ *   - ローカルキャッシュに即反映（オフライン時はキューへ）
+ *   - BEST 判定（コース別 / 通算）を提供
+ *   - KPI（総ラウンド数・平均スコア・ベストスコア）を提供
  */
 (function () {
   'use strict';
@@ -17,6 +23,92 @@
 
   function _writeCache(arr) {
     window.glStorage.writeLocal(CACHE_KEY, arr);
+  }
+
+  function _num(v) {
+    const n = parseInt(v, 10);
+    return isNaN(n) ? 0 : n;
+  }
+
+  /**
+   * ラウンド状態から自分（userId）のスナップショットを構築
+   * @param {Object} args - roundId 等の追加パラメータ
+   * @returns {Object} History 保存用オブジェクト
+   */
+  function _buildSnapshotForSelf(args) {
+    const userId = window.glProfile.getUserId();
+    const roundId = args.roundId || window.glState.get('roundId') || '';
+    const scores = args.scores || window.glState.get('scores') || {};
+    const pars = args.pars || window.glState.get('pars') || {};
+    const putts = args.putts || window.glState.get('putts') || {};
+    const players = args.players || [];
+
+    // 自分のスコア抽出
+    const myScores = scores[userId] || {};
+    const myPutts = putts[userId] || {};
+
+    // 入力済みホールのみで計算
+    let totalStrokes = 0;
+    let totalPar = 0;
+    let outStrokes = 0;
+    let inStrokes = 0;
+    let totalPutts = 0;
+    const holes = {};
+
+    for (let h = 1; h <= 18; h++) {
+      const s = _num(myScores['hole' + h] || myScores[h]);
+      const p = _num(pars['hole' + h] || pars[h]);
+      const pt = _num(myPutts['hole' + h] || myPutts[h]);
+
+      if (s > 0) {
+        totalStrokes += s;
+        totalPar += p;
+        if (h <= 9) outStrokes += s;
+        else inStrokes += s;
+      }
+      if (pt > 0) totalPutts += pt;
+
+      if (s > 0 || pt > 0 || p > 0) {
+        holes['h' + h] = { strokes: s || null, putts: pt || null, par: p || null };
+      }
+    }
+
+    const totalDiff = totalStrokes - totalPar;
+
+    // 同伴者のスナップショット（表示用・軽量）
+    const companions = players
+      .filter((p) => p.userId !== userId)
+      .map((p) => {
+        const cs = scores[p.userId] || {};
+        let cTotal = 0;
+        for (let h = 1; h <= 18; h++) cTotal += _num(cs['hole' + h] || cs[h]);
+        return {
+          userId: p.userId,
+          displayName: p.displayName || p.familyName || '?',
+          type: p.type || 'self',
+          totalStrokes: cTotal,
+        };
+      });
+
+    return {
+      userId,
+      roundId,
+      courseId: args.courseId || window.glState.get('courseId') || '',
+      courseName: args.courseName || window.glState.get('courseName') || 'コース未設定',
+      startedAt: args.startedAt || window.glState.get('startedAt') || new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      totalStrokes,
+      totalPar,
+      totalDiff,
+      outStrokes,
+      inStrokes,
+      totalPutts,
+      holesJson: JSON.stringify(holes),
+      companionsJson: JSON.stringify(companions),
+      lockerNumber: args.lockerNumber || window.glState.get('lockerNumber') || '',
+      theme: args.theme || 'classic',
+      notes: args.notes || '',
+    };
   }
 
   const glHistory = {
@@ -43,7 +135,105 @@
     },
 
     /**
-     * ラウンド完了時にローカルキャッシュへ追加
+     * v2.7.17: ラウンド終了時に自分のスコアを確定・保存（Y案）
+     * @param {Object} args - roundId/players 等
+     * @returns {Promise<Object>} 保存されたスナップショット + isBest
+     */
+    async finishAndSave(args) {
+      args = args || {};
+      const snapshot = _buildSnapshotForSelf(args);
+
+      // BEST 判定（保存前の履歴と比較）
+      const isBest = this.isBestScore(snapshot);
+      snapshot.isBest = isBest;
+
+      // 1. ローカルキャッシュに即反映（オフラインでも履歴に出す）
+      const arr = _readCache();
+      const idx = arr.findIndex((r) => r.roundId === snapshot.roundId && r.userId === snapshot.userId);
+      if (idx >= 0) arr[idx] = { ...arr[idx], ...snapshot };
+      else arr.unshift(snapshot);
+      _writeCache(arr);
+      window.glEvents.emit('history:updated', snapshot);
+
+      // 2. GAS 送信（失敗してもローカルには残る）
+      try {
+        const res = await window.glandApi.saveHistory(snapshot);
+        if (res && res.historyId) snapshot.historyId = res.historyId;
+        // historyId を反映
+        const arr2 = _readCache();
+        const idx2 = arr2.findIndex((r) => r.roundId === snapshot.roundId && r.userId === snapshot.userId);
+        if (idx2 >= 0) {
+          arr2[idx2] = { ...arr2[idx2], historyId: snapshot.historyId };
+          _writeCache(arr2);
+        }
+      } catch (err) {
+        // オフライン等 → キューに投入（あれば）
+        if (window.glQueue && typeof window.glQueue.enqueue === 'function') {
+          window.glQueue.enqueue({ action: 'saveHistory', params: snapshot });
+        }
+        window.glErrors.handle(err, { silent: true, context: 'history.finishAndSave' });
+      }
+
+      return snapshot;
+    },
+
+    /**
+     * v2.7.17: 現在のスコアがベスト更新かを判定
+     * コース別ベスト（同一 courseName 内で最少 totalStrokes）
+     */
+    isBestScore(snapshot) {
+      if (!snapshot || !snapshot.totalStrokes) return false;
+      const userId = snapshot.userId;
+      const courseName = snapshot.courseName;
+      const cur = snapshot.totalStrokes;
+
+      const past = _readCache().filter(
+        (r) => r.userId === userId && r.courseName === courseName && r.roundId !== snapshot.roundId
+      );
+      if (past.length === 0) return false; // 初回はBEST扱いしない（演出過剰防止）
+      const min = past.reduce((m, r) => Math.min(m, _num(r.totalStrokes) || 999), 999);
+      return cur > 0 && cur < min;
+    },
+
+    /**
+     * v2.7.17: KPI サマリー（総ラウンド数・平均・ベスト）
+     */
+    kpi(filter) {
+      filter = filter || {};
+      const userId = window.glProfile.getUserId();
+      let rounds = _readCache().filter((r) => r.userId === userId && _num(r.totalStrokes) > 0);
+      if (filter.courseName) rounds = rounds.filter((r) => r.courseName === filter.courseName);
+
+      if (rounds.length === 0) {
+        return { count: 0, avgStrokes: 0, avgDiff: 0, bestStrokes: null, bestDiff: null };
+      }
+      const totalS = rounds.reduce((a, r) => a + _num(r.totalStrokes), 0);
+      const totalD = rounds.reduce((a, r) => a + _num(r.totalDiff), 0);
+      const bestS = rounds.reduce((m, r) => Math.min(m, _num(r.totalStrokes)), 999);
+      const bestRound = rounds.find((r) => _num(r.totalStrokes) === bestS);
+      return {
+        count: rounds.length,
+        avgStrokes: Math.round((totalS / rounds.length) * 10) / 10,
+        avgDiff: Math.round((totalD / rounds.length) * 10) / 10,
+        bestStrokes: bestS,
+        bestDiff: bestRound ? _num(bestRound.totalDiff) : null,
+      };
+    },
+
+    /**
+     * v2.7.17: ユニークなコース名一覧（フィルタ用）
+     */
+    listCourses() {
+      const userId = window.glProfile.getUserId();
+      const set = new Set();
+      _readCache().forEach((r) => {
+        if (r.userId === userId && r.courseName) set.add(r.courseName);
+      });
+      return Array.from(set).sort();
+    },
+
+    /**
+     * 旧API互換: シンプル追加
      */
     saveRound(roundData) {
       if (!roundData || !roundData.roundId) return;
@@ -58,11 +248,9 @@
       window.glEvents.emit('history:updated', roundData);
     },
 
-    /**
-     * 全履歴（キャッシュから即返却）
-     */
     list() {
-      return _readCache();
+      const userId = window.glProfile.getUserId();
+      return _readCache().filter((r) => !userId || r.userId === userId || r.userId === undefined);
     },
 
     get(roundId) {

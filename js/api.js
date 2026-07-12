@@ -138,6 +138,9 @@
     async syncHistory({ userId }) {
       return _post('syncHistory', { userId });
     },
+    async saveHistory(params) {
+      return _post('saveHistory', params);
+    },
 
     // ==== Course ====
     async searchCourses({ prefecture, kana }) {

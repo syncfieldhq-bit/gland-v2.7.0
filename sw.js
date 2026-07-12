@@ -1,10 +1,10 @@
 /**
- * G-LAND v2.7.16 - Service Worker
+ * G-LAND v2.7.17 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * v2.7.16: クラシックテーマ完全版、入力パネル自動切替、午後スタート/ロッカー/LINE共有対応
+ * v2.7.17: Phase 2A/2B 履歴機能実装（KPI・フィルタ・詳細画面・BEST演出・Y案保存）
  */
-const CACHE_VERSION = 'gland-v2.7.16';
+const CACHE_VERSION = 'gland-v2.7.17';
 const CORE_ASSETS = [
   './',
   './index.html',
