@@ -31,21 +31,35 @@
   }
 
   /**
-   * ラウンド状態から自分（userId）のスナップショットを構築
-   * @param {Object} args - roundId 等の追加パラメータ
-   * @returns {Object} History 保存用オブジェクト
+   * v2.7.18: ラウンド状態から自分（userId）のスナップショットを構築
+   *
+   * データ構造の実態（classic.js が保存している形式）:
+   *   scores[playerId]['hole1']..['hole18']   = 打数
+   *   scores[playerId]['putt1']..['putt18']   = パット数（★ 同じ scores 内！）
+   *
+   * 修正点:
+   *   - パット数は scores[userId]['puttN'] から読み取る
+   *   - Par は state.pars → なければ デフォルト全ホール 4（A案）
    */
+  const DEFAULT_PAR = 4; // A案: コースDB未整備のため全ホール仮 Par 4
+
+  function _getPar(pars, hole) {
+    // state.pars の可能な形式を全部試す
+    const v = _num(
+      (pars && (pars['hole' + hole] || pars[hole] || pars['h' + hole])) || 0
+    );
+    return v > 0 ? v : DEFAULT_PAR;
+  }
+
   function _buildSnapshotForSelf(args) {
     const userId = window.glProfile.getUserId();
     const roundId = args.roundId || window.glState.get('roundId') || '';
     const scores = args.scores || window.glState.get('scores') || {};
     const pars = args.pars || window.glState.get('pars') || {};
-    const putts = args.putts || window.glState.get('putts') || {};
     const players = args.players || [];
 
-    // 自分のスコア抽出
-    const myScores = scores[userId] || {};
-    const myPutts = putts[userId] || {};
+    // 自分のスコアデータ（打数もパット数も同じオブジェクトの中）
+    const myData = scores[userId] || {};
 
     // 入力済みホールのみで計算
     let totalStrokes = 0;
@@ -56,9 +70,9 @@
     const holes = {};
 
     for (let h = 1; h <= 18; h++) {
-      const s = _num(myScores['hole' + h] || myScores[h]);
-      const p = _num(pars['hole' + h] || pars[h]);
-      const pt = _num(myPutts['hole' + h] || myPutts[h]);
+      const s = _num(myData['hole' + h]);
+      const pt = _num(myData['putt' + h]);
+      const p = _getPar(pars, h);
 
       if (s > 0) {
         totalStrokes += s;
@@ -68,25 +82,41 @@
       }
       if (pt > 0) totalPutts += pt;
 
-      if (s > 0 || pt > 0 || p > 0) {
-        holes['h' + h] = { strokes: s || null, putts: pt || null, par: p || null };
+      // Par は常に保存（表示用）、打数・パットは入力があれば保存
+      if (s > 0 || pt > 0) {
+        holes['h' + h] = {
+          strokes: s || null,
+          putts: pt || null,
+          par: p,
+        };
+      } else {
+        // 未入力ホールでも Par だけは表示できるように残す
+        holes['h' + h] = { strokes: null, putts: null, par: p };
       }
     }
 
     const totalDiff = totalStrokes - totalPar;
 
-    // 同伴者のスナップショット（表示用・軽量）
+    // 同伴者のスナップショット（打数合計 + ±Par）
     const companions = players
       .filter((p) => p.userId !== userId)
       .map((p) => {
-        const cs = scores[p.userId] || {};
+        const cd = scores[p.userId] || {};
         let cTotal = 0;
-        for (let h = 1; h <= 18; h++) cTotal += _num(cs['hole' + h] || cs[h]);
+        let cPar = 0;
+        for (let h = 1; h <= 18; h++) {
+          const cs = _num(cd['hole' + h]);
+          if (cs > 0) {
+            cTotal += cs;
+            cPar += _getPar(pars, h);
+          }
+        }
         return {
           userId: p.userId,
           displayName: p.displayName || p.familyName || '?',
           type: p.type || 'self',
           totalStrokes: cTotal,
+          totalDiff: cTotal - cPar,
         };
       });
 

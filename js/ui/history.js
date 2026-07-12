@@ -1,11 +1,16 @@
 /**
- * G-LAND v2.7.17 - History View UI
+ * G-LAND v2.7.18 - History View UI
  * ================================
- * Phase 2A: 履歴一覧（KPI・フィルタ・BESTバッジ）
- * Phase 2B: 履歴詳細（18Hスコアカード・OUT/IN/TOTAL・同伴者）
- * Phase 2C: ベスト更新演出（絵文字＋トロフィー）
+ * Phase 2A: 履歴一覧（KPI・コース/期間フィルタ・BESTバッジ）
+ * Phase 2B: 履歴詳細（18Hスコアカード、Par行、Score行、Putt行、OUT/IN合計）
+ * Phase 2C: ベスト更新演出（🏆モーダル）
  *
- * デザイン方針: 深緑 (#1a5f3f) × クリーム (#faf6ec) の落ち着いたクラシック
+ * v2.7.18 変更点:
+ *   - パット数の読み取り修正（scores[userId]['puttN']）
+ *   - Par デフォルト値 4（A案）
+ *   - 表示切替: ストローク ↔ ±Par
+ *   - 期間フィルタ: 全期間 / 過去5R / 過去10R
+ *   - 同伴者カードに±Par追加
  */
 (function () {
   'use strict';
@@ -14,8 +19,9 @@
   const COLOR_CREAM = '#faf6ec';
   const COLOR_ACCENT = '#c9a959';
 
-  let currentFilter = { courseName: '' };
-  let currentDetailId = null; // roundId
+  const currentFilter = { courseName: '', period: 'all' }; // period: all|5|10
+  let displayMode = 'strokes'; // 'strokes' | 'diff'
+  let currentDetailId = null;
 
   function _num(v) {
     const n = parseInt(v, 10);
@@ -44,10 +50,15 @@
 
   function _diffColor(diff) {
     const n = _num(diff);
-    if (n < 0) return '#c0392b';   // 赤（Under）
-    if (n === 0) return '#333';    // 黒（E）
-    if (n <= 9) return '#333';
-    return '#666';
+    if (n < 0) return '#c0392b';
+    if (n === 0) return '#333';
+    return '#333';
+  }
+
+  function _escape(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function _injectStyles() {
@@ -73,12 +84,25 @@
         font-size: 22px; font-weight: 800;
         color: ${COLOR_DARK}; margin: 4px 0 12px;
         display: flex; align-items: center; gap: 6px;
+        justify-content: space-between;
+      }
+      .glh-toggle {
+        display: inline-flex; background: #fff;
+        border: 1px solid #d5c98c; border-radius: 18px;
+        overflow: hidden; font-size: 12px;
+      }
+      .glh-toggle__btn {
+        background: transparent; border: none;
+        padding: 6px 12px; cursor: pointer;
+        color: ${COLOR_DARK}; font-weight: 700;
+      }
+      .glh-toggle__btn.active {
+        background: ${COLOR_DARK}; color: #fff;
       }
 
-      /* KPI カード */
       .glh-kpi {
         display: grid; grid-template-columns: repeat(3, 1fr);
-        gap: 8px; margin-bottom: 14px;
+        gap: 8px; margin-bottom: 12px;
       }
       .glh-kpi__card {
         background: #fff; border-radius: 10px; padding: 10px 8px;
@@ -94,24 +118,23 @@
         line-height: 1;
       }
       .glh-kpi__unit { font-size: 11px; color: #888; margin-left: 2px; font-weight: 500; }
+      .glh-kpi__sub { font-size: 11px; color: #999; margin-top: 3px; }
 
-      /* フィルタ */
       .glh-filter {
-        display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
+        display: flex; gap: 6px; margin-bottom: 10px; align-items: center;
         overflow-x: auto; white-space: nowrap; padding-bottom: 4px;
       }
-      .glh-filter__label { font-size: 12px; color: #666; flex-shrink: 0; }
+      .glh-filter__label { font-size: 11px; color: #666; flex-shrink: 0; }
       .glh-filter__chip {
         background: #fff; border: 1px solid #d5c98c;
-        padding: 5px 12px; border-radius: 16px;
-        font-size: 13px; color: ${COLOR_DARK};
+        padding: 4px 11px; border-radius: 14px;
+        font-size: 12px; color: ${COLOR_DARK};
         cursor: pointer; flex-shrink: 0;
       }
       .glh-filter__chip.active {
         background: ${COLOR_DARK}; color: #fff; border-color: ${COLOR_DARK};
       }
 
-      /* リストアイテム */
       .glh-item {
         background: #fff; border-radius: 10px;
         padding: 12px 14px; margin-bottom: 10px;
@@ -155,7 +178,7 @@
       }
       .glh-empty__icon { font-size: 48px; margin-bottom: 12px; }
 
-      /* ==== 詳細画面 ==== */
+      /* ==== 詳細 ==== */
       .glh-detail { padding: 4px 2px; }
       .glh-detail__header {
         background: ${COLOR_DARK}; color: #fff;
@@ -204,9 +227,11 @@
       .glh-scorecard .glh-sc-label {
         text-align: left; padding-left: 8px; font-weight: 700; background: #fbf7e6;
       }
-      .glh-under { color: #c0392b; font-weight: 800; }
+      .glh-scorecard .glh-sc-par-row td { background: #f8f4e0; color: #666; font-size: 11px; }
+      .glh-scorecard .glh-under { color: #c0392b; font-weight: 800; }
+      .glh-scorecard .glh-birdie { color: #c0392b; font-weight: 800; }
+      .glh-scorecard .glh-bogey { color: #444; }
 
-      /* 同伴者 */
       .glh-comp {
         display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px;
       }
@@ -218,9 +243,10 @@
       }
       .glh-comp__name { font-size: 13px; font-weight: 700; color: #333; }
       .glh-comp__score { font-size: 20px; font-weight: 800; color: ${COLOR_DARK}; margin-top: 2px; }
-      .glh-comp__type { font-size: 10px; color: #999; }
+      .glh-comp__diff { font-size: 13px; font-weight: 700; margin-left: 4px; }
+      .glh-comp__type { font-size: 10px; color: #999; margin-top: 2px; }
 
-      /* ベスト更新モーダル */
+      /* BEST モーダル */
       .glh-best-modal {
         position: fixed; inset: 0; z-index: 9999;
         background: rgba(0,0,0,.65);
@@ -249,16 +275,55 @@
     document.head.appendChild(style);
   }
 
+  // ==== 期間フィルタ ====
+  function _applyPeriodFilter(rounds) {
+    if (currentFilter.period === 'all') return rounds;
+    const n = parseInt(currentFilter.period, 10);
+    if (isNaN(n) || n <= 0) return rounds;
+    return rounds.slice(0, n); // 既に endedAt 降順
+  }
+
+  // ==== KPI 計算（フィルタ後の rounds で再計算） ====
+  function _calcKPI(rounds) {
+    const valid = rounds.filter((r) => _num(r.totalStrokes) > 0);
+    if (valid.length === 0) {
+      return { count: 0, avgStrokes: 0, avgDiff: 0, bestStrokes: null, bestDiff: null };
+    }
+    const totalS = valid.reduce((a, r) => a + _num(r.totalStrokes), 0);
+    const totalD = valid.reduce((a, r) => a + _num(r.totalDiff), 0);
+    const bestS = valid.reduce((m, r) => Math.min(m, _num(r.totalStrokes)), 999);
+    const bestRound = valid.find((r) => _num(r.totalStrokes) === bestS);
+    return {
+      count: valid.length,
+      avgStrokes: Math.round((totalS / valid.length) * 10) / 10,
+      avgDiff: Math.round((totalD / valid.length) * 10) / 10,
+      bestStrokes: bestS,
+      bestDiff: bestRound ? _num(bestRound.totalDiff) : null,
+    };
+  }
+
   // ==== 一覧描画 ====
 
   function _renderList(view) {
-    const allRounds = window.glHistory.list();
-    const rounds = currentFilter.courseName
-      ? allRounds.filter((r) => r.courseName === currentFilter.courseName)
-      : allRounds;
+    let rounds = window.glHistory.list();
 
-    const kpi = window.glHistory.kpi(currentFilter);
+    // コースフィルタ
+    if (currentFilter.courseName) {
+      rounds = rounds.filter((r) => r.courseName === currentFilter.courseName);
+    }
+    // 期間フィルタ
+    rounds = _applyPeriodFilter(rounds);
+
+    const kpi = _calcKPI(rounds);
     const courses = window.glHistory.listCourses();
+
+    // KPI 表示（displayMode で切替）
+    const avgDisplay = displayMode === 'diff'
+      ? (kpi.avgDiff !== 0 ? _diffStr(kpi.avgDiff) : (kpi.count > 0 ? 'E' : '-'))
+      : (kpi.avgStrokes || '-');
+    const bestDisplay = displayMode === 'diff'
+      ? (kpi.bestDiff !== null ? _diffStr(kpi.bestDiff) : '-')
+      : (kpi.bestStrokes || '-');
 
     const kpiHTML = `
       <div class="glh-kpi">
@@ -268,16 +333,19 @@
         </div>
         <div class="glh-kpi__card">
           <div class="glh-kpi__label">AVERAGE</div>
-          <div class="glh-kpi__value">${kpi.avgStrokes || '-'}</div>
+          <div class="glh-kpi__value">${avgDisplay}</div>
+          ${displayMode === 'strokes' && kpi.avgDiff !== 0 ? `<div class="glh-kpi__sub">${_diffStr(kpi.avgDiff)}</div>` : ''}
         </div>
         <div class="glh-kpi__card">
           <div class="glh-kpi__label">BEST</div>
-          <div class="glh-kpi__value">${kpi.bestStrokes || '-'}</div>
+          <div class="glh-kpi__value">${bestDisplay}</div>
+          ${displayMode === 'strokes' && kpi.bestDiff !== null ? `<div class="glh-kpi__sub">${_diffStr(kpi.bestDiff)}</div>` : ''}
         </div>
       </div>
     `;
 
-    const chipsHTML = courses.length === 0 ? '' : `
+    // コースフィルタチップ
+    const courseChipsHTML = courses.length === 0 ? '' : `
       <div class="glh-filter">
         <span class="glh-filter__label">コース：</span>
         <button class="glh-filter__chip ${!currentFilter.courseName ? 'active' : ''}" data-course="">すべて</button>
@@ -287,6 +355,17 @@
       </div>
     `;
 
+    // 期間フィルタチップ
+    const periodChipsHTML = `
+      <div class="glh-filter">
+        <span class="glh-filter__label">期間：</span>
+        <button class="glh-filter__chip ${currentFilter.period === 'all' ? 'active' : ''}" data-period="all">全期間</button>
+        <button class="glh-filter__chip ${currentFilter.period === '5' ? 'active' : ''}" data-period="5">過去5R</button>
+        <button class="glh-filter__chip ${currentFilter.period === '10' ? 'active' : ''}" data-period="10">過去10R</button>
+      </div>
+    `;
+
+    // 一覧アイテム
     const itemsHTML = rounds.length === 0
       ? `
         <div class="glh-empty">
@@ -299,6 +378,8 @@
           const total = _num(r.totalStrokes);
           const diff = _num(r.totalDiff);
           const putts = _num(r.totalPutts);
+          const main = displayMode === 'diff' ? (total > 0 ? _diffStr(diff) : '-') : (total || '-');
+          const sub = displayMode === 'diff' ? (total ? `(${total})` : '') : (total ? _diffStr(diff) : '');
           return `
             <div class="glh-item ${r.isBest ? 'is-best' : ''}" data-round-id="${_escape(r.roundId)}">
               <div class="glh-item__row1">
@@ -308,8 +389,8 @@
               <div class="glh-item__course">${_escape(r.courseName || 'コース未設定')}</div>
               <div class="glh-item__row3">
                 <div>
-                  <span class="glh-item__score">${total || '-'}</span>
-                  <span class="glh-item__diff" style="color:${_diffColor(diff)}">${total ? _diffStr(diff) : ''}</span>
+                  <span class="glh-item__score">${main}</span>
+                  <span class="glh-item__diff" style="color:${_diffColor(diff)}">${sub}</span>
                 </div>
                 <div class="glh-item__meta">
                   ${putts ? `Putts ${putts}` : ''}
@@ -322,18 +403,38 @@
 
     view.innerHTML = `
       <button class="glh-back" data-back>← ホームへ戻る</button>
-      <h1 class="glh-title">📖 履歴</h1>
+      <div class="glh-title">
+        <span>📖 履歴</span>
+        <div class="glh-toggle">
+          <button class="glh-toggle__btn ${displayMode === 'strokes' ? 'active' : ''}" data-mode="strokes">打数</button>
+          <button class="glh-toggle__btn ${displayMode === 'diff' ? 'active' : ''}" data-mode="diff">±Par</button>
+        </div>
+      </div>
       ${kpiHTML}
-      ${chipsHTML}
+      ${periodChipsHTML}
+      ${courseChipsHTML}
       <div class="glh-list">${itemsHTML}</div>
     `;
 
+    // イベントバインド
     view.querySelector('[data-back]')?.addEventListener('click', () => {
       window.glEvents.emit('ui:navigate', { view: 'home' });
     });
-    view.querySelectorAll('.glh-filter__chip').forEach((btn) => {
+    view.querySelectorAll('[data-mode]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        displayMode = btn.getAttribute('data-mode');
+        _renderList(view);
+      });
+    });
+    view.querySelectorAll('[data-course]').forEach((btn) => {
       btn.addEventListener('click', () => {
         currentFilter.courseName = btn.getAttribute('data-course') || '';
+        _renderList(view);
+      });
+    });
+    view.querySelectorAll('[data-period]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentFilter.period = btn.getAttribute('data-period') || 'all';
         _renderList(view);
       });
     });
@@ -362,61 +463,84 @@
     let companions = [];
     try { companions = JSON.parse(r.companionsJson || '[]'); } catch (e) { companions = []; }
 
-    // 1-9 (OUT) / 10-18 (IN) テーブル生成
-    const buildRow = (label, key, from, to) => {
-      let cells = `<td class="glh-sc-label">${label}</td>`;
-      let sum = 0;
+    // 各行生成: Par / Score / Putt
+    const buildTable = (from, to, label) => {
+      // ヘッダ
+      let head = `<th class="glh-sc-label">H</th>`;
+      for (let h = from; h <= to; h++) head += `<th>${h}</th>`;
+      head += `<th class="glh-sc-${from === 1 ? 'out' : 'in'}">${label}</th>`;
+
+      // Par 行
+      let parCells = `<td class="glh-sc-label">Par</td>`;
+      let parSum = 0;
       for (let h = from; h <= to; h++) {
-        const v = holes['h' + h] ? _num(holes['h' + h][key]) : 0;
-        sum += v;
-        cells += `<td>${v || '-'}</td>`;
+        const p = _num(holes['h' + h]?.par) || 4;
+        parSum += p;
+        parCells += `<td>${p}</td>`;
       }
-      cells += `<td class="glh-sc-${from === 1 ? 'out' : 'in'}">${sum || '-'}</td>`;
-      return `<tr>${cells}</tr>`;
+      parCells += `<td class="glh-sc-${from === 1 ? 'out' : 'in'}">${parSum}</td>`;
+
+      // Score 行
+      let scoreCells = `<td class="glh-sc-label">Score</td>`;
+      let scoreSum = 0;
+      for (let h = from; h <= to; h++) {
+        const s = _num(holes['h' + h]?.strokes);
+        const p = _num(holes['h' + h]?.par) || 4;
+        scoreSum += s;
+        let cls = '';
+        if (s > 0 && s < p) cls = 'glh-birdie';
+        else if (s > p) cls = 'glh-bogey';
+        scoreCells += `<td class="${cls}">${s || '-'}</td>`;
+      }
+      scoreCells += `<td class="glh-sc-${from === 1 ? 'out' : 'in'}">${scoreSum || '-'}</td>`;
+
+      // Putt 行
+      let puttCells = `<td class="glh-sc-label">Putt</td>`;
+      let puttSum = 0;
+      for (let h = from; h <= to; h++) {
+        const pt = _num(holes['h' + h]?.putts);
+        puttSum += pt;
+        puttCells += `<td>${pt || '-'}</td>`;
+      }
+      puttCells += `<td class="glh-sc-${from === 1 ? 'out' : 'in'}">${puttSum || '-'}</td>`;
+
+      return `
+        <table class="glh-scorecard">
+          <thead><tr>${head}</tr></thead>
+          <tbody>
+            <tr class="glh-sc-par-row">${parCells}</tr>
+            <tr>${scoreCells}</tr>
+            <tr>${puttCells}</tr>
+          </tbody>
+        </table>
+      `;
     };
 
-    const headerRow = (from, to, label) => {
-      let cells = `<th class="glh-sc-label">H</th>`;
-      for (let h = from; h <= to; h++) cells += `<th>${h}</th>`;
-      cells += `<th class="glh-sc-${from === 1 ? 'out' : 'in'}">${label}</th>`;
-      return `<tr>${cells}</tr>`;
-    };
-
-    const outTable = `
-      <table class="glh-scorecard">
-        <thead>${headerRow(1, 9, 'OUT')}</thead>
-        <tbody>
-          ${buildRow('Par', 'par', 1, 9)}
-          ${buildRow('Score', 'strokes', 1, 9)}
-          ${buildRow('Putt', 'putts', 1, 9)}
-        </tbody>
-      </table>
-    `;
-    const inTable = `
-      <table class="glh-scorecard">
-        <thead>${headerRow(10, 18, 'IN')}</thead>
-        <tbody>
-          ${buildRow('Par', 'par', 10, 18)}
-          ${buildRow('Score', 'strokes', 10, 18)}
-          ${buildRow('Putt', 'putts', 10, 18)}
-        </tbody>
-      </table>
-    `;
+    const outTable = buildTable(1, 9, 'OUT');
+    const inTable = buildTable(10, 18, 'IN');
 
     const compHTML = companions.length === 0 ? '' : `
       <div class="glh-card__title">同伴者</div>
       <div class="glh-comp">
-        ${companions.map((c) => `
-          <div class="glh-comp__item">
-            <div class="glh-comp__name">${_escape(c.displayName)}</div>
-            <div class="glh-comp__score">${_num(c.totalStrokes) || '-'}</div>
-            <div class="glh-comp__type">${c.type === 'proxy' ? '代理' : c.type === 'shared' ? '共有' : '自分'}</div>
-          </div>
-        `).join('')}
+        ${companions.map((c) => {
+          const cs = _num(c.totalStrokes);
+          const cd = _num(c.totalDiff);
+          return `
+            <div class="glh-comp__item">
+              <div class="glh-comp__name">${_escape(c.displayName)}</div>
+              <div>
+                <span class="glh-comp__score">${cs || '-'}</span>
+                ${cs ? `<span class="glh-comp__diff" style="color:${_diffColor(cd)}">${_diffStr(cd)}</span>` : ''}
+              </div>
+              <div class="glh-comp__type">${c.type === 'proxy' ? '代理' : c.type === 'shared' ? '共有' : '自分'}</div>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
 
     const diff = _num(r.totalDiff);
+    const totalPar = _num(r.totalPar);
 
     view.innerHTML = `
       <button class="glh-back" data-back-list>← 履歴一覧へ</button>
@@ -427,7 +551,7 @@
           <div class="glh-detail__stats">
             <div>
               <div class="glh-detail__total">${_num(r.totalStrokes) || '-'}</div>
-              <div style="font-size:10px;opacity:.8;">TOTAL</div>
+              <div style="font-size:10px;opacity:.8;">TOTAL${totalPar ? ` (Par ${totalPar})` : ''}</div>
             </div>
             <div class="glh-detail__diff">${_num(r.totalStrokes) ? _diffStr(diff) : ''}</div>
             <div style="margin-left:auto;text-align:right;font-size:11px;opacity:.9;">
@@ -456,12 +580,6 @@
       currentDetailId = null;
       _renderList(view);
     });
-  }
-
-  function _escape(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   // ==== 2C: BEST 更新演出 ====
@@ -499,7 +617,6 @@
       view.classList.add('show');
       window.glState && window.glState.set && window.glState.set('phase', 'S8');
 
-      // 詳細を開いていた場合は詳細を再表示、それ以外は一覧
       if (currentDetailId && window.glHistory.get(currentDetailId)) {
         _renderDetail(view, currentDetailId);
       } else {
@@ -510,9 +627,6 @@
     hide() {
       document.getElementById('view-history')?.classList.remove('show');
     },
-    /**
-     * 詳細画面を指定 roundId で開く
-     */
     showDetail(roundId) {
       _injectStyles();
       currentDetailId = roundId;
@@ -521,9 +635,6 @@
       view.classList.add('show');
       _renderDetail(view, roundId);
     },
-    /**
-     * BEST 更新演出（classic.js から呼ばれる）
-     */
     celebrateBest(snapshot) {
       _injectStyles();
       _showBestCelebration(snapshot);
@@ -532,7 +643,6 @@
 
   window.glHistoryUI = glHistoryUI;
 
-  // history:updated イベントで再描画（表示中のみ）
   if (window.glEvents) {
     window.glEvents.on('history:updated', () => {
       const view = document.getElementById('view-history');

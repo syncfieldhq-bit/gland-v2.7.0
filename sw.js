@@ -1,10 +1,10 @@
 /**
- * G-LAND v2.7.17 - Service Worker
+ * G-LAND v2.7.18 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * v2.7.17: Phase 2A/2B 履歴機能実装（KPI・フィルタ・詳細画面・BEST演出・Y案保存）
+ * v2.7.18: Phase 2A/2B 履歴機能実装（KPI・フィルタ・詳細画面・BEST演出・Y案保存）
  */
-const CACHE_VERSION = 'gland-v2.7.17';
+const CACHE_VERSION = 'gland-v2.7.18';
 const CORE_ASSETS = [
   './',
   './index.html',
