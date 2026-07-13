@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1a5f3f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="G-LAND">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="ゴルフスコアをリアルタイム共有できるPWAアプリ">
+
+  <title>G-LAND</title>
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="icon" href="./icons/icon-192.png">
+
+  <!-- ベーススタイル -->
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Meiryo", sans-serif;
+      background: #f8f9fa; color: #222;
+      overscroll-behavior-y: contain;
+    }
+    button { font-family: inherit; }
+    input, textarea { font-family: inherit; -webkit-appearance: none; }
+  </style>
+
+  <!-- ⬇️⬇️⬇️ GAS URL 設定（デプロイ時に必ず埋める！）⬇️⬇️⬇️ -->
+  <script>
+    // ================================================================
+    // ⚠️⚠️⚠️ 重要 ⚠️⚠️⚠️
+    // 下記の '' に必ず GAS デプロイURL を入れてください
+    // 例: window.GLAND_GAS_URL = 'https://script.google.com/macros/s/AKfyc.../exec';
+    // ここが空のままだとユーザー登録・ラウンド保存が全て失敗します
+    // ================================================================
+    window.GLAND_GAS_URL = '';
+
+    // GAS URL 未設定時の警告表示（デプロイミス防止）
+    if (!window.GLAND_GAS_URL) {
+      document.addEventListener('DOMContentLoaded', function () {
+        var warn = document.createElement('div');
+        warn.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#d32f2f;color:#fff;padding:12px 16px;font-size:13px;line-height:1.5;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,.3);font-family:sans-serif;';
+        warn.innerHTML = '⚠️ <b>GAS URL 未設定</b><br>index.html の <code>window.GLAND_GAS_URL</code> に GAS デプロイURL を埋め込んでください。<br>設定しないとユーザー登録やスコア保存はできません。';
+        document.body.appendChild(warn);
+      });
+    }
+  </script>
+
+  <!-- QRコード生成ライブラリ（招待用） -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+</head>
+<body>
+
+  <!-- ==== ビュー骨格（全て初期非表示。UI層が制御） ==== -->
+  <div id="install-gate"></div>
+  <div id="view-home"></div>
+  <div id="view-golf"></div>
+  <div id="view-score"></div>
+  <div id="view-history"></div>
+  <div id="view-mypage"></div>
+
+  <!-- モーダル/トースト コンテナ -->
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <!-- ==== スクリプト読込 ==== -->
+  <!-- Layer 2: Infrastructure -->
+  <script src="js/core/events.js"></script>
+  <script src="js/core/storage.js"></script>
+  <script src="js/core/state.js"></script>
+  <script src="js/core/net.js"></script>
+  <script src="js/core/errors.js"></script>
+  <script src="js/core/queue.js"></script>
+
+  <!-- Layer 1: External -->
+  <script src="js/api.js"></script>
+
+  <!-- Layer 3: Domain -->
+  <script src="js/domain/profile.js"></script>
+  <script src="js/domain/round.js"></script>
+  <script src="js/domain/score.js"></script>
+  <script src="js/domain/history.js"></script>
+  <script src="js/domain/course.js"></script>
+  <script src="js/domain/ads.js"></script>
+
+  <!-- Layer 4: UI -->
+  <script src="js/ui/_debugbar.js"></script>
+  <script src="js/ui/toast.js"></script>
+  <script src="js/ui/gate.js"></script>
+  <script src="js/ui/onboarding.js"></script>
+  <script src="js/ui/ads.js"></script>
+  <script src="js/ui/home.js"></script>
+  <script src="js/ui/round.js"></script>
+
+  <!-- Score テーマ（共通パネル→テーマ本体→ローダーの順） -->
+  <script src="js/ui/score/_panel.js"></script>
+  <script src="js/ui/score/simple.js"></script>
+  <script src="js/ui/score/classic.js"></script>
+  <script src="js/ui/score.js"></script>
+
+  <script src="js/ui/history.js"></script>
+  <script src="js/ui/mypage.js"></script>
+  <script src="js/ui/course.js"></script>
+
+  <!-- Layer 5: Bootstrap -->
+  <script src="js/boot.js"></script>
+</body>
+</html>

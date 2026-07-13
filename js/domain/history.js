@@ -168,50 +168,12 @@
     },
 
     /**
-     * v2.7.20: 保存前にサーバから最新スコアを取得（同伴者のスコアを万全にする）
-     * @param {string} roundId
-     * @param {number} timeoutMs - タイムアウト（デフォルト5秒）
-     * @returns {Promise<Object|null>} 最新スコア or null（失敗時）
-     */
-    async syncScoresBeforeSave(roundId, timeoutMs = 5000) {
-      if (!roundId || !navigator.onLine) return null;
-      try {
-        const result = await Promise.race([
-          window.glandApi.listScores({ roundId }),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('sync timeout')), timeoutMs)),
-        ]);
-        if (result && result.playerScores) {
-          const myUserId = window.glProfile.getUserId();
-          const currentScores = window.glState.get('scores') || {};
-          const merged = { ...result.playerScores };
-          // 自分の未送信分は保持（自分のスコアはソースオブトルース）
-          if (currentScores[myUserId]) {
-            merged[myUserId] = { ...merged[myUserId], ...currentScores[myUserId] };
-          }
-          window.glState.set('scores', merged);
-          return merged;
-        }
-      } catch (err) {
-        console.warn('[history] pre-save sync failed:', err.message);
-      }
-      return null;
-    },
-
-    /**
-     * v2.7.17/v2.7.20: ラウンド終了時に自分のスコアを確定・保存（Y案）
+     * v2.7.17: ラウンド終了時に自分のスコアを確定・保存（Y案）
      * @param {Object} args - roundId/players 等
      * @returns {Promise<Object>} 保存されたスナップショット + isBest
      */
     async finishAndSave(args) {
       args = args || {};
-
-      // ★ v2.7.20: 保存直前に同期（同伴者の最新スコアを取得）
-      const roundId = args.roundId || window.glState.get('roundId');
-      const synced = await this.syncScoresBeforeSave(roundId);
-      if (synced) {
-        args.scores = synced;
-      }
-
       const snapshot = _buildSnapshotForSelf(args);
 
       // BEST 判定（保存前の履歴と比較）

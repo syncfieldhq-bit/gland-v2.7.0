@@ -108,19 +108,7 @@
      * @param {string} groupCode
      */
     async join(groupCode) {
-      // ★ v2.7.20: 招待失敗の原因特定用詳細ログ
-      console.log('[round.join] START', {
-        code: groupCode,
-        ua: navigator.userAgent.substring(0, 60),
-        platform: navigator.platform,
-        onLine: navigator.onLine,
-        time: new Date().toISOString(),
-        existingRoundId: window.glState.get('roundId'),
-        pendingJoin: window.glStorage.readLocal(KEYS.pendingJoin),
-      });
-
       if (_joinInProgress) {
-        console.warn('[round.join] BLOCKED - already in progress');
         const e = new Error('Join already in progress');
         e.code = 'U2';
         throw e;
@@ -128,7 +116,6 @@
 
       const userId = window.glProfile.getUserId();
       if (!userId) {
-        console.error('[round.join] userId not issued');
         const e = new Error('userId not issued');
         e.code = 'A1';
         window.glErrors.handle(e);
@@ -137,7 +124,6 @@
 
       const code = (groupCode || '').trim().toUpperCase();
       if (!code) {
-        console.error('[round.join] groupCode required, got:', groupCode);
         const e = new Error('groupCode required');
         e.code = 'U5';
         throw e;
@@ -148,9 +134,7 @@
 
       _joinInProgress = true;
       try {
-        console.log('[round.join] calling GAS joinRound...', { userId, code, guestName });
         const result = await window.glandApi.joinRound({ userId, groupCode: code, guestName });
-        console.log('[round.join] GAS response:', result);
 
         const roundId = _extractRoundId(result);
         if (!roundId) {
@@ -167,11 +151,9 @@
         window.glStorage.writeLocal(KEYS.pendingJoin, null);
         window.glState.set('pendingJoinRoundId', null);
 
-        console.log('[round.join] SUCCESS - roundId:', roundId);
         window.glEvents.emit('round:joined', { roundId, groupCode: code });
         return { roundId, groupCode: code };
       } catch (err) {
-        console.error('[round.join] FAILED:', err.message, 'code:', err.code, 'stack:', err.stack);
         window.glErrors.handle(err, { context: 'round.join' });
         throw err;
       } finally {
@@ -234,8 +216,6 @@
       window.glStorage.removeAll(KEYS.roundId);
       window.glStorage.removeAll(KEYS.groupCode);
       window.glStorage.writeLocal(KEYS.proxyPlayers, null);
-      // ★ v2.7.20: pendingJoin もクリア（ラウンド終了時のゾンビ化防止）
-      window.glStorage.writeLocal(KEYS.pendingJoin, null);
       window.glState.patch({
         roundId: null,
         groupCode: null,
@@ -244,7 +224,6 @@
         currentHole: 1,
         scores: {},
         hostUserId: null,
-        pendingJoinRoundId: null,
       });
     },
 
