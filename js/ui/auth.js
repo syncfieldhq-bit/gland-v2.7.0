@@ -117,6 +117,57 @@
         document.body.appendChild(containerEl);
       }
     }
+
+    // 【v2.8.0】iOS PWA (Standalone) では Google ログイン不可
+    // Safari で開くよう案内する
+    const isIOSPWA = window.glFirebase && window.glFirebase.isIOSStandalone && window.glFirebase.isIOSStandalone();
+
+    if (isIOSPWA) {
+      containerEl.innerHTML = `
+        <div class="gl-auth-card">
+          <div class="gl-auth-logo">G-LAND</div>
+          <div class="gl-auth-tag">ゴルフスコア共有アプリ</div>
+          <h2 class="gl-auth-title" style="color:#d32f2f;">⚠️ Safari で開いてください</h2>
+          <p class="gl-auth-desc">
+            ホーム画面のアイコンからの起動では<br>
+            Google ログインができません。<br><br>
+            以下の手順で Safari で開いてください：
+          </p>
+          <ol style="text-align:left; font-size:13px; line-height:1.8; color:#333; padding-left:20px; margin:16px 0;">
+            <li>このアイコンを閉じる</li>
+            <li>Safari を開く</li>
+            <li>ブックマークまたはURLから G-LAND へ</li>
+            <li>Google ログインして登録</li>
+          </ol>
+          <p style="font-size:11px; color:#999; line-height:1.5; margin-top:12px;">
+            登録後はこのアイコンからも使えるようになります。<br>
+            （iOS の仕様上、PWA初回利用時は Safari での認証が必要です）
+          </p>
+          <button class="gl-auth-btn-google" id="gl-auth-copy-url" style="margin-top:16px; background:#1a5f3f; color:#fff; border:none;">
+            📋 URLをコピーして Safari で開く
+          </button>
+        </div>
+      `;
+      const copyBtn = document.getElementById('gl-auth-copy-url');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          const url = location.href;
+          try {
+            if (navigator.clipboard) {
+              await navigator.clipboard.writeText(url);
+              copyBtn.textContent = '✅ コピーしました！Safariで貼り付けてください';
+            } else {
+              copyBtn.textContent = 'URL: ' + url;
+            }
+          } catch (e) {
+            copyBtn.textContent = 'URL: ' + url;
+          }
+        });
+      }
+      return;
+    }
+
+    // 通常のログイン画面
     containerEl.innerHTML = `
       <div class="gl-auth-card">
         <div class="gl-auth-logo">G-LAND</div>
@@ -185,7 +236,11 @@
       loading.classList.remove('show');
 
       let msg = 'ログインに失敗しました。';
-      if (err.code === 'auth/unauthorized-domain') {
+      if (err.code === 'auth/ios-standalone-unsupported') {
+        // iOS PWA の場合は _render() でガイダンス画面を再レンダリング
+        _render();
+        return;
+      } else if (err.code === 'auth/unauthorized-domain') {
         msg = 'このドメインは Firebase に登録されていません。管理者にお問い合わせください。';
       } else if (err.code === 'auth/popup-blocked') {
         msg = 'ポップアップがブロックされました。ブラウザ設定を確認してください。';

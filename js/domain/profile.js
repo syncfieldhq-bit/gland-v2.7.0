@@ -204,15 +204,34 @@
 
     /**
      * 表示名を取得
-     * @param {string} context - 'score' | 'history' | 'home' | 'mypage'
+     *
+     * 呼び出しパターン1: getDisplayName('home')  → 自分のニックネームまたは姓
+     * 呼び出しパターン2: getDisplayName(playerObject)  → プレイヤーの姓（同伴プレイヤー対応）
+     *
+     * 【重要】player オブジェクトが渡された場合は、自分ではなくそのプレイヤーの名前を返す
      */
-    getDisplayName(context = 'score') {
-      const s = _getStored();
-      if (context === 'home' || context === 'mypage') {
-        return s.nickname || s.familyName || 'ゲスト';
+    getDisplayName(arg) {
+      // 引数なし or 文字列としての context
+      if (arg == null || typeof arg === 'string') {
+        const context = arg || 'score';
+        const s = _getStored();
+        if (context === 'home' || context === 'mypage') {
+          return s.nickname || s.familyName || 'ゲスト';
+        }
+        return s.familyName || 'ゲスト';
       }
-      // score / history はデフォルトで姓
-      return s.familyName || 'ゲスト';
+
+      // player オブジェクトが渡された場合
+      const player = arg;
+      // 自分のユーザーID と一致する場合 → 自分のプロフィールから取得
+      const myUserId = window.glStorage.readTriple(KEYS.userId);
+      if (myUserId && player.userId === myUserId) {
+        const s = _getStored();
+        return s.familyName || player.familyName || player.displayName || 'ゲスト';
+      }
+
+      // 同伴プレイヤー → そのプレイヤーの familyName / displayName を返す
+      return player.familyName || player.displayName || player.name || 'ゲスト';
     },
   };
 

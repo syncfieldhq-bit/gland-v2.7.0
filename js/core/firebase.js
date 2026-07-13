@@ -4,15 +4,16 @@
  * Firebase SDK (v12.16.0) の初期化を行う ES Module。
  * type="module" で読み込まれ、window.glFirebase を公開する。
  *
- * 【iOS Safari 対応】
+ * 【iOS Safari / PWA 対応】
  * - Redirect 結果取得は initializeApp 直後に必ず実行（順序重要）
- * - Popup 優先だが、失敗時に Redirect フォールバック
- * - Standalone PWA は最初から Redirect
+ * - iOS PWA では Redirect が動かないため、Popup を強制試行
+ * - Popup 失敗時は「Safari で開いてください」案内を出す
  */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
 import {
   getAuth,
   browserLocalPersistence,
+  indexedDBLocalPersistence,
   setPersistence,
   GoogleAuthProvider,
   signInWithPopup,
@@ -32,6 +33,22 @@ const firebaseConfig = {
   appId: '1:328605356763:web:a7f929f0153b3466d772fe',
 };
 
+// ==== 環境判定 ====
+function _isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
+function _isStandalone() {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function _isIOSStandalone() {
+  return _isIOS() && _isStandalone();
+}
+
 // ==== 状態 ====
 let app = null;
 let auth = null;
@@ -46,18 +63,22 @@ const readyPromise = (async () => {
     auth = getAuth(app);
     auth.languageCode = 'ja';
 
-    // 2. 永続化を明示的に指定（iOS Safari で重要）
-    //    browserLocalPersistence: localStorage に保存 → リロード後も保持
+    // 2. 永続化を明示的に指定
+    //    iOS PWA では indexedDB を優先（Safari と PWA で共有される可能性）
+    //    通常環境では browserLocalPersistence を使用
     try {
-      await setPersistence(auth, browserLocalPersistence);
-      console.log('[firebase] persistence set to browserLocal');
+      if (_isIOSStandalone()) {
+        await setPersistence(auth, indexedDBLocalPersistence);
+        console.log('[firebase] persistence: indexedDB (iOS standalone)');
+      } else {
+        await setPersistence(auth, browserLocalPersistence);
+        console.log('[firebase] persistence: browserLocal');
+      }
     } catch (persistErr) {
       console.warn('[firebase] setPersistence failed:', persistErr);
     }
 
     // 3. 【最重要】Redirect 結果を最優先で取得
-    //    iOS Safari の Redirect フローでは、
-    //    initializeApp 直後に getRedirectResult を呼ばないと結果が消える
     let redirectUser = null;
     try {
       const result = await getRedirectResult(auth);
@@ -72,7 +93,6 @@ const readyPromise = (async () => {
     }
 
     // 4. 現在の認証状態を確定
-    //    (redirect result があれば、それが currentUser にも入っているはず)
     await new Promise((resolve) => {
       const unsub = fbOnAuthStateChanged(auth, (user) => {
         currentUser = user || redirectUser;
@@ -90,6 +110,7 @@ const readyPromise = (async () => {
     });
 
     console.log('[firebase] initialized. currentUser =', currentUser?.uid || '(none)');
+    console.log('[firebase] env: iOS=' + _isIOS() + ', standalone=' + _isStandalone());
     return { app, auth };
   } catch (err) {
     console.error('[firebase] initialization failed:', err);
@@ -97,21 +118,13 @@ const readyPromise = (async () => {
   }
 })();
 
-// ==== 環境判定ヘルパー ====
-function _isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
-}
-
-function _isStandalone() {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true
-  );
-}
-
 // ==== 公開 API ====
 const glFirebase = {
   ready: readyPromise,
+
+  isIOSStandalone: _isIOSStandalone,
+  isStandalone: _isStandalone,
+  isIOS: _isIOS,
 
   getCurrentUser() {
     return currentUser;
@@ -119,17 +132,19 @@ const glFirebase = {
 
   async signInWithGoogle() {
     await readyPromise;
+
+    // iOS PWA (Standalone) では Popup / Redirect ともに不安定
+    //   → 特殊エラーを投げてUI側で「Safari で開いてください」を出させる
+    if (_isIOSStandalone()) {
+      const err = new Error('iOS PWA では Google ログインができません');
+      err.code = 'auth/ios-standalone-unsupported';
+      throw err;
+    }
+
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    // Standalone PWA (iOS) は Popup が動かないため必ず Redirect
-    if (_isStandalone() && _isIOS()) {
-      console.log('[firebase] using redirect (iOS standalone)');
-      await signInWithRedirect(auth, provider);
-      return null;
-    }
-
-    // それ以外は Popup を試す
+    // まず Popup を試す
     try {
       console.log('[firebase] trying popup');
       const result = await signInWithPopup(auth, provider);
