@@ -183,29 +183,32 @@
      * 現在のメンバー一覧を再取得
      */
     async refreshMembers() {
-      const roundId = window.glState.get('roundId');
-      if (!roundId) return [];
+    const roundId = window.glState.get('roundId');
+    if (!roundId) return [];
 
-      try {
-        const result = await window.glandApi.listRoundMembers({ roundId });
-        const members = result?.members || result || [];
+    try {
+      const result = await window.glandApi.listRoundMembers({ roundId });
+      let members = result.members || result || [];
 
-        // 自分を先頭にソート
-        const myUserId = window.glProfile.getUserId();
-        const sorted = [...members].sort((a, b) => {
-          if (a.userId === myUserId) return -1;
-          if (b.userId === myUserId) return 1;
-          return 0;
-        });
+      // ★ここからID統一ロジック（神の手）
+      const localPlayers = window.glState.get('players') || [];
+      members = members.map(remoteMember => {
+        const localMatch = localPlayers.find(lp => lp.name === remoteMember.name);
+        // 同じ名前の代理人がいたら、サーバー側のIDに自分のIDを合わせる（合体！）
+        if (localMatch && localMatch.type === 'proxy') {
+            return { ...remoteMember, userId: localMatch.userId };
+        }
+        return remoteMember;
+      });
+      // ★ここまで
 
-        window.glState.set('players', sorted);
-        window.glEvents.emit('round:member-updated', { members: sorted });
-        return sorted;
-      } catch (err) {
-        window.glErrors.handle(err, { silent: true, context: 'round.refreshMembers' });
-        return window.glState.get('players') || [];
-      }
-    },
+      window.glState.set('players', members);
+      return members;
+    } catch (err) {
+      console.error('Failed to refresh members:', err);
+      return [];
+    }
+  },
 
     /**
      * ラウンド離脱
