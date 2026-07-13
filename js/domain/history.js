@@ -184,10 +184,15 @@
           const myUserId = window.glProfile.getUserId();
           const currentScores = window.glState.get('scores') || {};
           const merged = { ...result.playerScores };
-          // 自分の未送信分は保持（自分のスコアはソースオブトルース）
-          if (currentScores[myUserId]) {
-            merged[myUserId] = { ...merged[myUserId], ...currentScores[myUserId] };
-          }
+          // ★修正：自分と「自分の代理」の完璧な手入力データを、最後の同期から絶対守り抜く
+          const myProxies = window.glState.get('proxyPlayers') || [];
+          const protectedIds = [myUserId, ...myProxies.map(p => p.userId)];
+          
+          protectedIds.forEach(pid => {
+            if (currentScores[pid]) {
+              merged[pid] = { ...merged[pid], ...currentScores[pid] };
+            }
+          });
           window.glState.set('scores', merged);
           return merged;
         }
