@@ -90,11 +90,21 @@
           result?.data?.scores ||
           {};
 
-        // 楽観的UI値を優先的に維持しつつマージ
+        // ★修正：自分の管理下（自分と自分の代理）だけローカル優先、他人はサーバー優先
         const local = _getScoresMap();
         const merged = { ...playerScores };
+        const myUserId = window.glProfile.getUserId();
+        const myProxies = window.glState.get('proxyPlayers') || [];
+        const myProxyIds = myProxies.map(p => p.userId);
+
         Object.keys(local).forEach((pid) => {
-          merged[pid] = { ...(playerScores[pid] || {}), ...local[pid] };
+          if (pid === myUserId || myProxyIds.includes(pid)) {
+            // 自分・自分の代理：スマホの記憶（手入力）を優先して上書き
+            merged[pid] = { ...(playerScores[pid] || {}), ...local[pid] };
+          } else {
+            // 共有メンバー：サーバーの最新データを優先！（これで4が5に変わる）
+            merged[pid] = { ...(local[pid] || {}), ...(playerScores[pid] || {}) };
+          }
         });
 
         window.glState.set('scores', merged);

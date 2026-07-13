@@ -129,10 +129,16 @@
     return String(strokes);
   }
 
+  // ★修正：サーバーから「代理」と来ても、自分が作った代理じゃなければ「共有」と判定する
   function _getPlayerType(player) {
     const myUserId = window.glProfile.getUserId();
     if (player.userId === myUserId) return 'self';
-    if (player.isProxy || player.role === 'proxy') return 'proxy';
+    
+    // 自分が作成した代理プレイヤーか判定
+    const myProxies = window.glState.get('proxyPlayers') || [];
+    const isMyProxy = myProxies.some(p => p.userId === player.userId);
+    
+    if (isMyProxy) return 'proxy';
     return 'shared';
   }
 
@@ -1734,7 +1740,11 @@
 
     try {
       const roundId = window.glState.get('roundId');
-      const players = _getPlayers();
+      // ★修正：履歴システムに渡す前に「誰が自分か」の判定結果(type)をしっかり刻み込む
+      const players = _getPlayers().map(p => ({
+        ...p,
+        type: _getPlayerType(p)
+      }));
 
       // Y案: 自分のスコアだけをスナップショット化してGAS送信＋ローカル保存
       const snapshot = await window.glHistory.finishAndSave({
