@@ -178,17 +178,50 @@
   const glGate = {
     /**
      * gateを表示（起動時判定）
-     * 【v2.8.0】PWA Install Gate は廃止 → 常に false を返してスキップ
-     * 将来ホーム画面に PWA インストールバナーを実装予定
+     *
+     * 【v2.8.0-rev4】プラットフォーム別の分岐
+     *   Android: 強制表示しないが、マニュアル呼び出しは可（showManually）
+     *   iOS Safari: 強制表示しない（ホームのバナーから呼ぶ）
+     *   iOS PWA: 既に PWA なのでスキップ
+     *
+     * → 起動直後には表示しないが、ホーム画面に小さな「インストール」ボタンを表示できるようにする
      */
     show() {
-      // v2.8.0: PWA Install Gate を完全に無効化
-      this.hide();
+      // 自動表示はしない（ホーム画面のバナーから手動で）
       return false;
     },
 
     /**
-     * 【v2.8.0 新規】将来のマニュアル呼び出し用（ホームの「PWAにする」ボタンなどから）
+     * 【v2.8.0-rev4】PWA インストール可能か判定
+     */
+    canInstall() {
+      if (_isPWA()) return false;
+      const env = _detectEnv();
+      // Android Chrome は beforeinstallprompt が発火していればインストール可
+      if (env.isAndroid && deferredPrompt) return true;
+      // iOS Safari は手動で「共有→ホーム画面に追加」を案内できる
+      if (env.isIOS && env.isSafari) return true;
+      return false;
+    },
+
+    /**
+     * 【v2.8.0-rev4】Android で beforeinstallprompt を直接トリガー
+     */
+    async triggerNativeInstall() {
+      if (!deferredPrompt) return false;
+      try {
+        deferredPrompt.prompt();
+        const result = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        return result && result.outcome === 'accepted';
+      } catch (err) {
+        console.error('[gate] triggerNativeInstall failed:', err);
+        return false;
+      }
+    },
+
+    /**
+     * 【v2.8.0 新規】ホーム画面の「インストール」ボタンから呼ばれる（ガイダンス画面を表示）
      */
     showManually() {
       if (_isPWA()) {

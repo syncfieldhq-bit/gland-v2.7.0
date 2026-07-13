@@ -131,9 +131,30 @@
   }
 
   /**
-   * 代理入力プレイヤー管理モーダル
+   * v2.7.20: 代理入力プレイヤー管理モーダル
+   * - 既存モーダルがあれば先に全削除（多層化防止）
+   * - 閉じずに連続追加可能（リスト・フォームだけ部分更新）
    */
   function _showProxyManagerModal() {
+    // ★ 既存の同種モーダルを全削除
+    document.querySelectorAll('[data-modal-type="proxy-manager"]').forEach((m) => m.remove());
+
+    const wrap = document.createElement('div');
+    wrap.className = 'gl-modal show';
+    wrap.setAttribute('data-modal-type', 'proxy-manager');
+    wrap.innerHTML = _renderProxyModalContent();
+    document.body.appendChild(wrap);
+
+    const close = () => wrap.remove();
+    wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
+
+    _bindProxyModalEvents(wrap, close);
+  }
+
+  /**
+   * 代理モーダルの内容を生成（部分更新でも使う）
+   */
+  function _renderProxyModalContent() {
     const proxies = window.glRound.listProxyPlayers();
     const max = window.glRound.getMaxProxy();
     const canAdd = proxies.length < max;
@@ -150,45 +171,74 @@
           </div>
         `).join('');
 
-    const wrap = document.createElement('div');
-    wrap.className = 'gl-modal show';
-    wrap.innerHTML = `
+    return `
       <div class="gl-modal__backdrop"></div>
       <div class="gl-modal__body">
         <h2 class="gl-modal__title">🧍 代理入力プレイヤー</h2>
         <p style="font-size:13px;color:#666;">スマホを使わない人のスコアを代わりに入力できます（最大${max}名）</p>
-        <div style="margin:12px 0;">${list}</div>
-        ${canAdd ? `
-          <h3 style="font-size:14px;color:#1a5f3f;margin:16px 0 8px;">新規追加</h3>
-          <div class="gl-form__group">
-            <label class="gl-form__label">名前 <span style="color:#f44336;">*</span></label>
-            <input class="gl-form__input" id="proxy-add-name" placeholder="例: 田中">
-          </div>
-          <div class="gl-form__group">
-            <label class="gl-form__label">ふりがな（任意）</label>
-            <input class="gl-form__input" id="proxy-add-kana" placeholder="例: たなか">
-          </div>
-          <button class="gl-btn-primary" data-add>➕ 追加する</button>
-        ` : `
-          <p style="text-align:center;color:#ff9800;padding:12px;background:#fff8e1;border-radius:6px;font-size:13px;">上限に達しています</p>
-        `}
+        <div style="margin:12px 0;" data-proxy-list>${list}</div>
+        <div data-proxy-form>
+          ${canAdd ? `
+            <h3 style="font-size:14px;color:#1a5f3f;margin:16px 0 8px;">新規追加</h3>
+            <div class="gl-form__group">
+              <label class="gl-form__label">名前 <span style="color:#f44336;">*</span></label>
+              <input class="gl-form__input" data-proxy-name placeholder="例: 田中">
+            </div>
+            <div class="gl-form__group">
+              <label class="gl-form__label">ふりがな（任意）</label>
+              <input class="gl-form__input" data-proxy-kana placeholder="例: たなか">
+            </div>
+            <button class="gl-btn-primary" data-add>➕ 追加する</button>
+          ` : `
+            <p style="text-align:center;color:#ff9800;padding:12px;background:#fff8e1;border-radius:6px;font-size:13px;">上限に達しています</p>
+          `}
+        </div>
         <button style="width:100%;padding:12px;margin-top:10px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer;" data-close>閉じる</button>
       </div>
     `;
-    document.body.appendChild(wrap);
+  }
 
-    const close = () => wrap.remove();
-    wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
-    wrap.querySelector('[data-close]').addEventListener('click', close);
+  /**
+   * v2.7.20: モーダル内のリスト・フォームだけを部分更新（モーダル自体は閉じない）
+   */
+  function _refreshProxyModalContent(wrap) {
+    const body = wrap.querySelector('.gl-modal__body');
+    if (!body) return;
+    // リストとフォームだけ差し替え
+    const newHTML = _renderProxyModalContent();
+    // parse して必要部分のみ取り出す
+    const temp = document.createElement('div');
+    temp.innerHTML = newHTML;
+    const newList = temp.querySelector('[data-proxy-list]');
+    const newForm = temp.querySelector('[data-proxy-form]');
+    const oldList = wrap.querySelector('[data-proxy-list]');
+    const oldForm = wrap.querySelector('[data-proxy-form]');
+    if (newList && oldList) oldList.innerHTML = newList.innerHTML;
+    if (newForm && oldForm) oldForm.innerHTML = newForm.innerHTML;
+    // 再バインド
+    _bindProxyModalInner(wrap);
+  }
 
-    if (canAdd) {
-      wrap.querySelector('[data-add]')?.addEventListener('click', () => {
-        // ★ wrap スコープに限定して取得（id重複対策）
-        const nameEl = wrap.querySelector('#proxy-add-name');
-        const kanaEl = wrap.querySelector('#proxy-add-kana');
+  /**
+   * モーダルの外側イベント（閉じるボタンなど）は一度だけバインド
+   */
+  function _bindProxyModalEvents(wrap, close) {
+    wrap.querySelector('[data-close]')?.addEventListener('click', close);
+    _bindProxyModalInner(wrap);
+  }
+
+  /**
+   * モーダル内部のフォーム・削除ボタンをバインド（部分更新のたびに呼ぶ）
+   */
+  function _bindProxyModalInner(wrap) {
+    // 追加ボタン
+    const addBtn = wrap.querySelector('[data-add]');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const nameEl = wrap.querySelector('[data-proxy-name]');
+        const kanaEl = wrap.querySelector('[data-proxy-kana]');
         const name = (nameEl?.value || '').trim();
         const kana = (kanaEl?.value || '').trim();
-        console.log('[proxy] add attempt: name=', name, 'kana=', kana);
         if (!name) {
           window.glToast.warn('名前は必須です');
           nameEl?.focus();
@@ -197,23 +247,21 @@
         const player = window.glRound.addProxyPlayer({ familyName: name, familyKana: kana });
         if (player) {
           window.glToast.success(`${name} さんを追加しました`);
-          close();
-          // ★ 完全に DOM から消えるのを待ってから再描画（id重複回避）
-          setTimeout(() => {
-            _showProxyManagerModal();
-            _renderIndex();
-          }, 50);
+          // ★ モーダル閉じずに内容だけ更新
+          _refreshProxyModalContent(wrap);
+          _renderIndex();
         }
       });
     }
 
+    // 削除ボタン
     wrap.querySelectorAll('[data-remove]').forEach((btn) => {
       btn.addEventListener('click', () => {
         if (!confirm('この代理プレイヤーを削除しますか？')) return;
         window.glRound.removeProxyPlayer(btn.dataset.remove);
         window.glToast.info('削除しました');
-        close();
-        _showProxyManagerModal();
+        // ★ モーダル閉じずに内容だけ更新
+        _refreshProxyModalContent(wrap);
         _renderIndex();
       });
     });
@@ -268,19 +316,32 @@
     });
   }
 
+  /**
+   * v2.7.20: 招待モーダル
+   * - 既存の招待モーダルを先に削除（多層化防止）
+   * - QR生成は wrap 内の要素に対して行う（getElementById使わない）
+   * - groupCode 未取得なら警告して開かない
+   */
   function _showInviteModal() {
-    const groupCode = window.glState.get('groupCode');
-    const roundId = window.glState.get('roundId');
-    // QRには groupCode（4桁）を埋め込む → join() とパラメータを揃えてサーバエラー回避
-    const joinUrl = location.origin + location.pathname + '?join=' + encodeURIComponent(groupCode || '');
+    // ★ 既存の招待モーダルを全削除
+    document.querySelectorAll('[data-modal-type="invite"]').forEach((m) => m.remove());
 
-    _modalPrompt({
+    const groupCode = window.glState.get('groupCode');
+    if (!groupCode) {
+      window.glToast.warn('招待コードが取得できません。ラウンドを開始してください');
+      return;
+    }
+
+    const joinUrl = location.origin + location.pathname + '?join=' + encodeURIComponent(groupCode);
+
+    const wrap = _modalPrompt({
       title: '📤 招待',
+      modalType: 'invite',
       body: `
         <div class="gl-invite-box">
           <div style="font-size:14px;opacity:.9;">招待コード</div>
-          <div class="gl-invite-box__code">${groupCode || '- - - -'}</div>
-          <div id="invite-qr-container" class="gl-invite-box__qr">
+          <div class="gl-invite-box__code">${groupCode}</div>
+          <div class="gl-invite-box__qr" data-qr-container>
             <div class="gl-spinner"></div>
           </div>
           <div class="gl-invite-box__hint">
@@ -292,15 +353,20 @@
       onOk: () => true,
     });
 
-    // QR生成（非同期）
-    setTimeout(() => _generateQR(joinUrl), 100);
+    // ★ wrap（モーダル本体）内の要素に対してQR生成
+    if (wrap) {
+      setTimeout(() => {
+        const container = wrap.querySelector('[data-qr-container]');
+        if (container) _generateQRInContainer(container, joinUrl);
+      }, 50);
+    }
   }
 
-  function _generateQR(url) {
-    const container = document.getElementById('invite-qr-container');
+  /**
+   * v2.7.20: 指定されたコンテナ内にQRを生成
+   */
+  function _generateQRInContainer(container, url) {
     if (!container) return;
-
-    // QRCode.js (window.QRCode) が読み込まれている想定
     if (window.QRCode) {
       container.innerHTML = '';
       try {
@@ -309,7 +375,6 @@
         container.innerHTML = '<div style="color:#f44336;">QR生成失敗</div>';
       }
     } else {
-      // フォールバック: Google Chart API
       const src = 'https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=' + encodeURIComponent(url);
       container.innerHTML = `<img src="${src}" width="180" height="180" alt="QR">`;
     }
@@ -333,9 +398,13 @@
   /**
    * 汎用モーダル（round.js内共用）
    */
-  function _modalPrompt({ title, body, okLabel, onOk, allowClose = true }) {
+  /**
+   * v2.7.20: modalType 対応 + wrap 返却（呼び出し側で内部要素を探せるように）
+   */
+  function _modalPrompt({ title, body, okLabel, onOk, allowClose = true, modalType = '' }) {
     const wrap = document.createElement('div');
     wrap.className = 'gl-modal show';
+    if (modalType) wrap.setAttribute('data-modal-type', modalType);
     wrap.innerHTML = `
       <div class="gl-modal__backdrop"></div>
       <div class="gl-modal__body">
@@ -359,6 +428,8 @@
     if (allowClose) {
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
     }
+
+    return wrap;  // ★ v2.7.20: wrap を返して呼び出し側が内部要素へアクセスできるように
   }
 
   const glRoundUI = {

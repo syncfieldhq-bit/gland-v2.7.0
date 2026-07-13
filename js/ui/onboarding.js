@@ -108,6 +108,14 @@
     btn.disabled = true;
     btn.textContent = '登録中...';
 
+    // 全画面ローディング表示
+    if (window.glLoading) {
+      window.glLoading.show(
+        isJoinFlow ? '合流を準備しています...' : '登録中...',
+        { showCancelAfter: 8000 }
+      );
+    }
+
     try {
       const result = await window.glProfile.register(
         { familyName, familyKana },
@@ -121,7 +129,7 @@
         // pendingJoin があれば自動合流
         const pendingCode = window.glRound.getPendingJoin();
         if (pendingCode) {
-          window.glToast.info('スコアカードに合流中...');
+          if (window.glLoading) window.glLoading.update('スコアカードに合流中...');
           try {
             await window.glRound.join(pendingCode);
             window.glToast.success('合流しました');
@@ -137,6 +145,8 @@
       btn.disabled = false;
       btn.textContent = '登録して始める';
       window.glErrors.handle(err, { context: 'onboarding.submit' });
+    } finally {
+      if (window.glLoading) window.glLoading.hide();
     }
   }
 
@@ -145,8 +155,9 @@
      * 起動時判定 → 必要なら表示
      */
     check() {
-      // v2.8.0: Firebase 未ログインなら Onboarding はスキップ
-      if (window.glAuth && !window.glAuth.isLoggedIn()) return false;
+      // v2.8.0-rev5: iOS は Firebase を使わないのでログインチェック不要
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (!isIOS && window.glAuth && !window.glAuth.isLoggedIn()) return false;
       if (window.glGate && window.glGate.isActive && window.glGate.isActive()) return false;
 
       const isRegistered = window.glProfile.isMinimum();

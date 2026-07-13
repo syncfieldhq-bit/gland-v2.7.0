@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  const VERSION_LABEL = 'v2.8.0 (build: 20260713)';
+  const VERSION_LABEL = 'v2.8.0-rev5 (build: 20260713)';
 
   function _injectStyles() {
     if (document.getElementById('gl-mypage-styles')) return;
@@ -135,6 +135,16 @@
 
       <div id="ad-slot-mypage"></div>
 
+      <!-- 【v2.8.0-rev5】非常時の復旧ボタン -->
+      <div class="gl-mypage__card" style="margin-top:14px;background:#fffbf0;border:1px solid #ffcc80;">
+        <div style="font-size:13px;font-weight:700;color:#d84315;margin-bottom:6px;">⚠️ もしアプリの調子が悪い場合</div>
+        <div style="font-size:11px;color:#666;line-height:1.5;margin-bottom:10px;">
+          不具合が続く場合は、アプリをリセットして新規登録からやり直してください。<br>
+          （クラウド保存された履歴データは消えません）
+        </div>
+        <button data-reset-app style="width:100%;padding:10px;background:#fff;color:#d84315;border:1px solid #d84315;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">🔄 アプリをリセットしてユーザー登録をやり直す</button>
+      </div>
+
       <div class="gl-mypage__version">${VERSION_LABEL}</div>
     `;
 
@@ -158,6 +168,35 @@
     }
 
     _renderThemeOptions();
+
+    // 【v2.8.0-rev5】アプリリセットボタン
+    const resetBtn = view.querySelector('[data-reset-app]');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (!confirm('アプリをリセットしますか？\n\n・プロフィール入力やり直し\n・ローカルデータ全削除\n\n※クラウドの履歴データは残ります')) return;
+        try {
+          // localStorage 全削除
+          try {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              if (k && (k.startsWith('gl_') || k.startsWith('firebase:'))) keys.push(k);
+            }
+            keys.forEach(k => localStorage.removeItem(k));
+          } catch (e) {}
+          // sessionStorage もクリア
+          try { sessionStorage.clear(); } catch (e) {}
+          // Service Worker のキャッシュもクリア
+          if ('caches' in window) {
+            caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+          }
+          if (window.glLoading) window.glLoading.show('リセット中...');
+          setTimeout(() => location.reload(), 500);
+        } catch (err) {
+          alert('リセットに失敗しました: ' + (err.message || err));
+        }
+      });
+    }
 
     const adSlot = document.getElementById('ad-slot-mypage');
     if (adSlot) window.glAdsUI.mount(adSlot, 'mypage');

@@ -6,7 +6,7 @@
  *  - Google OAuth 通信 (googleapis.com, firebaseapp.com) は非キャッシュ
  *  - v2.8.0 新規ファイル: js/core/firebase.js, js/domain/auth.js, js/ui/auth.js
  */
-const CACHE_VERSION = 'gland-v2.8.0';
+const CACHE_VERSION = 'gland-v2.8.0-rev5';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -31,6 +31,7 @@ const CORE_ASSETS = [
   './js/domain/ads.js',
   './js/ui/_debugbar.js',
   './js/ui/toast.js',
+  './js/ui/loading.js',
   './js/ui/auth.js',
   './js/ui/gate.js',
   './js/ui/onboarding.js',
