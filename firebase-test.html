@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a5f3f">
+  <title>G-LAND Firebase Auth テスト (v2.8.0-alpha)</title>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Meiryo", sans-serif;
+      background: linear-gradient(135deg, #1a5f3f 0%, #2d8f5f 100%);
+      color: #222;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    h1 {
+      color: #fff;
+      text-align: center;
+      font-size: 24px;
+      margin: 16px 0 4px;
+      font-weight: 700;
+    }
+    .subtitle {
+      color: rgba(255,255,255,0.85);
+      text-align: center;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      background: #ffc107;
+      color: #333;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+    h2 { font-size: 16px; margin: 0 0 12px; color: #1a5f3f; }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+    .status-row:last-child { border-bottom: 0; }
+    .status-label { color: #666; }
+    .status-value { font-weight: 600; }
+    .status-ok { color: #2d8f5f; }
+    .status-ng { color: #d32f2f; }
+    .status-wait { color: #999; }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      margin: 8px 0;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-google {
+      background: #fff;
+      color: #333;
+      border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-google:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .btn-google svg { width: 20px; height: 20px; }
+    .btn-danger {
+      background: #d32f2f;
+      color: #fff;
+    }
+    .btn-primary {
+      background: #1a5f3f;
+      color: #fff;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #f0f7f2;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+    .user-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #ccc;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-weight: 600; font-size: 14px; }
+    .user-email { font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; }
+
+    .log {
+      background: #1e1e1e;
+      color: #e0e0e0;
+      font-family: "Menlo", "Consolas", monospace;
+      font-size: 11px;
+      padding: 12px;
+      border-radius: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .log-info { color: #64d9ff; }
+    .log-ok { color: #7cffb8; }
+    .log-err { color: #ff8f8f; }
+    .log-warn { color: #ffd166; }
+
+    .footer-note {
+      text-align: center;
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+    code {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔥 Firebase Auth テスト</h1>
+    <div class="subtitle">G-LAND v2.8.0-alpha プロトタイプ</div>
+
+    <!-- 疎通ステータス -->
+    <div class="card">
+      <span class="badge">STEP 1</span>
+      <h2>Firebase 疎通確認</h2>
+      <div class="status-row">
+        <span class="status-label">SDK 読み込み</span>
+        <span class="status-value status-wait" id="stat-sdk">確認中...</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Firebase 初期化</span>
+        <span class="status-value status-wait" id="stat-init">確認中...</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Auth モジュール</span>
+        <span class="status-value status-wait" id="stat-auth">確認中...</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">プロジェクトID</span>
+        <span class="status-value" id="stat-project">-</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">現在のドメイン</span>
+        <span class="status-value" id="stat-domain">-</span>
+      </div>
+    </div>
+
+    <!-- ログイン操作 -->
+    <div class="card">
+      <span class="badge">STEP 2</span>
+      <h2>Google ログインテスト</h2>
+
+      <div id="logged-out-panel">
+        <p style="font-size:13px; color:#666; margin:0 0 12px;">
+          下のボタンをタップして Google アカウントでログインしてください。
+        </p>
+        <button class="btn btn-google" id="btn-login" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+            <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+            <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+            <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+            <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+          </svg>
+          Google でログイン
+        </button>
+      </div>
+
+      <div id="logged-in-panel" style="display:none;">
+        <div class="user-profile">
+          <img id="user-photo" class="user-avatar" src="" alt="">
+          <div class="user-info">
+            <div class="user-name" id="user-name">-</div>
+            <div class="user-email" id="user-email">-</div>
+          </div>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Firebase UID</span>
+          <span class="status-value" id="user-uid" style="font-size:11px;">-</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">ログイン方式</span>
+          <span class="status-value" id="user-provider">-</span>
+        </div>
+        <button class="btn btn-danger" id="btn-logout" style="margin-top:16px;">
+          ログアウト
+        </button>
+      </div>
+    </div>
+
+    <!-- ログ表示 -->
+    <div class="card">
+      <span class="badge">LOG</span>
+      <h2>実行ログ</h2>
+      <div class="log" id="log"></div>
+      <button class="btn btn-primary" id="btn-clear-log" style="margin-top:12px; padding:8px; font-size:13px;">
+        ログクリア
+      </button>
+    </div>
+
+    <div class="footer-note">
+      このページは Firebase Auth の疎通確認専用です。<br>
+      本番機能には影響しません。<br>
+      本番アプリへ戻る → <a href="./" style="color:#fff; text-decoration:underline;">index.html</a>
+    </div>
+  </div>
+
+  <!-- ==== Firebase SDK (v12.16.0 as module) ==== -->
+  <script type="module">
+    // ---- ログユーティリティ ----
+    const logEl = document.getElementById('log');
+    function log(msg, level='info') {
+      const ts = new Date().toLocaleTimeString('ja-JP');
+      const span = document.createElement('div');
+      span.className = 'log-' + level;
+      span.textContent = `[${ts}] ${msg}`;
+      logEl.appendChild(span);
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(`[fb-test][${level}]`, msg);
+    }
+    function setStatus(id, text, cls) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = 'status-value ' + (cls || '');
+    }
+
+    document.getElementById('btn-clear-log').addEventListener('click', () => {
+      logEl.innerHTML = '';
+      log('ログをクリアしました', 'info');
+    });
+
+    log('=== Firebase Auth テスト開始 ===', 'info');
+    log(`URL: ${location.href}`, 'info');
+    log(`Domain: ${location.hostname}`, 'info');
+    setStatus('stat-domain', location.hostname);
+
+    // ---- Firebase 設定 ----
+    const firebaseConfig = {
+      apiKey: "AIzaSyBC31Nhc_QWi7PKqSfxT6U1in3F-9Vf95w",
+      authDomain: "gland-golf.firebaseapp.com",
+      projectId: "gland-golf",
+      storageBucket: "gland-golf.firebasestorage.app",
+      messagingSenderId: "328605356763",
+      appId: "1:328605356763:web:a7f929f0153b3466d772fe"
+    };
+    setStatus('stat-project', firebaseConfig.projectId);
+
+    // ---- Firebase SDK 動的 import ----
+    let app, auth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged;
+
+    try {
+      log('Firebase SDK を読み込み中... (v12.16.0)', 'info');
+      const appMod = await import('https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js');
+      const authMod = await import('https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js');
+      log('SDK モジュール取得成功', 'ok');
+      setStatus('stat-sdk', '✅ OK', 'status-ok');
+
+      const { initializeApp } = appMod;
+      ({ GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = authMod);
+      const { getAuth } = authMod;
+
+      log('Firebase 初期化中...', 'info');
+      app = initializeApp(firebaseConfig);
+      log(`Firebase App 初期化成功: ${app.name}`, 'ok');
+      setStatus('stat-init', '✅ OK', 'status-ok');
+
+      auth = getAuth(app);
+      auth.languageCode = 'ja';
+      log('Auth モジュール取得成功', 'ok');
+      setStatus('stat-auth', '✅ OK', 'status-ok');
+
+      document.getElementById('btn-login').disabled = false;
+      log('準備完了。ログインボタンを押してください。', 'ok');
+
+    } catch (err) {
+      log(`初期化エラー: ${err.message}`, 'err');
+      setStatus('stat-sdk', '❌ 失敗', 'status-ng');
+      console.error(err);
+      return;
+    }
+
+    // ---- Auth 状態監視 ----
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        log(`✅ ログイン検出: ${user.displayName || '(名前なし)'}`, 'ok');
+        log(`   UID: ${user.uid}`, 'info');
+        log(`   Email: ${user.email || '(取得不可)'}`, 'info');
+
+        document.getElementById('logged-out-panel').style.display = 'none';
+        document.getElementById('logged-in-panel').style.display = 'block';
+        document.getElementById('user-name').textContent = user.displayName || '(名前未設定)';
+        document.getElementById('user-email').textContent = user.email || '(メールなし)';
+        document.getElementById('user-uid').textContent = user.uid.slice(0,20) + '...';
+        document.getElementById('user-photo').src = user.photoURL || '';
+
+        const providerId = user.providerData?.[0]?.providerId || 'unknown';
+        document.getElementById('user-provider').textContent = providerId;
+      } else {
+        log('未ログイン状態', 'warn');
+        document.getElementById('logged-out-panel').style.display = 'block';
+        document.getElementById('logged-in-panel').style.display = 'none';
+      }
+    });
+
+    // ---- ログインボタン ----
+    document.getElementById('btn-login').addEventListener('click', async () => {
+      log('Google ログイン開始...', 'info');
+      const btn = document.getElementById('btn-login');
+      btn.disabled = true;
+      btn.textContent = 'ログイン中...';
+
+      try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        const result = await signInWithPopup(auth, provider);
+        log(`ログイン成功: ${result.user.displayName}`, 'ok');
+      } catch (err) {
+        log(`ログインエラー: ${err.code} - ${err.message}`, 'err');
+
+        // エラーコード別の詳細ヘルプ
+        if (err.code === 'auth/unauthorized-domain') {
+          log('→ このドメインが承認済みドメインに登録されていません', 'err');
+          log(`→ Firebase Console → Authentication → 設定 → 承認済みドメインに "${location.hostname}" を追加してください`, 'warn');
+        } else if (err.code === 'auth/popup-blocked') {
+          log('→ ポップアップがブロックされました。ブラウザ設定を確認してください', 'warn');
+        } else if (err.code === 'auth/popup-closed-by-user') {
+          log('→ ユーザーがログインをキャンセルしました', 'warn');
+        } else if (err.code === 'auth/cancelled-popup-request') {
+          log('→ 別のポップアップ処理が進行中です', 'warn');
+        }
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+            <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+            <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+            <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+            <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+          </svg>
+          Google でログイン
+        `;
+      }
+    });
+
+    // ---- ログアウトボタン ----
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      log('ログアウト実行中...', 'info');
+      try {
+        await signOut(auth);
+        log('ログアウト成功', 'ok');
+      } catch (err) {
+        log(`ログアウトエラー: ${err.message}`, 'err');
+      }
+    });
+  </script>
+</body>
+</html>

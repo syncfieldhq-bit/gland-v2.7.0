@@ -1,10 +1,12 @@
 /**
- * G-LAND v2.7.18 - Service Worker
+ * G-LAND v2.8.0-alpha - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * v2.7.18: Phase 2A/2B 履歴機能実装（KPI・フィルタ・詳細画面・BEST演出・Y案保存）
+ * v2.8.0-alpha: Firebase Auth 疎通確認用プロトタイプ
+ *  - firebase-test.html を追加（既存機能への影響なし）
+ *  - Firebase SDK (gstatic.com) はキャッシュしない
  */
-const CACHE_VERSION = 'gland-v2.7.18';
+const CACHE_VERSION = 'gland-v2.8.0-alpha';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -72,6 +74,16 @@ self.addEventListener('fetch', (event) => {
 
   // GAS通信はキャッシュしない
   if (url.hostname.includes('script.google.com')) return;
+
+  // Firebase SDK (gstatic.com) はキャッシュしない（最新版取得のため）
+  if (url.hostname.includes('gstatic.com')) return;
+
+  // Firebase Auth / API 通信はキャッシュしない
+  if (url.hostname.includes('firebaseapp.com')) return;
+  if (url.hostname.includes('googleapis.com')) return;
+
+  // firebase-test.html は毎回ネットワーク優先
+  if (url.pathname.endsWith('firebase-test.html')) return;
 
   // GET のみキャッシュ対象
   if (event.request.method !== 'GET') return;
