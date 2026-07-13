@@ -1600,7 +1600,7 @@
       return {
         userId: p.userId,
         displayName: p.displayName || p.familyName || '?',
-        type: p.type || 'self',
+        type: _getPlayerType(p), // ← 専用の判定ルールに変更！
         filled,
         complete: filled === 18,
       };
@@ -1667,6 +1667,27 @@
         resolve(result);
       };
 
+      // ★追加：同期前後で手入力データを絶対に守る「保護バリア」
+      const safeSync = async () => {
+        // 1. 同期する前に、スマホ内の完璧なデータ（手入力分）を金庫に退避
+        const backupScores = JSON.parse(JSON.stringify(window.glState.get('scores') || {}));
+        
+        // 2. サーバーから最新データを受信（共有プレイヤーのスコアをもらうため）
+        await window.glHistory.syncScoresBeforeSave(roundId, 5000);
+        
+        // 3. 同期後、退避しておいた「自分」と「代理」のスコアだけを強制的に復元して守り抜く
+        const syncedScores = window.glState.get('scores') || {};
+        const players = _getPlayers();
+        players.forEach(p => {
+          const type = _getPlayerType(p);
+          if (type === 'self' || type === 'proxy') {
+            syncedScores[p.userId] = { ...(syncedScores[p.userId] || {}), ...(backupScores[p.userId] || {}) };
+          }
+        });
+        // 守り抜いたデータをシステムに再セット
+        window.glState.set('scores', syncedScores);
+      };
+
       const bindEvents = () => {
         modal.querySelector('[data-cancel]')?.addEventListener('click', () => close(false));
         modal.querySelector('.gl-modal__backdrop')?.addEventListener('click', () => close(false));
@@ -1674,7 +1695,7 @@
         modal.querySelector('[data-refresh]')?.addEventListener('click', async () => {
           const btn = modal.querySelector('[data-refresh]');
           if (btn) { btn.disabled = true; btn.textContent = '同期中...'; }
-          await window.glHistory.syncScoresBeforeSave(roundId, 5000);
+          await safeSync(); // ★安全な同期に変更
           const newStatus = _computeInputStatus();
           modal.innerHTML = renderContent(newStatus);
           bindEvents();
@@ -1684,7 +1705,7 @@
 
       // バックグラウンドで一回同期して内容更新
       setTimeout(async () => {
-        await window.glHistory.syncScoresBeforeSave(roundId, 5000);
+        await safeSync(); // ★安全な同期に変更
         const newStatus = _computeInputStatus();
         if (document.body.contains(modal)) {
           modal.innerHTML = renderContent(newStatus);
