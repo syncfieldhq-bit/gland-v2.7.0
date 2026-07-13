@@ -178,10 +178,20 @@
   const glGate = {
     /**
      * gateを表示（起動時判定）
+     * 【v2.8.0】PWA Install Gate は廃止 → 常に false を返してスキップ
+     * 将来ホーム画面に PWA インストールバナーを実装予定
      */
     show() {
+      // v2.8.0: PWA Install Gate を完全に無効化
+      this.hide();
+      return false;
+    },
+
+    /**
+     * 【v2.8.0 新規】将来のマニュアル呼び出し用（ホームの「PWAにする」ボタンなどから）
+     */
+    showManually() {
       if (_isPWA()) {
-        this.hide();
         return false;
       }
       _injectStyles();

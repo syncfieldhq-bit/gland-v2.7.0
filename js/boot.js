@@ -58,14 +58,13 @@
 
   /**
    * Firebase ログイン後の起動処理
+   *
+   * 【v2.8.0 変更】旧 PWA Install Gate は廃止（ログインに到達できない問題を回避）
+   * → PWA インストール案内は将来ホーム画面に小さなバナーで表示予定
    */
   function _postAuthBoot() {
     try {
-      // 1. Install Gate 判定（PWA でない場合のみ表示）
-      const gateShown = window.glGate.show();
-      if (gateShown) return;
-
-      // 2. Onboarding 判定（プロフィール未登録なら表示）
+      // Onboarding 判定（プロフィール未登録なら表示）
       const onboardingShown = window.glOnboarding.check();
       if (onboardingShown) return;
 
@@ -115,8 +114,10 @@
    * ログイン成功 → auth:changed イベント → _postAuthBoot() 実行
    */
   function _showLoginScreen() {
-    // 既存の Gate / Onboarding を隠す
+    // 既存の Gate を完全非表示（v2.8.0: PWA ゲートは廃止）
     if (window.glGate && window.glGate.hide) window.glGate.hide();
+    const gateEl = document.getElementById('install-gate');
+    if (gateEl) gateEl.style.display = 'none';
 
     // Login 画面表示
     if (window.glAuthUI && window.glAuthUI.show) {
@@ -138,7 +139,16 @@
       // 2. 基盤初期化
       window.glToast._init();
       window.glNet._init();
+      // v2.8.0: glGate._init() は beforeinstallprompt のリスナー登録のみなので保持
       window.glGate._init();
+
+      // 【v2.8.0】旧 PWA Install Gate は表示しない
+      // (将来ホームに PWA インストールバナーを小さく表示予定)
+      const gateEl = document.getElementById('install-gate');
+      if (gateEl) {
+        gateEl.style.display = 'none';
+        gateEl.classList.remove('show');
+      }
 
       // 3. Storage → State 復元
       window.glState.hydrate();
