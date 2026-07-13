@@ -84,17 +84,11 @@
         <div class="gl-gate__panel">
           <div class="gl-gate__icon">📱</div>
           <h3>アプリをインストール</h3>
-          <p>G-LANDをネイティブアプリのように使えます</p>
-          <button class="gl-gate__btn" id="gl-gate-install" data-install-status="waiting">
-            📥 アプリをインストール
-          </button>
-          <div id="gl-gate-fallback" style="display:none;margin-top:12px;font-size:13px;color:#666;text-align:left;">
-            <p style="margin-bottom:6px;">自動インストールができない場合：</p>
-            <ol style="padding-left:24px;margin:0;">
-              <li>Chromeの右上メニュー <b>⋮</b> をタップ</li>
-              <li>「<b>アプリをインストール</b>」を選択</li>
-            </ol>
-          </div>
+          <p>ホーム画面に追加すると、次回から素早く起動できます。</p>
+          <button class="gl-gate__btn" id="gl-gate-install">📥 アプリをインストール</button>
+          <p style="margin-top:12px;font-size:13px;color:#666;">
+            ※ボタンが反応しない場合は、右上メニュー(⋮)から「ホーム画面に追加」を選択してください
+          </p>
         </div>
       `;
     }
@@ -156,10 +150,7 @@
           }
           deferredPrompt = null;
         } else {
-          // v2.7.20: フォールバック案内を表示して導導
-          const fallback = document.getElementById('gl-gate-fallback');
-          if (fallback) fallback.style.display = 'block';
-          window.glToast.warn('メニュー(⋮)から「アプリをインストール」を選択してください');
+          window.glToast.warn('メニュー(⋮)から「ホーム画面に追加」を選択してください');
         }
       });
     }
@@ -215,17 +206,6 @@
 
       _bindEvents(env);
       window.glEvents.emit('gate:shown', env);
-
-      // v2.7.20: 5秒経っても beforeinstallprompt が来ない場合、フォールバック案内を表示（Androidのみ）
-      if (env.isAndroid) {
-        setTimeout(() => {
-          if (!deferredPrompt) {
-            const fallback = document.getElementById('gl-gate-fallback');
-            if (fallback) fallback.style.display = 'block';
-          }
-        }, 5000);
-      }
-
       return true;
     },
 
@@ -249,9 +229,6 @@
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        // v2.7.20: ボタンの状態を「準備完了」に更新
-        const btn = document.getElementById('gl-gate-install');
-        if (btn) btn.setAttribute('data-install-status', 'ready');
       });
 
       window.addEventListener('appinstalled', () => {

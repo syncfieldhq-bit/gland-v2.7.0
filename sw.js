@@ -1,10 +1,10 @@
 /**
- * G-LAND v2.7.20 - Service Worker
+ * G-LAND v2.7.18 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * v2.7.20: 整合性リセット（モーダル管理/自動スクロール/同伴者スコア同期/Gate UX/pendingJoin）
+ * v2.7.18: Phase 2A/2B 履歴機能実装（KPI・フィルタ・詳細画面・BEST演出・Y案保存）
  */
-const CACHE_VERSION = 'gland-v2.7.20';
+const CACHE_VERSION = 'gland-v2.7.18';
 const CORE_ASSETS = [
   './',
   './index.html',

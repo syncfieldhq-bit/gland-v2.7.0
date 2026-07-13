@@ -36,7 +36,6 @@
   let unsubProxies = null;
   let orientationMedia = null;
   let clockTimer = null;
-  let isFirstRender = true; // v2.7.20: 初回レンダリングを判定（自動スクロールの制御）
 
   // 入力パネル関連
   let inputSession = null; // { hole, playerQueue, currentIdx, isEditingPast }
@@ -386,19 +385,6 @@
       .gl-cls-btn-invite { background: #fff; color: #1a5f3f; border: 2px solid #1a5f3f; }
       .gl-cls-btn-line { background: #06c755; color: #fff; }
       .gl-cls-btn-finish { background: #1a5f3f; color: #fff; }
-
-      /* v2.7.20: 現在ホールへフォーカスボタン（フローティング） */
-      .gl-cls-focus-btn {
-        position: fixed; right: 16px; bottom: 82px;
-        width: 48px; height: 48px; border-radius: 50%;
-        background: #1a5f3f; color: #fff; border: none;
-        font-size: 22px; cursor: pointer;
-        box-shadow: 0 4px 12px rgba(26,95,63,.4);
-        z-index: 100;
-        display: flex; align-items: center; justify-content: center;
-        transition: transform .15s;
-      }
-      .gl-cls-focus-btn:active { transform: scale(.92); }
 
       /* ===== 入力パネル内部スタイルのみ（外枠は共通 _panel.js が提供）===== */
       .gl-cls-panel-header {
@@ -1098,18 +1084,11 @@
         <button class="gl-cls-btn-line" data-line>💚 LINE共有</button>
         <button class="gl-cls-btn-finish" data-finish>🏁 終了・保存</button>
       </div>
-
-      <button class="gl-cls-focus-btn" data-focus-current title="現在ホールへ">🎯</button>
     `;
 
     _bindEvents();
     _bindInfoBarEvents();
-
-    // v2.7.20: 初回レンダー時のみ現在ホールへ自動スクロール
-    if (isFirstRender) {
-      _scrollToCurrentHole(currentHole);
-      isFirstRender = false;
-    }
+    _scrollToCurrentHole(currentHole);
   }
 
   function _scrollToCurrentHole(currentHole) {
@@ -1124,29 +1103,8 @@
       const cellWidth = innerWidth / totalCols;
       const scrollerWidth = scroller.clientWidth;
       const targetScroll = colIdx * cellWidth - scrollerWidth / 2 + cellWidth / 2;
-      scroller.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
+      scroller.scrollLeft = Math.max(0, targetScroll);
     }, 50);
-  }
-
-  /**
-   * v2.7.20: スクロール位置を保持しながら再描画
-   * 他プレイヤーのスコア変更などの自動変更ではこちらを使う
-   */
-  function _renderKeepScroll() {
-    // 現在のスクロール位置を記録
-    const oldScroller = document.getElementById('gl-cls-scroll');
-    const savedScrollLeft = oldScroller ? oldScroller.scrollLeft : 0;
-
-    // 再描画（isFirstRender=false なので自動スクロールは走らない）
-    _render();
-
-    // 新しいscrollerに位置を復元
-    requestAnimationFrame(() => {
-      const newScroller = document.getElementById('gl-cls-scroll');
-      if (newScroller && savedScrollLeft > 0) {
-        newScroller.scrollLeft = savedScrollLeft;
-      }
-    });
   }
 
   // ==== イベントバインド ====
@@ -1208,12 +1166,6 @@
     });
     view.querySelector('[data-line]')?.addEventListener('click', _showLineShareModal);
     view.querySelector('[data-finish]')?.addEventListener('click', _finishRound);
-
-    // v2.7.20: 現在ホールへフォーカスボタン
-    view.querySelector('[data-focus-current]')?.addEventListener('click', () => {
-      const currentHole = _computeCurrentHole();
-      _scrollToCurrentHole(currentHole);
-    });
   }
 
   // ==== 入力セッション（自動プレイヤー切替の核心） ====
@@ -1583,127 +1535,10 @@
     return msg;
   }
 
-  // ==== ラウンド終了（v2.7.20: Y案 + 保存前確認ダイアログ） ====
-
-  /**
-   * v2.7.20: 各プレイヤーの入力状況を集計
-   */
-  function _computeInputStatus() {
-    const players = _getPlayers();
-    const scores = window.glState.get('scores') || {};
-    return players.map((p) => {
-      const s = scores[p.userId] || {};
-      let filled = 0;
-      for (let h = 1; h <= 18; h++) {
-        if (s['hole' + h]) filled++;
-      }
-      return {
-        userId: p.userId,
-        displayName: p.displayName || p.familyName || '?',
-        type: p.type || 'self',
-        filled,
-        complete: filled === 18,
-      };
-    });
-  }
-
-  /**
-   * v2.7.20: 保存前の確認ダイアログを表示
-   * @returns {Promise<boolean>} true なら保存実行
-   */
-  async function _showFinishConfirm() {
-    // 保存前にサーバ同期（同伴者の最新スコアを取得）
-    const roundId = window.glState.get('roundId');
-    let syncStatus = '同期しています...';
-
-    return new Promise((resolve) => {
-      const modal = document.createElement('div');
-      modal.className = 'gl-modal show';
-      modal.setAttribute('data-modal-type', 'finish-confirm');
-
-      const renderContent = (status) => {
-        const rows = status.map((s) => {
-          const icon = s.complete ? '✅' : '⚠️';
-          const typeLabel = s.type === 'proxy' ? '代理' : s.type === 'shared' ? '共有' : '自分';
-          return `<tr>
-            <td style="padding:6px 8px;">${_escapeHtml(s.displayName)}<span style="font-size:10px;color:#888;margin-left:4px;">${typeLabel}</span></td>
-            <td style="padding:6px 8px;text-align:right;font-family:monospace;">${s.filled}/18</td>
-            <td style="padding:6px 8px;">${icon}</td>
-          </tr>`;
-        }).join('');
-
-        const allComplete = status.every((s) => s.complete);
-
-        return `
-          <div class="gl-modal__backdrop"></div>
-          <div class="gl-modal__body">
-            <h2 class="gl-modal__title">🏁 保存前の確認</h2>
-            <p style="font-size:13px;color:#666;margin-bottom:8px;">各プレイヤーの入力状況です</p>
-            <table style="width:100%;border-collapse:collapse;font-size:14px;">
-              <tbody>${rows}</tbody>
-            </table>
-            ${allComplete
-              ? '<p style="margin-top:12px;padding:8px;background:#e8f5e9;color:#1a5f3f;border-radius:6px;font-size:13px;">✅ 全員のスコアが揃いました</p>'
-              : '<p style="margin-top:12px;padding:8px;background:#fff8e1;color:#e65100;border-radius:6px;font-size:13px;">⚠️ 未入力のホールがあります。全員のスコアが揃ってから保存することを推奨します</p>'
-            }
-            <div style="display:flex;gap:8px;margin-top:16px;">
-              <button data-refresh style="flex:1;padding:10px;background:#fff;border:1px solid #d5c98c;border-radius:6px;color:#1a5f3f;font-weight:700;cursor:pointer;">🔄 最新取得</button>
-              <button data-cancel style="flex:1;padding:10px;background:#f5f5f5;border:1px solid #ccc;border-radius:6px;color:#666;font-weight:700;cursor:pointer;">キャンセル</button>
-            </div>
-            <button data-save-anyway style="width:100%;padding:12px;margin-top:8px;background:${allComplete ? '#1a5f3f' : '#c9a959'};color:#fff;border:none;border-radius:6px;font-weight:800;font-size:15px;cursor:pointer;">
-              ${allComplete ? '保存する' : 'それでも保存する'}
-            </button>
-          </div>
-        `;
-      };
-
-      // 初回レンダリング（同期前のステータス）
-      const currentStatus = _computeInputStatus();
-      modal.innerHTML = renderContent(currentStatus);
-      document.body.appendChild(modal);
-
-      const close = (result) => {
-        modal.remove();
-        resolve(result);
-      };
-
-      const bindEvents = () => {
-        modal.querySelector('[data-cancel]')?.addEventListener('click', () => close(false));
-        modal.querySelector('.gl-modal__backdrop')?.addEventListener('click', () => close(false));
-        modal.querySelector('[data-save-anyway]')?.addEventListener('click', () => close(true));
-        modal.querySelector('[data-refresh]')?.addEventListener('click', async () => {
-          const btn = modal.querySelector('[data-refresh]');
-          if (btn) { btn.disabled = true; btn.textContent = '同期中...'; }
-          await window.glHistory.syncScoresBeforeSave(roundId, 5000);
-          const newStatus = _computeInputStatus();
-          modal.innerHTML = renderContent(newStatus);
-          bindEvents();
-        });
-      };
-      bindEvents();
-
-      // バックグラウンドで一回同期して内容更新
-      setTimeout(async () => {
-        await window.glHistory.syncScoresBeforeSave(roundId, 5000);
-        const newStatus = _computeInputStatus();
-        if (document.body.contains(modal)) {
-          modal.innerHTML = renderContent(newStatus);
-          bindEvents();
-        }
-      }, 100);
-    });
-  }
-
-  function _escapeHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  // ==== ラウンド終了（v2.7.17: Y案 - 各自の端末で確定・保存） ====
 
   async function _finishRound() {
-    // v2.7.20: 新規確認ダイアログ（入力状況表示 + 最新取得ボタン）
-    const proceed = await _showFinishConfirm();
-    if (!proceed) return;
+    if (!confirm('このラウンドを終了して\n自分のスコアを保存しますか？\n\n※各プレイヤーが個別に保存する仕様です')) return;
 
     const finishBtn = document.querySelector('[data-finish]');
     if (finishBtn) {
@@ -1765,21 +1600,16 @@
     description: '本物のスコアカード風。18ホール横スクロール表示',
 
     show() {
-      isFirstRender = true; // v2.7.20: 画面を開くたびに初回フラグをリセット
       _render();
       document.getElementById('view-score')?.classList.add('show');
       window.glState.set('phase', 'S6');
 
-      // v2.7.20: スクロール位置を保持しながら再描画
-      unsubScores = window.glState.subscribe('scores', () => _renderKeepScroll());
-      unsubPlayers = window.glState.subscribe('players', () => _renderKeepScroll());
-      unsubProxies = window.glState.subscribe('proxyPlayers', () => _renderKeepScroll());
+      unsubScores = window.glState.subscribe('scores', () => _render());
+      unsubPlayers = window.glState.subscribe('players', () => _render());
+      unsubProxies = window.glState.subscribe('proxyPlayers', () => _render());
 
       orientationMedia = window.matchMedia('(orientation: landscape)');
-      this._orientationHandler = () => {
-        isFirstRender = true; // 画面回転時は自動スクロールをリセット
-        _render();
-      };
+      this._orientationHandler = () => _render();
       orientationMedia.addEventListener('change', this._orientationHandler);
 
       _startClockTimer();
