@@ -165,12 +165,15 @@
       window.glNet._init();
       window.glGate._init();
 
-      // v2.8.0-rev5: iOS では Install Gate を強制表示可能に、Android では非表示
+      // v2.8.0-rev6: Install Gate を明示的に非アクティブ化（Onboarding blockage 防止）
       const gateEl = document.getElementById('install-gate');
       if (gateEl) {
         gateEl.style.display = 'none';
         gateEl.classList.remove('show');
       }
+      // ★重要: __glGateActive フラグを false に強制（iOS で Onboarding がブロックされないよう）
+      window.__glGateActive = false;
+      document.body.classList.remove('gl-gate-active');
 
       // 3. Storage → State 復元
       window.glState.hydrate();
