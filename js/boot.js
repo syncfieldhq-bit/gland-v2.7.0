@@ -89,15 +89,8 @@
       const joinCode = params.get('join');
       if (joinCode) {
         window.glRound.setPendingJoin(joinCode.trim().toUpperCase());
-      } else {
-        // ★ v2.7.20: 無料配布URL時、古い pendingJoin をクリア（ゾンビラウンド防止）
-        //   ただし、現在進行中のラウンドがある場合は保持
-        const currentRoundId = window.glState.get('roundId');
-        if (!currentRoundId && window.glRound.clearPendingJoin) {
-          window.glRound.clearPendingJoin();
-          console.log('[boot] cleared stale pendingJoin (no ?join= param)');
-        }
       }
+      // ★ v2.7.20 FIX: pendingJoin の自動クリアを削除（合流バグの原因）
 
       // 7. Install Gate 判定
       const gateShown = window.glGate.show();
