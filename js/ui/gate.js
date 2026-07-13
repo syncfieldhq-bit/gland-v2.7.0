@@ -84,11 +84,17 @@
         <div class="gl-gate__panel">
           <div class="gl-gate__icon">📱</div>
           <h3>アプリをインストール</h3>
-          <p>ホーム画面に追加すると、次回から素早く起動できます。</p>
-          <button class="gl-gate__btn" id="gl-gate-install">📥 アプリをインストール</button>
-          <p style="margin-top:12px;font-size:13px;color:#666;">
-            ※ボタンが反応しない場合は、右上メニュー(⋮)から「ホーム画面に追加」を選択してください
-          </p>
+          <p>G-LANDをネイティブアプリのように使えます</p>
+          <button class="gl-gate__btn" id="gl-gate-install" data-install-status="waiting">
+            📥 アプリをインストール
+          </button>
+          <div id="gl-gate-fallback" style="display:none;margin-top:12px;font-size:13px;color:#666;text-align:left;">
+            <p style="margin-bottom:6px;">自動インストールができない場合：</p>
+            <ol style="padding-left:24px;margin:0;">
+              <li>Chromeの右上メニュー <b>⋮</b> をタップ</li>
+              <li>「<b>アプリをインストール</b>」を選択</li>
+            </ol>
+          </div>
         </div>
       `;
     }
@@ -150,7 +156,10 @@
           }
           deferredPrompt = null;
         } else {
-          window.glToast.warn('メニュー(⋮)から「ホーム画面に追加」を選択してください');
+          // v2.7.20: フォールバック案内を表示して導導
+          const fallback = document.getElementById('gl-gate-fallback');
+          if (fallback) fallback.style.display = 'block';
+          window.glToast.warn('メニュー(⋮)から「アプリをインストール」を選択してください');
         }
       });
     }
@@ -178,53 +187,10 @@
   const glGate = {
     /**
      * gateを表示（起動時判定）
-     *
-     * 【v2.8.0-rev4】プラットフォーム別の分岐
-     *   Android: 強制表示しないが、マニュアル呼び出しは可（showManually）
-     *   iOS Safari: 強制表示しない（ホームのバナーから呼ぶ）
-     *   iOS PWA: 既に PWA なのでスキップ
-     *
-     * → 起動直後には表示しないが、ホーム画面に小さな「インストール」ボタンを表示できるようにする
      */
     show() {
-      // 自動表示はしない（ホーム画面のバナーから手動で）
-      return false;
-    },
-
-    /**
-     * 【v2.8.0-rev4】PWA インストール可能か判定
-     */
-    canInstall() {
-      if (_isPWA()) return false;
-      const env = _detectEnv();
-      // Android Chrome は beforeinstallprompt が発火していればインストール可
-      if (env.isAndroid && deferredPrompt) return true;
-      // iOS Safari は手動で「共有→ホーム画面に追加」を案内できる
-      if (env.isIOS && env.isSafari) return true;
-      return false;
-    },
-
-    /**
-     * 【v2.8.0-rev4】Android で beforeinstallprompt を直接トリガー
-     */
-    async triggerNativeInstall() {
-      if (!deferredPrompt) return false;
-      try {
-        deferredPrompt.prompt();
-        const result = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        return result && result.outcome === 'accepted';
-      } catch (err) {
-        console.error('[gate] triggerNativeInstall failed:', err);
-        return false;
-      }
-    },
-
-    /**
-     * 【v2.8.0 新規】ホーム画面の「インストール」ボタンから呼ばれる（ガイダンス画面を表示）
-     */
-    showManually() {
       if (_isPWA()) {
+        this.hide();
         return false;
       }
       _injectStyles();
@@ -249,6 +215,17 @@
 
       _bindEvents(env);
       window.glEvents.emit('gate:shown', env);
+
+      // v2.7.20: 5秒経っても beforeinstallprompt が来ない場合、フォールバック案内を表示（Androidのみ）
+      if (env.isAndroid) {
+        setTimeout(() => {
+          if (!deferredPrompt) {
+            const fallback = document.getElementById('gl-gate-fallback');
+            if (fallback) fallback.style.display = 'block';
+          }
+        }, 5000);
+      }
+
       return true;
     },
 
@@ -272,6 +249,9 @@
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
+        // v2.7.20: ボタンの状態を「準備完了」に更新
+        const btn = document.getElementById('gl-gate-install');
+        if (btn) btn.setAttribute('data-install-status', 'ready');
       });
 
       window.addEventListener('appinstalled', () => {

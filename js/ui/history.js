@@ -656,103 +656,8 @@
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
   }
 
-  // ===== v2.8.0: 履歴閉覧前の必須項目チェック =====
-  function _ensureFullProfile() {
-    if (!window.glProfile || !window.glProfile.getMissingForHistory) return true;
-    const missing = window.glProfile.getMissingForHistory();
-    if (missing.length === 0) return true;
-    _showProfileCompletionModal(missing);
-    return false;
-  }
-
-  function _escHist(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
-
-  function _showProfileCompletionModal(missing) {
-    const stored = window.glProfile.getStored();
-    const existing = document.getElementById('gl-history-profile-modal');
-    if (existing) existing.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'gl-history-profile-modal';
-    modal.style.cssText = 'position:fixed;inset:0;z-index:9700;display:block;';
-    modal.innerHTML = `
-      <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-      <div style="position:relative;margin:8vh auto 0;max-width:460px;background:#fff;border-radius:16px;padding:24px 22px;box-shadow:0 12px 40px rgba(0,0,0,.3);max-height:85vh;overflow-y:auto;">
-        <h2 style="font-size:18px;font-weight:700;color:#1a5f3f;margin:0 0 6px;">履歴を見るには追加情報が必要です</h2>
-        <p style="font-size:13px;color:#666;margin:0 0 16px;">
-          以下の項目を入力して保存してください。<br>
-          <span style="font-size:11px;color:#999;">（マイページからいつでも変更できます）</span>
-        </p>
-        ${missing.includes('firstName') ? `
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">名（漢字）<span style="color:#f44336;">*</span></label>
-            <input type="text" id="hp-firstName" value="${_escHist(stored.firstName || '')}" placeholder="例: 新一" style="width:100%;padding:12px 14px;font-size:16px;border:2px solid #ddd;border-radius:8px;box-sizing:border-box;" autocomplete="given-name">
-          </div>` : ''}
-        ${missing.includes('firstKana') ? `
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">名（ひらがな）<span style="color:#f44336;">*</span></label>
-            <input type="text" id="hp-firstKana" value="${_escHist(stored.firstKana || '')}" placeholder="例: しんいち" style="width:100%;padding:12px 14px;font-size:16px;border:2px solid #ddd;border-radius:8px;box-sizing:border-box;">
-          </div>` : ''}
-        ${missing.includes('nickname') ? `
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">ニックネーム<span style="color:#f44336;">*</span></label>
-            <input type="text" id="hp-nickname" value="${_escHist(stored.nickname || '')}" placeholder="例: しんちゃん" style="width:100%;padding:12px 14px;font-size:16px;border:2px solid #ddd;border-radius:8px;box-sizing:border-box;">
-          </div>` : ''}
-        <button id="hp-save" style="width:100%;padding:14px;margin-top:8px;background:#1a5f3f;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;">保存して履歴を見る</button>
-        <button id="hp-cancel" style="width:100%;padding:10px;margin-top:8px;background:transparent;color:#666;border:none;font-size:13px;cursor:pointer;">キャンセル（ホームへ戻る）</button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('hp-cancel').addEventListener('click', () => {
-      modal.remove();
-      window.glEvents.emit('ui:navigate', { view: 'home' });
-    });
-
-    document.getElementById('hp-save').addEventListener('click', async () => {
-      const patch = {};
-      if (missing.includes('firstName')) {
-        const v = (document.getElementById('hp-firstName').value || '').trim();
-        if (!v) { window.glToast.warn('名（漢字）を入力してください'); return; }
-        patch.firstName = v;
-      }
-      if (missing.includes('firstKana')) {
-        const v = (document.getElementById('hp-firstKana').value || '').trim();
-        if (!v) { window.glToast.warn('名（ひらがな）を入力してください'); return; }
-        patch.firstKana = v;
-      }
-      if (missing.includes('nickname')) {
-        const v = (document.getElementById('hp-nickname').value || '').trim();
-        if (!v) { window.glToast.warn('ニックネームを入力してください'); return; }
-        patch.nickname = v;
-      }
-
-      const btn = document.getElementById('hp-save');
-      btn.disabled = true;
-      btn.textContent = '保存中...';
-
-      try {
-        await window.glProfile.update(patch);
-        window.glToast.success('プロフィールを更新しました');
-        modal.remove();
-        glHistoryUI.show();
-      } catch (err) {
-        btn.disabled = false;
-        btn.textContent = '保存して履歴を見る';
-        window.glErrors.handle(err, { context: 'historyProfile.update' });
-      }
-    });
-  }
-
   const glHistoryUI = {
     show() {
-      // v2.8.0: 履歴閉覧には 5項目全て必須
-      if (!_ensureFullProfile()) return;
-
       _injectStyles();
       const view = document.getElementById('view-history');
       if (!view) return;
@@ -770,7 +675,6 @@
       document.getElementById('view-history')?.classList.remove('show');
     },
     showDetail(roundId) {
-      if (!_ensureFullProfile()) return;
       _injectStyles();
       currentDetailId = roundId;
       const view = document.getElementById('view-history');

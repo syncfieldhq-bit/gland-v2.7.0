@@ -122,55 +122,16 @@
     document.head.appendChild(style);
   }
 
-  function _renderInstallBanner() {
-    // すでに PWA として起動している場合は非表示
-    if (!window.glGate || !window.glGate.canInstall || !window.glGate.canInstall()) {
-      return '';
-    }
-    // 一旦閉じた場合は 1日非表示
-    try {
-      const hiddenUntil = parseInt(window.glStorage.readLocal('gl_install_banner_hidden_until_v1') || '0', 10);
-      if (hiddenUntil && Date.now() < hiddenUntil) return '';
-    } catch (e) {}
-    const ua = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua);
-    const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
-    const isAndroid = /Android/.test(ua);
-
-    let label = '📱 アプリとしてインストール';
-    let sub = 'フルスクリーンで快適に使えます';
-    if (isIOS && isSafari) {
-      sub = 'ホーム画面に追加（手順を見る）';
-    } else if (isAndroid) {
-      sub = 'アプリ化してフルスクリーンで使う';
-    }
-
-    return `
-      <div class="gl-home__install-banner" id="gl-install-banner">
-        <button class="gl-home__install-btn" data-install-app>
-          <div class="gl-home__install-label">${label}</div>
-          <div class="gl-home__install-sub">${sub}</div>
-        </button>
-        <button class="gl-home__install-close" data-install-close aria-label="閉じる">×</button>
-      </div>
-    `;
-  }
-
   function _render() {
     _injectStyles();
-    _injectInstallBannerStyles();
     const view = document.getElementById('view-home');
     if (!view) return;
-
-    const installBanner = _renderInstallBanner();
 
     view.innerHTML = `
       <div class="gl-home__header">
         <div class="gl-home__logo">G-LAND</div>
         <div class="gl-home__tagline">ゴルフスコア共有アプリ</div>
       </div>
-
-      ${installBanner}
 
       <div class="gl-home__menu">
         <button class="gl-home__btn gl-home__btn--primary" data-nav="golf" type="button">
@@ -220,73 +181,6 @@
     // 広告カルーセルをマウント
     const adSlot = document.getElementById('ad-slot-home');
     if (adSlot && window.glAdsUI) window.glAdsUI.mount(adSlot, 'home');
-
-    // 【v2.8.0-rev4】インストールバナーイベント
-    const installBtn = view.querySelector('[data-install-app]');
-    if (installBtn) {
-      installBtn.addEventListener('click', async () => {
-        const ua = navigator.userAgent;
-        const isAndroid = /Android/.test(ua);
-
-        if (isAndroid && window.glGate.triggerNativeInstall) {
-          // Android: ネイティブインストールプロンプト
-          const accepted = await window.glGate.triggerNativeInstall();
-          if (accepted) {
-            document.getElementById('gl-install-banner')?.remove();
-            window.glToast?.success('インストールしました！ホーム画面から起動できます');
-          }
-        } else {
-          // iOS Safari: ガイダンス画面を表示
-          window.glGate.showManually();
-        }
-      });
-    }
-    const closeBtn = view.querySelector('[data-install-close]');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => {
-        document.getElementById('gl-install-banner')?.remove();
-        // 1日非表示（localStorage）
-        try {
-          const until = Date.now() + 24 * 60 * 60 * 1000;
-          window.glStorage.writeLocal('gl_install_banner_hidden_until_v1', String(until));
-        } catch (e) {}
-      });
-    }
-  }
-
-  function _injectInstallBannerStyles() {
-    if (document.getElementById('gl-home-install-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-home-install-styles';
-    style.textContent = `
-      .gl-home__install-banner {
-        display: flex; align-items: stretch;
-        margin: 0 0 16px; border-radius: 12px;
-        background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-        border: 1px solid #ffcc80;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,.08);
-      }
-      .gl-home__install-btn {
-        flex: 1; padding: 12px 16px;
-        background: none; border: none; cursor: pointer;
-        text-align: left;
-      }
-      .gl-home__install-label {
-        font-size: 14px; font-weight: 700; color: #333;
-        margin-bottom: 2px;
-      }
-      .gl-home__install-sub {
-        font-size: 11px; color: #666;
-      }
-      .gl-home__install-close {
-        width: 40px; padding: 0;
-        background: none; border: none; cursor: pointer;
-        font-size: 22px; color: #999;
-      }
-      .gl-home__install-close:hover { color: #333; }
-    `;
-    document.head.appendChild(style);
   }
 
   /**

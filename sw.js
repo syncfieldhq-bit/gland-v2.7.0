@@ -1,12 +1,10 @@
 /**
- * G-LAND v2.8.0 - Service Worker
+ * G-LAND v2.7.20 - Service Worker
  * ==============================
- * v2.8.0: Firebase Authentication (Google Sign-In) 導入
- *  - Firebase SDK モジュール (gstatic.com) は非キャッシュ
- *  - Google OAuth 通信 (googleapis.com, firebaseapp.com) は非キャッシュ
- *  - v2.8.0 新規ファイル: js/core/firebase.js, js/domain/auth.js, js/ui/auth.js
+ * Cache-first with network fallback.
+ * v2.7.20: 整合性リセット（モーダル管理/自動スクロール/同伴者スコア同期/Gate UX/pendingJoin）
  */
-const CACHE_VERSION = 'gland-v2.8.0-rev5';
+const CACHE_VERSION = 'gland-v2.7.20';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -21,8 +19,6 @@ const CORE_ASSETS = [
   './js/core/net.js',
   './js/core/errors.js',
   './js/core/queue.js',
-  './js/core/firebase.js',
-  './js/domain/auth.js',
   './js/domain/profile.js',
   './js/domain/round.js',
   './js/domain/score.js',
@@ -31,8 +27,6 @@ const CORE_ASSETS = [
   './js/domain/ads.js',
   './js/ui/_debugbar.js',
   './js/ui/toast.js',
-  './js/ui/loading.js',
-  './js/ui/auth.js',
   './js/ui/gate.js',
   './js/ui/onboarding.js',
   './js/ui/ads.js',
@@ -51,6 +45,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
       .then((cache) => {
+        // 個別追加でエラー耐性確保
+        // icon-512.png が未配置の環境でも他のアセットは正しくキャッシュされる
         return Promise.all(
           CORE_ASSETS.map((url) =>
             cache.add(url).catch((err) => {
@@ -74,16 +70,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // GAS 通信は非キャッシュ
+  // GAS通信はキャッシュしない
   if (url.hostname.includes('script.google.com')) return;
-
-  // Firebase SDK (gstatic) は非キャッシュ（常に最新取得）
-  if (url.hostname.includes('gstatic.com')) return;
-
-  // Firebase Auth / API 通信は非キャッシュ
-  if (url.hostname.includes('firebaseapp.com')) return;
-  if (url.hostname.includes('googleapis.com')) return;
-  if (url.hostname.includes('identitytoolkit')) return;
 
   // GET のみキャッシュ対象
   if (event.request.method !== 'GET') return;

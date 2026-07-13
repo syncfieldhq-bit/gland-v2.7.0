@@ -1,13 +1,8 @@
 /**
- * G-LAND GAS v2.8.0 - Database Layer
+ * G-LAND GAS v2.7.0 - Database Layer
  * ==================================
  * スプレッドシートへの全I/Oを集約。
  * 列参照は必ず _colIdx() 経由（タイポ即エラー化）。
- *
- * v2.8.0 Users スキーマ拡張:
- *   userId | firebaseUid | email | familyName | familyKana | firstName | firstKana | nickname | createdAt | updatedAt
- *   → courseAdjust は廃止（既存シートにあってもエラーにならない）
- *   → firebaseUid, email, nickname カラムを新規追加（自動で初回アクセス時に伸張）
  */
 
 // ==== ID生成ヘルパー ====
@@ -30,48 +25,26 @@ function _genGroupCode() {
 
 // ==== Users ====
 
-/**
- * Users シートのスキーマを自動拡張（v2.8.0 新カラムを必要なら追加）
- * 既存シートへの後方互換性を保つ
- */
-function _ensureUsersSchema() {
-  const sheet = _sheet('Users');
-  const lastCol = sheet.getLastColumn();
-  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  const needed = ['firebaseUid', 'email', 'nickname'];
-  const toAdd = needed.filter(function (h) { return headers.indexOf(h) === -1; });
-  if (toAdd.length === 0) return headers;
-  for (var i = 0; i < toAdd.length; i++) {
-    sheet.getRange(1, lastCol + 1 + i).setValue(toAdd[i]);
-  }
-  return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-}
-
 function dbCreateUser(params) {
-  var familyName = params.familyName;
-  var familyKana = params.familyKana;
-  var firstName = params.firstName;
-  var firstKana = params.firstKana;
-  var nickname = params.nickname;
-  var firebaseUid = params.firebaseUid;
-  var email = params.email;
+  const familyName = params.familyName;
+  const familyKana = params.familyKana;
+  const firstName = params.firstName;
+  const firstKana = params.firstKana;
+  const courseAdjust = params.courseAdjust;
 
-  var sheet = _sheet('Users');
-  var headers = _ensureUsersSchema();
-  var userId = _genId('U');
-  var now = new Date().toISOString();
+  const sheet = _sheet('Users');
+  const userId = _genId('U');
+  const now = new Date().toISOString();
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
-  var row = headers.map(function (h) {
+  const row = headers.map((h) => {
     switch (h) {
       case 'userId': return userId;
-      case 'firebaseUid': return firebaseUid || '';
-      case 'email': return email || '';
       case 'familyName': return familyName || '';
       case 'familyKana': return familyKana || '';
       case 'firstName': return firstName || '';
       case 'firstKana': return firstKana || '';
-      case 'nickname': return nickname || '';
-      case 'courseAdjust': return ''; // 廃止（既存シート互換）
+      case 'courseAdjust': return courseAdjust || '';
       case 'createdAt': return now;
       case 'updatedAt': return now;
       default: return '';
@@ -81,51 +54,33 @@ function dbCreateUser(params) {
   return userId;
 }
 
-/**
- * v2.8.0: Firebase UID で先に検索（主キー）、なければフォールバック
- */
-function dbFindUserByFirebaseUid(firebaseUid) {
-  if (!firebaseUid) return null;
-  _ensureUsersSchema();
-  var sheet = _sheet('Users');
-  var rows = _allRowsAsObjects(sheet);
-  return rows.find(function (r) { return r.firebaseUid === firebaseUid; }) || null;
-}
-
 function dbFindUserByProfile(familyName, familyKana) {
-  var sheet = _sheet('Users');
-  var rows = _allRowsAsObjects(sheet);
-  return rows.find(function (r) { return r.familyName === familyName && r.familyKana === familyKana; }) || null;
+  const sheet = _sheet('Users');
+  const rows = _allRowsAsObjects(sheet);
+  return rows.find((r) => r.familyName === familyName && r.familyKana === familyKana) || null;
 }
 
 function dbGetUser(userId) {
-  var sheet = _sheet('Users');
-  var rows = _allRowsAsObjects(sheet);
-  return rows.find(function (r) { return r.userId === userId; }) || null;
+  const sheet = _sheet('Users');
+  const rows = _allRowsAsObjects(sheet);
+  return rows.find((r) => r.userId === userId) || null;
 }
 
 function dbUpdateUser(userId, patch) {
-  _ensureUsersSchema();
-  var sheet = _sheet('Users');
-  var lastRow = sheet.getLastRow();
+  const sheet = _sheet('Users');
+  const lastRow = sheet.getLastRow();
   if (lastRow < 2) return false;
 
-  var userIdCol = _colIdx(sheet, 'userId');
-  var updatedAtCol = _colIdx(sheet, 'updatedAt');
-  var ids = sheet.getRange(2, userIdCol, lastRow - 1, 1).getValues().map(function (r) { return r[0]; });
-  var idx = ids.indexOf(userId);
+  const userIdCol = _colIdx(sheet, 'userId');
+  const updatedAtCol = _colIdx(sheet, 'updatedAt');
+  const ids = sheet.getRange(2, userIdCol, lastRow - 1, 1).getValues().map((r) => r[0]);
+  const idx = ids.indexOf(userId);
   if (idx === -1) return false;
 
-  var row = idx + 2;
-  var updatableFields = ['firebaseUid', 'email', 'familyName', 'familyKana', 'firstName', 'firstKana', 'nickname'];
-  updatableFields.forEach(function (field) {
+  const row = idx + 2;
+  ['familyName', 'familyKana', 'firstName', 'firstKana', 'courseAdjust'].forEach((field) => {
     if (patch[field] !== undefined) {
-      try {
-        var colIdx = _colIdx(sheet, field);
-        sheet.getRange(row, colIdx).setValue(patch[field]);
-      } catch (e) {
-        // カラム未存在ならスキップ
-      }
+      sheet.getRange(row, _colIdx(sheet, field)).setValue(patch[field]);
     }
   });
   sheet.getRange(row, updatedAtCol).setValue(new Date().toISOString());

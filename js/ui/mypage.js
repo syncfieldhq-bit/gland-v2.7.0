@@ -1,13 +1,12 @@
 /**
- * G-LAND v2.8.0 - MyPage View UI
+ * G-LAND v2.7.0 - MyPage View UI
  * ==============================
  * プロフィール表示・編集モーダル・バージョン表示（最下部）
- * v2.8.0: Firebase アカウント情報 + ニックネーム項目を追加、ログアウトボタン
  */
 (function () {
   'use strict';
 
-  const VERSION_LABEL = 'v2.8.0-rev5 (build: 20260713)';
+  const VERSION_LABEL = 'v2.7.0 (build: 20260709)';
 
   function _injectStyles() {
     if (document.getElementById('gl-mypage-styles')) return;
@@ -66,12 +65,6 @@
     document.head.appendChild(style);
   }
 
-  function _esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
-
   function _render() {
     _injectStyles();
     const view = document.getElementById('view-mypage');
@@ -79,45 +72,23 @@
 
     const p = window.glProfile.getStored();
     const userId = p.userId || '未発行';
-    const authUser = window.glAuth && window.glAuth.getUser ? window.glAuth.getUser() : null;
 
-    const row = (label, value, isRequired) => {
-      const requiredMark = isRequired && !value
-        ? '<span style="color:#f44336;font-size:11px;margin-left:6px;">履歴閉覧に必須</span>'
-        : '';
-      return `<div class="gl-mypage__row">
-        <span class="gl-mypage__label">${label}${requiredMark}</span>
-        <span class="gl-mypage__value ${value ? '' : 'gl-mypage__value--empty'}">${_esc(value) || '（未設定）'}</span>
+    const row = (label, value) =>
+      `<div class="gl-mypage__row">
+        <span class="gl-mypage__label">${label}</span>
+        <span class="gl-mypage__value ${value ? '' : 'gl-mypage__value--empty'}">${value || '（未設定）'}</span>
       </div>`;
-    };
-
-    const firebaseCard = authUser ? `
-      <div class="gl-mypage__card">
-        <div style="font-size:14px;font-weight:700;color:#1a5f3f;margin-bottom:8px;">🔥 Google アカウント</div>
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
-          ${authUser.photoURL ? `<img src="${_esc(authUser.photoURL)}" style="width:40px;height:40px;border-radius:50%;" alt="">` : ''}
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:14px;font-weight:600;">${_esc(authUser.displayName || '(名前なし)')}</div>
-            <div style="font-size:11px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(authUser.email || '')}</div>
-          </div>
-        </div>
-        <button data-logout style="width:100%;padding:10px;margin-top:8px;background:#fff;color:#d32f2f;border:1px solid #d32f2f;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">🚪 ログアウト</button>
-      </div>
-    ` : '';
 
     view.innerHTML = `
       <button class="gl-round__back" data-back>← ホームへ戻る</button>
       <h1 class="gl-mypage__title">👤 マイページ</h1>
 
-      ${firebaseCard}
-
       <div class="gl-mypage__card">
-        <div style="font-size:14px;font-weight:700;color:#1a5f3f;margin-bottom:8px;">プロフィール</div>
-        ${row('姓（漢字）', p.familyName, false)}
-        ${row('姓（ひらがな）', p.familyKana, false)}
-        ${row('名（漢字）', p.firstName, true)}
-        ${row('名（ひらがな）', p.firstKana, true)}
-        ${row('ニックネーム', p.nickname, true)}
+        ${row('苗字（漢字）', p.familyName)}
+        ${row('苗字（ひらがな）', p.familyKana)}
+        ${row('名前（漢字）', p.firstName)}
+        ${row('名前（ひらがな）', p.firstKana)}
+        ${row('コース調整値', p.courseAdjust)}
       </div>
 
       <button class="gl-btn-primary" data-edit>✏️ プロフィールを編集</button>
@@ -129,21 +100,10 @@
       </div>
 
       <div class="gl-mypage__card" style="margin-top:14px;font-size:12px;color:#888;">
-        <div>ユーザーID: <span style="font-family:monospace;">${_esc(userId)}</span></div>
-        ${authUser ? `<div style="margin-top:4px;">Firebase UID: <span style="font-family:monospace;font-size:10px;">${_esc((authUser.uid || '').slice(0,16))}...</span></div>` : ''}
+        <div>ユーザーID: <span style="font-family:monospace;">${userId}</span></div>
       </div>
 
       <div id="ad-slot-mypage"></div>
-
-      <!-- 【v2.8.0-rev5】非常時の復旧ボタン -->
-      <div class="gl-mypage__card" style="margin-top:14px;background:#fffbf0;border:1px solid #ffcc80;">
-        <div style="font-size:13px;font-weight:700;color:#d84315;margin-bottom:6px;">⚠️ もしアプリの調子が悪い場合</div>
-        <div style="font-size:11px;color:#666;line-height:1.5;margin-bottom:10px;">
-          不具合が続く場合は、アプリをリセットして新規登録からやり直してください。<br>
-          （クラウド保存された履歴データは消えません）
-        </div>
-        <button data-reset-app style="width:100%;padding:10px;background:#fff;color:#d84315;border:1px solid #d84315;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">🔄 アプリをリセットしてユーザー登録をやり直す</button>
-      </div>
 
       <div class="gl-mypage__version">${VERSION_LABEL}</div>
     `;
@@ -153,50 +113,7 @@
     });
     view.querySelector('[data-edit]').addEventListener('click', () => _showEditModal());
 
-    const logoutBtn = view.querySelector('[data-logout]');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        if (!confirm('ログアウトしますか？\n\nもう一度ログインすればデータは復元されます。')) return;
-        try {
-          await window.glAuth.signOut();
-          window.glToast.success('ログアウトしました。再読み込みします...');
-          setTimeout(() => location.reload(), 800);
-        } catch (err) {
-          window.glToast.error('ログアウトに失敗しました');
-        }
-      });
-    }
-
     _renderThemeOptions();
-
-    // 【v2.8.0-rev5】アプリリセットボタン
-    const resetBtn = view.querySelector('[data-reset-app]');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        if (!confirm('アプリをリセットしますか？\n\n・プロフィール入力やり直し\n・ローカルデータ全削除\n\n※クラウドの履歴データは残ります')) return;
-        try {
-          // localStorage 全削除
-          try {
-            const keys = [];
-            for (let i = 0; i < localStorage.length; i++) {
-              const k = localStorage.key(i);
-              if (k && (k.startsWith('gl_') || k.startsWith('firebase:'))) keys.push(k);
-            }
-            keys.forEach(k => localStorage.removeItem(k));
-          } catch (e) {}
-          // sessionStorage もクリア
-          try { sessionStorage.clear(); } catch (e) {}
-          // Service Worker のキャッシュもクリア
-          if ('caches' in window) {
-            caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
-          }
-          if (window.glLoading) window.glLoading.show('リセット中...');
-          setTimeout(() => location.reload(), 500);
-        } catch (err) {
-          alert('リセットに失敗しました: ' + (err.message || err));
-        }
-      });
-    }
 
     const adSlot = document.getElementById('ad-slot-mypage');
     if (adSlot) window.glAdsUI.mount(adSlot, 'mypage');
@@ -237,32 +154,29 @@
     const p = window.glProfile.getStored();
     const wrap = document.createElement('div');
     wrap.className = 'gl-modal show';
-    wrap.style.zIndex = '9700';
     wrap.innerHTML = `
       <div class="gl-modal__backdrop"></div>
       <div class="gl-modal__body">
         <h2 class="gl-modal__title">プロフィール編集</h2>
-        <p style="font-size:12px;color:#999;margin:0 0 12px;">スコア・履歴に表示される情報を編集できます。</p>
         <div class="gl-form__group">
-          <label class="gl-form__label">姓（漢字）<span style="color:#f44336;">*</span></label>
-          <input class="gl-form__input" id="ed-family-name" value="${_esc(p.familyName || '')}">
+          <label class="gl-form__label">苗字（漢字）</label>
+          <input class="gl-form__input" id="ed-family-name" value="${p.familyName || ''}">
         </div>
         <div class="gl-form__group">
-          <label class="gl-form__label">姓（ひらがな）<span style="color:#f44336;">*</span></label>
-          <input class="gl-form__input" id="ed-family-kana" value="${_esc(p.familyKana || '')}">
+          <label class="gl-form__label">苗字（ひらがな）</label>
+          <input class="gl-form__input" id="ed-family-kana" value="${p.familyKana || ''}">
         </div>
         <div class="gl-form__group">
-          <label class="gl-form__label">名（漢字）<span style="color:#f44336;font-size:11px;">履歴閉覧時必須</span></label>
-          <input class="gl-form__input" id="ed-first-name" value="${_esc(p.firstName || '')}">
+          <label class="gl-form__label">名前（漢字）</label>
+          <input class="gl-form__input" id="ed-first-name" value="${p.firstName || ''}">
         </div>
         <div class="gl-form__group">
-          <label class="gl-form__label">名（ひらがな）<span style="color:#f44336;font-size:11px;">履歴閉覧時必須</span></label>
-          <input class="gl-form__input" id="ed-first-kana" value="${_esc(p.firstKana || '')}">
+          <label class="gl-form__label">名前（ひらがな）</label>
+          <input class="gl-form__input" id="ed-first-kana" value="${p.firstKana || ''}">
         </div>
         <div class="gl-form__group">
-          <label class="gl-form__label">ニックネーム<span style="color:#f44336;font-size:11px;">履歴閉覧時必須</span></label>
-          <input class="gl-form__input" id="ed-nickname" value="${_esc(p.nickname || '')}" placeholder="例: しんちゃん">
-          <div style="font-size:11px;color:#999;margin-top:4px;">ホーム画面やマイページで使用します</div>
+          <label class="gl-form__label">コース調整値（任意）</label>
+          <input class="gl-form__input" id="ed-adjust" value="${p.courseAdjust || ''}" placeholder="例: -2">
         </div>
         <button class="gl-btn-primary" data-save>保存</button>
         <button style="width:100%;padding:12px;margin-top:8px;background:none;border:none;color:#666;" data-cancel>キャンセル</button>
@@ -280,10 +194,10 @@
         familyKana: document.getElementById('ed-family-kana').value.trim(),
         firstName: document.getElementById('ed-first-name').value.trim(),
         firstKana: document.getElementById('ed-first-kana').value.trim(),
-        nickname: document.getElementById('ed-nickname').value.trim(),
+        courseAdjust: document.getElementById('ed-adjust').value.trim(),
       };
       if (!patch.familyName || !patch.familyKana) {
-        window.glToast.warn('姓（漢字・ひらがな）は必須です');
+        window.glToast.warn('苗字は必須です');
         return;
       }
       await window.glProfile.update(patch);

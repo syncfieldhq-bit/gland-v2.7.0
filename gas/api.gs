@@ -1,11 +1,8 @@
 /**
- * G-LAND GAS v2.8.0 - API Handlers
+ * G-LAND GAS v2.7.0 - API Handlers
  * ================================
  * doPost からディスパッチされる全アクション実装。
  * DB操作は必ず db.gs 経由（列名は _colIdx() で解決）。
- *
- * v2.8.0: Firebase UID を主キーとしたユーザー同一性判定を導入。
- * 同一 Firebase UID なら同一 userId を返す → 端末差のない復元が可能に。
  */
 
 const _API_HANDLERS = {
@@ -37,55 +34,23 @@ function _apiPing() {
 function _apiRegisterUser(p) {
   const familyName = String(p.familyName || '').trim();
   const familyKana = String(p.familyKana || '').trim();
-  const firebaseUid = String(p.firebaseUid || '').trim();
-  const email = String(p.email || '').trim();
   if (!familyName || !familyKana) return _ng('familyName and familyKana required');
 
   return _withWriteLock(function () {
-    // v2.8.0: まず Firebase UID で検索（主キー）
-    if (firebaseUid) {
-      const byUid = dbFindUserByFirebaseUid(firebaseUid);
-      if (byUid) {
-        // 既存ユーザーで、苗字/メールに変更があれば更新
-        const patch = { familyName: familyName, familyKana: familyKana };
-        if (email) patch.email = email;
-        try { dbUpdateUser(byUid.userId, patch); } catch (e) {}
-        return _ok({ userId: byUid.userId, reused: true, matchedBy: 'firebaseUid' });
-      }
-    }
-
-    // フォールバック: 苗字+よみで検索（v2.7 互換）
+    // 既存ユーザーの検索
     const existing = dbFindUserByProfile(familyName, familyKana);
-    if (existing) {
-      // Firebase UID を付与（同一人物と推定される場合の復元）
-      if (firebaseUid && !existing.firebaseUid) {
-        const patch = { firebaseUid: firebaseUid };
-        if (email) patch.email = email;
-        try { dbUpdateUser(existing.userId, patch); } catch (e) {}
-      }
-      return _ok({ userId: existing.userId, reused: true, matchedBy: 'profile' });
-    }
+    if (existing) return _ok({ userId: existing.userId, reused: true });
 
-    const userId = dbCreateUser({
-      familyName: familyName,
-      familyKana: familyKana,
-      firebaseUid: firebaseUid,
-      email: email,
-    });
-    return _ok({ userId: userId });
+    const userId = dbCreateUser({ familyName, familyKana });
+    return _ok({ userId });
   });
 }
 
 function _apiUpdateUser(p) {
   const userId = String(p.userId || '').trim();
   if (!userId) return _ng('userId required');
-  // ノイズフィールドを除外して渡す
-  const patch = {};
-  ['firebaseUid', 'email', 'familyName', 'familyKana', 'firstName', 'firstKana', 'nickname'].forEach(function (k) {
-    if (p[k] !== undefined) patch[k] = p[k];
-  });
-  dbUpdateUser(userId, patch);
-  return _ok({ userId: userId, updated: true });
+  dbUpdateUser(userId, p);
+  return _ok({ userId, updated: true });
 }
 
 // ==== Round ====

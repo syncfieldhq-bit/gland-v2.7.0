@@ -1,17 +1,11 @@
 /**
- * G-LAND v2.8.0 - Profile Domain
+ * G-LAND v2.7.0 - Profile Domain
  * ==============================
- * Firebase UID を主キーとしたユーザープロフィール管理。
+ * 楽観的UI: 入力→即localStorage保存→UI遷移→バックグラウンドでGAS登録
+ * ゲスト合流時 (?join=) のみ userId 発行を同期待ちする
  *
- * 【2段階入力設計】
- *   初回登録（必須2項目）: familyName, familyKana
- *     → スコア入力・同伴プレイヤー表示に必要
- *   履歴閲覧時（追加3項目）: firstName, firstKana, nickname
- *     → 履歴詳細を見る時までに揃える
- *
- * 【表示ルール】
- *   スコアカード / 履歴: familyName（姓）
- *   ホーム / マイページ: nickname（未入力時は familyName でフォールバック）
+ * 必須項目: familyName（漢字）+ familyKana（ひらがな） 2項目のみ
+ * 任意項目: firstName, firstKana, courseAdjust
  */
 (function () {
   'use strict';
@@ -22,8 +16,6 @@
     familyKana: 'gl_profile_lastNameKana',
     firstName: 'gl_profile_firstName',
     firstKana: 'gl_profile_firstNameKana',
-    nickname: 'gl_profile_nickname',
-    // 旧: courseAdjust は廃止（v2.7 まで互換）
     courseAdjust: 'gl_profile_courseAdjust',
   };
 
@@ -35,7 +27,7 @@
       familyKana: s.readTriple(KEYS.familyKana),
       firstName: s.readTriple(KEYS.firstName),
       firstKana: s.readTriple(KEYS.firstKana),
-      nickname: s.readTriple(KEYS.nickname),
+      courseAdjust: s.readTriple(KEYS.courseAdjust),
     };
   }
 
@@ -45,22 +37,12 @@
     if (profile.familyKana !== undefined) s.writeTriple(KEYS.familyKana, profile.familyKana || '');
     if (profile.firstName !== undefined) s.writeTriple(KEYS.firstName, profile.firstName || '');
     if (profile.firstKana !== undefined) s.writeTriple(KEYS.firstKana, profile.firstKana || '');
-    if (profile.nickname !== undefined) s.writeTriple(KEYS.nickname, profile.nickname || '');
-  }
-
-  function _firebaseUid() {
-    return window.glAuth && window.glAuth.getUid ? window.glAuth.getUid() : null;
-  }
-
-  function _firebaseEmail() {
-    const u = window.glAuth && window.glAuth.getUser ? window.glAuth.getUser() : null;
-    return u ? u.email : '';
+    if (profile.courseAdjust !== undefined) s.writeTriple(KEYS.courseAdjust, String(profile.courseAdjust || ''));
   }
 
   const glProfile = {
     /**
-     * 初回登録（必須2項目: familyName, familyKana）
-     * Firebase UID を GAS に送り、userId を紐付ける
+     * 初回登録（楽観的UI）
      * @param {Object} data - {familyName, familyKana}
      * @param {Object} opts - {syncWait: boolean} ゲスト合流時はtrue
      * @returns {Promise<{userId, optimistic}>}
@@ -82,20 +64,11 @@
 
       // 2. GAS登録
       const existingUserId = window.glStorage.readTriple(KEYS.userId);
-      const firebaseUid = _firebaseUid();
-      const email = _firebaseEmail();
-
-      const registerPayload = {
-        familyName: fn,
-        familyKana: fk,
-        firebaseUid,
-        email,
-      };
 
       if (opts.syncWait) {
         // ゲスト合流フロー: userId 発行を同期待ち
         try {
-          const result = await window.glandApi.registerUser(registerPayload);
+          const result = await window.glandApi.registerUser({ familyName: fn, familyKana: fk });
           const userId = result?.userId || existingUserId;
           if (userId) {
             window.glStorage.writeTriple(KEYS.userId, userId);
@@ -112,7 +85,7 @@
       // 通常フロー: バックグラウンド登録
       (async () => {
         try {
-          const result = await window.glandApi.registerUser(registerPayload);
+          const result = await window.glandApi.registerUser({ familyName: fn, familyKana: fk });
           const userId = result?.userId;
           if (userId) {
             window.glStorage.writeTriple(KEYS.userId, userId);
@@ -122,7 +95,7 @@
         } catch (err) {
           // バックグラウンド失敗時はキューへ
           window.glErrors.handle(err, { silent: true, context: 'register.bg' });
-          window.glQueue.enqueue('updateUser', registerPayload);
+          window.glQueue.enqueue('updateUser', { familyName: fn, familyKana: fk });
         }
       })();
 
@@ -131,7 +104,6 @@
 
     /**
      * プロフィール更新（既存ユーザー）
-     * 5項目のうち任意項目をマージ更新
      */
     async update(profile) {
       const stored = _getStored();
@@ -150,12 +122,7 @@
 
       // バックグラウンド送信 or キュー
       try {
-        await window.glandApi.updateUser({
-          userId,
-          firebaseUid: _firebaseUid(),
-          email: _firebaseEmail(),
-          ...profile,
-        });
+        await window.glandApi.updateUser({ userId, ...profile });
         return { ok: true };
       } catch (err) {
         window.glErrors.handle(err, { silent: true, context: 'update.bg' });
@@ -165,8 +132,7 @@
     },
 
     /**
-     * 最低限の必須項目が揃っているか（合流可否・スコア入力可否）
-     * = 姓 + 姓のよみがな
+     * 最低限の必須項目が揃っているか（合流可否判定）
      */
     isMinimum() {
       const s = _getStored();
@@ -174,24 +140,11 @@
     },
 
     /**
-     * 履歴閲覧に必要な全項目が揃っているか
-     * = 姓 + 姓よみ + 名 + 名よみ + ニックネーム
+     * 5項目全て揃っているか（ラウンド保存時の判定）
      */
     isFull() {
       const s = _getStored();
-      return !!(s.familyName && s.familyKana && s.firstName && s.firstKana && s.nickname);
-    },
-
-    /**
-     * 履歴閲覧時に不足している項目のキーを返す（プロンプトUI用）
-     */
-    getMissingForHistory() {
-      const s = _getStored();
-      const missing = [];
-      if (!s.firstName) missing.push('firstName');
-      if (!s.firstKana) missing.push('firstKana');
-      if (!s.nickname) missing.push('nickname');
-      return missing;
+      return !!(s.familyName && s.familyKana && s.firstName && s.firstKana && s.courseAdjust);
     },
 
     getStored() {
@@ -200,38 +153,6 @@
 
     getUserId() {
       return window.glStorage.readTriple(KEYS.userId);
-    },
-
-    /**
-     * 表示名を取得
-     *
-     * 呼び出しパターン1: getDisplayName('home')  → 自分のニックネームまたは姓
-     * 呼び出しパターン2: getDisplayName(playerObject)  → プレイヤーの姓（同伴プレイヤー対応）
-     *
-     * 【重要】player オブジェクトが渡された場合は、自分ではなくそのプレイヤーの名前を返す
-     */
-    getDisplayName(arg) {
-      // 引数なし or 文字列としての context
-      if (arg == null || typeof arg === 'string') {
-        const context = arg || 'score';
-        const s = _getStored();
-        if (context === 'home' || context === 'mypage') {
-          return s.nickname || s.familyName || 'ゲスト';
-        }
-        return s.familyName || 'ゲスト';
-      }
-
-      // player オブジェクトが渡された場合
-      const player = arg;
-      // 自分のユーザーID と一致する場合 → 自分のプロフィールから取得
-      const myUserId = window.glStorage.readTriple(KEYS.userId);
-      if (myUserId && player.userId === myUserId) {
-        const s = _getStored();
-        return s.familyName || player.familyName || player.displayName || 'ゲスト';
-      }
-
-      // 同伴プレイヤー → そのプレイヤーの familyName / displayName を返す
-      return player.familyName || player.displayName || player.name || 'ゲスト';
     },
   };
 
