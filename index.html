@@ -37,7 +37,7 @@
     // 例: window.GLAND_GAS_URL = 'https://script.google.com/macros/s/AKfyc.../exec';
     // ここが空のままだとユーザー登録・ラウンド保存が全て失敗します
     // ================================================================
-    window.GLAND_GAS_URL = 'https://script.google.com/macros/s/AKfycbz3XtpkVhh_kA2YAzT2K3ujyzHWFwNZcmDX8SoP3ULiPqwMHRs7U0Q_618ODPlsns37/exec';
+    window.GLAND_GAS_URL = '';
 
     // GAS URL 未設定時の警告表示（デプロイミス防止）
     if (!window.GLAND_GAS_URL) {
@@ -52,6 +52,9 @@
 
   <!-- QRコード生成ライブラリ（招待用） -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+
+  <!-- Firebase Auth (v2.8.0より導入) - ES Moduleとして先行ロード -->
+  <script type="module" src="./js/core/firebase.js"></script>
 </head>
 <body>
 
@@ -80,6 +83,7 @@
   <script src="js/api.js"></script>
 
   <!-- Layer 3: Domain -->
+  <script src="js/domain/auth.js"></script>
   <script src="js/domain/profile.js"></script>
   <script src="js/domain/round.js"></script>
   <script src="js/domain/score.js"></script>
@@ -90,6 +94,7 @@
   <!-- Layer 4: UI -->
   <script src="js/ui/_debugbar.js"></script>
   <script src="js/ui/toast.js"></script>
+  <script src="js/ui/auth.js"></script>
   <script src="js/ui/gate.js"></script>
   <script src="js/ui/onboarding.js"></script>
   <script src="js/ui/ads.js"></script>

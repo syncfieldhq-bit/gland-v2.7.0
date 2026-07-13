@@ -1,10 +1,12 @@
 /**
- * G-LAND v2.7.0 - Onboarding UI (修正版: 真っ白化バグ解消)
- * =======================================================
- * 修正点:
- *   - 登録完了後の遷移を「emit + 直接呼出」の二重化で確実化
- *   - モーダル要素を完全に DOM から除去（残留による重なり防止）
- *   - 履歴同期を裏で実行（次画面表示を止めない）
+ * G-LAND v2.8.0 - Onboarding UI
+ * =============================
+ * Firebase Google ログイン後の初回プロフィール登録画面。
+ * 必須 2項目：姓（漢字）、姓（ひらがな）
+ *   → この2項目でスコア入力・同伴プレイヤーとしての展开が可能
+ * ?join= 経由の未登録ゲストは強制表示 → 登録後に自動合流
+ *
+ * 残り3項目（名、名よみ、ニックネーム）は履歴閉覧時に history.js が入力を促す。
  */
 (function () {
   'use strict';
@@ -55,83 +57,42 @@
       document.body.appendChild(modalEl);
     }
 
-    const title = isJoinFlow ? '合流には登録が必要です' : 'ようこそ G-LAND へ';
+    const authUser = window.glAuth && window.glAuth.getUser ? window.glAuth.getUser() : null;
+    const greetingLine = authUser && authUser.displayName
+      ? `<div style="font-size:12px;color:#666;margin-bottom:12px;">ログイン中: ${_esc(authUser.displayName)}${authUser.email ? ' （' + _esc(authUser.email) + '）' : ''}</div>`
+      : '';
+    const title = isJoinFlow ? '合流には名前の登録が必要です' : 'ようこそ G-LAND へ';
     const sub = isJoinFlow
       ? 'お名前を登録してからスコアカードに参加します'
-      : 'まずはお名前を教えてください（変更は後からできます）';
+      : 'スコアカードに表示するお名前を教えてください（変更は後からできます）';
 
     modalEl.innerHTML = `
       <div class="gl-modal__backdrop"></div>
       <div class="gl-modal__body">
         <h2 class="gl-modal__title">${title}</h2>
         <p class="gl-modal__sub">${sub}</p>
+        ${greetingLine}
         <div class="gl-form__group">
-          <label class="gl-form__label">苗字（漢字）<span style="color:#f44336;">*</span></label>
-          <input type="text" class="gl-form__input" id="ob-family-name" placeholder="例: 田中" autocomplete="family-name">
+          <label class="gl-form__label">姓（漢字）<span style="color:#f44336;">*</span></label>
+          <input type="text" class="gl-form__input" id="ob-family-name" placeholder="例: 佐藤" autocomplete="family-name">
         </div>
         <div class="gl-form__group">
-          <label class="gl-form__label">苗字（ひらがな）<span style="color:#f44336;">*</span></label>
-          <input type="text" class="gl-form__input" id="ob-family-kana" placeholder="例: たなか">
+          <label class="gl-form__label">姓（ひらがな）<span style="color:#f44336;">*</span></label>
+          <input type="text" class="gl-form__input" id="ob-family-kana" placeholder="例: さとう">
           <div class="gl-form__hint">ひらがなでご入力ください</div>
+        </div>
+        <div style="font-size:11px;color:#999;margin:8px 0 12px;line-height:1.5;">
+          （名やニックネームは、あとで履歴を見る時に入力します）
         </div>
         <button class="gl-btn-primary" id="ob-submit">登録して${isJoinFlow ? '合流' : '始める'}</button>
       </div>
     `;
 
     modalEl.classList.add('show');
+    // 背景クリック禁止（データ欠損防止）
 
     const submitBtn = document.getElementById('ob-submit');
     submitBtn.addEventListener('click', () => _handleSubmit(isJoinFlow));
-  }
-
-  /**
-   * ⭐【修正】モーダルを完全に DOM から除去
-   * classList.remove だけだと z-index が残って次画面を覆う恐れがある
-   */
-  function _destroyModal() {
-    if (modalEl) {
-      modalEl.classList.remove('show');
-      // 次の描画サイクルで DOM から完全除去
-      setTimeout(() => {
-        if (modalEl && modalEl.parentNode) {
-          modalEl.parentNode.removeChild(modalEl);
-        }
-        modalEl = null;
-      }, 50);
-    }
-  }
-
-  /**
-   * ⭐【修正】ビュー遷移を「emit + 直接呼出」で二重化
-   * emit で通常フローを走らせ、購読者がいなかった場合は直接 __glNavigate を呼ぶ
-   */
-  function _safeNavigate(view) {
-    try {
-      window.glEvents.emit('ui:navigate', { view });
-    } catch (e) {
-      console.warn('[onboarding] emit failed, direct fallback:', e);
-    }
-
-    // フォールバック: 少し待ってからビューが表示されているか検査、なければ強制表示
-    setTimeout(() => {
-      const el = document.getElementById('view-' + view);
-      if (!el || !el.classList.contains('show')) {
-        console.warn('[onboarding] view not shown after emit, forcing direct call');
-        if (typeof window.__glNavigate === 'function') {
-          window.__glNavigate(view);
-        } else {
-          // 最終フォールバック: 個別に呼出
-          const map = {
-            home: window.glHome,
-            golf: window.glRoundUI,
-            score: window.glScoreUI,
-            history: window.glHistoryUI,
-            mypage: window.glMyPageUI,
-          };
-          if (map[view]?.show) map[view].show();
-        }
-      }
-    }, 100);
   }
 
   async function _handleSubmit(isJoinFlow) {
@@ -139,7 +100,7 @@
     const familyKana = (document.getElementById('ob-family-kana').value || '').trim();
 
     if (!familyName || !familyKana) {
-      window.glToast.warn('苗字と ひらがな を入力してください');
+      window.glToast.warn('姓と ひらがな を入力してください');
       return;
     }
 
@@ -148,63 +109,63 @@
     btn.textContent = '登録中...';
 
     try {
-      await window.glProfile.register(
+      const result = await window.glProfile.register(
         { familyName, familyKana },
-        { syncWait: isJoinFlow }
+        { syncWait: isJoinFlow } // 合流フローのみ userId 発行を待つ
       );
 
-      // ⭐ モーダル完全除去
-      _destroyModal();
+      // モーダルを静かに閉じる（アラート出さず）
+      modalEl.classList.remove('show');
 
       if (isJoinFlow) {
+        // pendingJoin があれば自動合流
         const pendingCode = window.glRound.getPendingJoin();
         if (pendingCode) {
           window.glToast.info('スコアカードに合流中...');
           try {
             await window.glRound.join(pendingCode);
             window.glToast.success('合流しました');
-            _safeNavigate('golf');
+            window.glEvents.emit('ui:navigate', { view: 'golf' });
           } catch (err) {
             window.glErrors.handle(err, { context: 'onboarding.autoJoin' });
-            // 合流失敗時も home へフォールバック
-            _safeNavigate('home');
           }
-        } else {
-          _safeNavigate('home');
         }
       } else {
-        // ⭐ 通常フロー: 履歴同期は裏で（画面表示を止めない）
-        if (window.glProfile.getUserId() && navigator.onLine) {
-          window.glHistory.syncFromServer().catch(() => {});
-        }
-        _safeNavigate('home');
+        window.glEvents.emit('ui:navigate', { view: 'home' });
       }
     } catch (err) {
       btn.disabled = false;
-      btn.textContent = isJoinFlow ? '登録して合流' : '登録して始める';
+      btn.textContent = '登録して始める';
       window.glErrors.handle(err, { context: 'onboarding.submit' });
     }
   }
 
   const glOnboarding = {
+    /**
+     * 起動時判定 → 必要なら表示
+     */
     check() {
-      if (window.glGate.isActive()) return;
+      // v2.8.0: Firebase 未ログインなら Onboarding はスキップ
+      if (window.glAuth && !window.glAuth.isLoggedIn()) return false;
+      if (window.glGate && window.glGate.isActive && window.glGate.isActive()) return false;
 
       const isRegistered = window.glProfile.isMinimum();
       const pendingJoin = window.glRound.getPendingJoin();
 
       if (!isRegistered) {
+        // 未登録 → 必ず表示（?join= 有無問わず）
         _render(!!pendingJoin);
         return true;
       }
 
       if (pendingJoin) {
+        // 登録済み + pendingJoin → 自動合流
         (async () => {
           try {
             window.glToast.info('スコアカードに合流中...');
             await window.glRound.join(pendingJoin);
             window.glToast.success('合流しました');
-            _safeNavigate('golf');
+            window.glEvents.emit('ui:navigate', { view: 'golf' });
           } catch (err) {
             window.glErrors.handle(err, { context: 'onboarding.autoJoinDirect' });
           }
@@ -214,10 +175,19 @@
       return false;
     },
 
+    /**
+     * 手動表示（gate.js 完了後などから）
+     */
     showRegistration(isJoinFlow) {
       _render(isJoinFlow || false);
     },
   };
+
+  function _esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
   window.glOnboarding = glOnboarding;
 })();

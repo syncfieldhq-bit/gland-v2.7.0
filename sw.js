@@ -1,12 +1,12 @@
 /**
- * G-LAND v2.8.0-alpha - Service Worker
+ * G-LAND v2.8.0 - Service Worker
  * ==============================
- * Cache-first with network fallback.
- * v2.8.0-alpha: Firebase Auth 疎通確認用プロトタイプ
- *  - firebase-test.html を追加（既存機能への影響なし）
- *  - Firebase SDK (gstatic.com) はキャッシュしない
+ * v2.8.0: Firebase Authentication (Google Sign-In) 導入
+ *  - Firebase SDK モジュール (gstatic.com) は非キャッシュ
+ *  - Google OAuth 通信 (googleapis.com, firebaseapp.com) は非キャッシュ
+ *  - v2.8.0 新規ファイル: js/core/firebase.js, js/domain/auth.js, js/ui/auth.js
  */
-const CACHE_VERSION = 'gland-v2.8.0-alpha';
+const CACHE_VERSION = 'gland-v2.8.0';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -21,6 +21,8 @@ const CORE_ASSETS = [
   './js/core/net.js',
   './js/core/errors.js',
   './js/core/queue.js',
+  './js/core/firebase.js',
+  './js/domain/auth.js',
   './js/domain/profile.js',
   './js/domain/round.js',
   './js/domain/score.js',
@@ -29,6 +31,7 @@ const CORE_ASSETS = [
   './js/domain/ads.js',
   './js/ui/_debugbar.js',
   './js/ui/toast.js',
+  './js/ui/auth.js',
   './js/ui/gate.js',
   './js/ui/onboarding.js',
   './js/ui/ads.js',
@@ -47,8 +50,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
       .then((cache) => {
-        // 個別追加でエラー耐性確保
-        // icon-512.png が未配置の環境でも他のアセットは正しくキャッシュされる
         return Promise.all(
           CORE_ASSETS.map((url) =>
             cache.add(url).catch((err) => {
@@ -72,18 +73,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // GAS通信はキャッシュしない
+  // GAS 通信は非キャッシュ
   if (url.hostname.includes('script.google.com')) return;
 
-  // Firebase SDK (gstatic.com) はキャッシュしない（最新版取得のため）
+  // Firebase SDK (gstatic) は非キャッシュ（常に最新取得）
   if (url.hostname.includes('gstatic.com')) return;
 
-  // Firebase Auth / API 通信はキャッシュしない
+  // Firebase Auth / API 通信は非キャッシュ
   if (url.hostname.includes('firebaseapp.com')) return;
   if (url.hostname.includes('googleapis.com')) return;
-
-  // firebase-test.html は毎回ネットワーク優先
-  if (url.pathname.endsWith('firebase-test.html')) return;
+  if (url.hostname.includes('identitytoolkit')) return;
 
   // GET のみキャッシュ対象
   if (event.request.method !== 'GET') return;

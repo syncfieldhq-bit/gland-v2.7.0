@@ -1,14 +1,17 @@
 /**
- * G-LAND v2.7.0 - Bootstrap
+ * G-LAND v2.8.0 - Bootstrap
  * =========================
- * 起動シーケンスと画面遷移ルーター。
- * 初期化失敗時はフォールバックUI（ロゴ+再読み込みボタン）を表示。
+ * 【新起動フロー】
+ *   1. Firebase Auth 初期化を待つ
+ *   2. Firebase 未ログイン → glAuthUI (Google ログイン画面) を表示
+ *   3. Firebase ログイン済み → PWA Gate 判定 → Onboarding 判定 → ホーム
+ *
+ * 起動時のエラーはフォールバックUIを表示する。
  */
 (function () {
   'use strict';
 
   // ===== GAS URL 設定 =====
-  // ⚠️ 本番デプロイ時は index.html 内の window.GLAND_GAS_URL を更新
   window.GLAND_GAS_URL = window.GLAND_GAS_URL || '';
 
   function _showFallbackUI(errorMsg) {
@@ -38,7 +41,6 @@
   }
 
   function _navigate(view) {
-    // 全ビュー非表示
     ['home', 'golf', 'score', 'history', 'mypage'].forEach((v) => {
       const el = document.getElementById('view-' + v);
       if (el) el.classList.remove('show');
@@ -54,6 +56,76 @@
     }
   }
 
+  /**
+   * Firebase ログイン後の起動処理
+   */
+  function _postAuthBoot() {
+    try {
+      // 1. Install Gate 判定（PWA でない場合のみ表示）
+      const gateShown = window.glGate.show();
+      if (gateShown) return;
+
+      // 2. Onboarding 判定（プロフィール未登録なら表示）
+      const onboardingShown = window.glOnboarding.check();
+      if (onboardingShown) return;
+
+      // 3. 履歴同期（バックグラウンド）
+      if (window.glProfile.getUserId() && navigator.onLine) {
+        window.glHistory.syncFromServer();
+      }
+
+      // 4. 初期画面表示
+      _navigate('home');
+
+      // 5. ?join= からの自動合流
+      const pending = window.glRound.getPendingJoin && window.glRound.getPendingJoin();
+      if (pending && window.glProfile.getUserId()) {
+        const currentRound = window.glState.get('roundId');
+        if (!currentRound) {
+          setTimeout(async () => {
+            try {
+              console.log('[boot] auto-joining with code:', pending);
+              await window.glRound.join(pending);
+              window.glToast?.success('ラウンドに合流しました');
+            } catch (err) {
+              console.error('[boot] auto-join failed:', err);
+              const msg = (err && err.message) ? err.message : '不明なエラー';
+              window.glToast?.error('合流に失敗しました: ' + msg);
+              window.glRound.clearPendingJoin && window.glRound.clearPendingJoin();
+            } finally {
+              if (window.history && window.history.replaceState) {
+                window.history.replaceState({}, '', location.pathname);
+              }
+            }
+          }, 500);
+        } else {
+          window.glRound.clearPendingJoin && window.glRound.clearPendingJoin();
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, '', location.pathname);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[boot] postAuth error:', err);
+    }
+  }
+
+  /**
+   * Firebase 未ログイン時: ログイン画面を表示
+   * ログイン成功 → auth:changed イベント → _postAuthBoot() 実行
+   */
+  function _showLoginScreen() {
+    // 既存の Gate / Onboarding を隠す
+    if (window.glGate && window.glGate.hide) window.glGate.hide();
+
+    // Login 画面表示
+    if (window.glAuthUI && window.glAuthUI.show) {
+      window.glAuthUI.show();
+    } else {
+      console.error('[boot] glAuthUI not available');
+    }
+  }
+
   async function _boot() {
     try {
       // 1. Service Worker 登録
@@ -63,7 +135,7 @@
         });
       }
 
-      // 2. Toast/Net/Gate 初期化
+      // 2. 基盤初期化
       window.glToast._init();
       window.glNet._init();
       window.glGate._init();
@@ -71,7 +143,7 @@
       // 3. Storage → State 復元
       window.glState.hydrate();
 
-      // 3.5. ナビゲーション購読（最優先：Gate/Onboardingで return しても確実に登録される）
+      // 3.5. ナビゲーション購読
       window.glEvents.on('ui:navigate', (data) => {
         _navigate(data?.view || 'home');
       });
@@ -91,26 +163,39 @@
         window.glRound.setPendingJoin(joinCode.trim().toUpperCase());
       }
 
-      // 7. Install Gate 判定
-      const gateShown = window.glGate.show();
-      if (gateShown) {
-        return; // gate表示中はここで停止
+      // 7. Firebase Auth 初期化を待つ（最大 8 秒でタイムアウト）
+      const authReady = window.glAuth
+        ? Promise.race([
+            window.glAuth.ready(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('auth timeout')), 8000)),
+          ]).catch((err) => {
+            console.warn('[boot] auth ready failed:', err.message);
+            return null;
+          })
+        : Promise.resolve(null);
+
+      await authReady;
+
+      // 8. Firebase ログイン状態で分岐
+      if (!window.glAuth || !window.glAuth.isLoggedIn()) {
+        _showLoginScreen();
+        // ログイン成功時に post-auth ブートを走らせる
+        if (window.glAuth) {
+          const unsub = window.glAuth.onChange((user) => {
+            if (user && user.uid) {
+              unsub();
+              if (window.glAuthUI && window.glAuthUI.hide) window.glAuthUI.hide();
+              _postAuthBoot();
+            }
+          });
+        }
+        return; // ここで一旦停止
       }
 
-      // 8. Onboarding 判定
-      const onboardingShown = window.glOnboarding.check();
-      if (onboardingShown) {
-        return; // 登録待ち
-      }
+      // 9. ログイン済み → 通常起動
+      _postAuthBoot();
 
-      // 9. 履歴同期（起動時のみ・バックグラウンド）
-      if (window.glProfile.getUserId() && navigator.onLine) {
-        window.glHistory.syncFromServer();
-      }
-
-      // 10. （旧）ナビゲーション購読→ 3.5 へ移動済み
-
-      // 11. Keep-alive（3分毎の ping）
+      // 10. Keep-alive
       if (window.GLAND_GAS_URL) {
         setInterval(() => {
           if (navigator.onLine) {
@@ -119,57 +204,19 @@
         }, 180000);
       }
 
-      // 12. 初期画面表示
-      _navigate('home');
-
-      // 13. ?join= からの自動合流（QRコード対応）
-      const pending = window.glRound.getPendingJoin && window.glRound.getPendingJoin();
-      if (pending && window.glProfile.getUserId()) {
-        // 既にラウンド中でない場合のみ実行
-        const currentRound = window.glState.get('roundId');
-        if (!currentRound) {
-          setTimeout(async () => {
-            try {
-              console.log('[boot] auto-joining with code:', pending);
-              await window.glRound.join(pending);
-              window.glToast?.success('ラウンドに合流しました');
-            } catch (err) {
-              console.error('[boot] auto-join failed:', err);
-              const msg = (err && err.message) ? err.message : '不明なエラー';
-              window.glToast?.error('合流に失敗しました: ' + msg);
-              // 失敗時は pendingJoin をクリアして再試行を防ぐ
-              window.glRound.clearPendingJoin && window.glRound.clearPendingJoin();
-            } finally {
-              // URL からパラメータを除去（履歴汚染防止）
-              if (window.history && window.history.replaceState) {
-                window.history.replaceState({}, '', location.pathname);
-              }
-            }
-          }, 500);
-        } else {
-          // 既にラウンド中なら pendingJoin だけクリア
-          window.glRound.clearPendingJoin && window.glRound.clearPendingJoin();
-          if (window.history && window.history.replaceState) {
-            window.history.replaceState({}, '', location.pathname);
-          }
-        }
-      }
-
-      console.log('[boot] G-LAND v2.7.0 ready');
+      console.log('[boot] G-LAND v2.8.0 ready');
     } catch (err) {
       console.error('[boot] fatal error:', err);
       _showFallbackUI(err.message || String(err));
     }
   }
 
-  // DOMContentLoaded 待機
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _boot);
   } else {
     _boot();
   }
 
-  // 全体エラーハンドラ
   window.addEventListener('error', (e) => {
     console.error('[global error]', e.error);
   });

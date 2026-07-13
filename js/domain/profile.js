@@ -1,9 +1,17 @@
 /**
- * G-LAND v2.7.0 - Profile Domain (修正版: name 互換フィールド追加)
- * ==============================================================
- * 修正点:
- *   - getStored() に name (= familyName) を自動付与
- *   - buildDisplayName() ヘルパーを追加して他モジュールから利用可能に
+ * G-LAND v2.8.0 - Profile Domain
+ * ==============================
+ * Firebase UID を主キーとしたユーザープロフィール管理。
+ *
+ * 【2段階入力設計】
+ *   初回登録（必須2項目）: familyName, familyKana
+ *     → スコア入力・同伴プレイヤー表示に必要
+ *   履歴閲覧時（追加3項目）: firstName, firstKana, nickname
+ *     → 履歴詳細を見る時までに揃える
+ *
+ * 【表示ルール】
+ *   スコアカード / 履歴: familyName（姓）
+ *   ホーム / マイページ: nickname（未入力時は familyName でフォールバック）
  */
 (function () {
   'use strict';
@@ -14,46 +22,21 @@
     familyKana: 'gl_profile_lastNameKana',
     firstName: 'gl_profile_firstName',
     firstKana: 'gl_profile_firstNameKana',
+    nickname: 'gl_profile_nickname',
+    // 旧: courseAdjust は廃止（v2.7 まで互換）
     courseAdjust: 'gl_profile_courseAdjust',
   };
 
-  /**
-   * ⭐【新規】表示名を統一的に構築するヘルパー
-   * 優先順: displayName > familyName+firstName > familyName > name > 'プレイヤー'
-   * この関数を全モジュールで共通利用することで名前解決の食い違いを根絶
-   */
-  function _buildDisplayName(obj) {
-    if (!obj) return 'プレイヤー';
-    if (obj.displayName && String(obj.displayName).trim()) return String(obj.displayName).trim();
-
-    const fn = (obj.familyName || '').trim();
-    const gn = (obj.firstName || '').trim();
-    if (fn && gn) return `${fn} ${gn}`;
-    if (fn) return fn;
-
-    if (obj.name && String(obj.name).trim()) return String(obj.name).trim();
-    return 'プレイヤー';
-  }
-
   function _getStored() {
     const s = window.glStorage;
-    const familyName = s.readTriple(KEYS.familyName);
-    const familyKana = s.readTriple(KEYS.familyKana);
-    const firstName = s.readTriple(KEYS.firstName);
-    const firstKana = s.readTriple(KEYS.firstKana);
-
-    const stored = {
+    return {
       userId: s.readTriple(KEYS.userId),
-      familyName: familyName,
-      familyKana: familyKana,
-      firstName: firstName,
-      firstKana: firstKana,
-      courseAdjust: s.readTriple(KEYS.courseAdjust),
+      familyName: s.readTriple(KEYS.familyName),
+      familyKana: s.readTriple(KEYS.familyKana),
+      firstName: s.readTriple(KEYS.firstName),
+      firstKana: s.readTriple(KEYS.firstKana),
+      nickname: s.readTriple(KEYS.nickname),
     };
-    // ⭐【修正】name 互換フィールドを自動付与
-    stored.name = _buildDisplayName(stored);
-    stored.displayName = stored.name;
-    return stored;
   }
 
   function _saveToStorage(profile) {
@@ -62,10 +45,26 @@
     if (profile.familyKana !== undefined) s.writeTriple(KEYS.familyKana, profile.familyKana || '');
     if (profile.firstName !== undefined) s.writeTriple(KEYS.firstName, profile.firstName || '');
     if (profile.firstKana !== undefined) s.writeTriple(KEYS.firstKana, profile.firstKana || '');
-    if (profile.courseAdjust !== undefined) s.writeTriple(KEYS.courseAdjust, String(profile.courseAdjust || ''));
+    if (profile.nickname !== undefined) s.writeTriple(KEYS.nickname, profile.nickname || '');
+  }
+
+  function _firebaseUid() {
+    return window.glAuth && window.glAuth.getUid ? window.glAuth.getUid() : null;
+  }
+
+  function _firebaseEmail() {
+    const u = window.glAuth && window.glAuth.getUser ? window.glAuth.getUser() : null;
+    return u ? u.email : '';
   }
 
   const glProfile = {
+    /**
+     * 初回登録（必須2項目: familyName, familyKana）
+     * Firebase UID を GAS に送り、userId を紐付ける
+     * @param {Object} data - {familyName, familyKana}
+     * @param {Object} opts - {syncWait: boolean} ゲスト合流時はtrue
+     * @returns {Promise<{userId, optimistic}>}
+     */
     async register({ familyName, familyKana }, opts = {}) {
       const fn = (familyName || '').trim();
       const fk = (familyKana || '').trim();
@@ -76,23 +75,27 @@
         throw e;
       }
 
+      // 1. 即座にlocalStorageへ保存（楽観的UI）
       _saveToStorage({ familyName: fn, familyKana: fk });
+      window.glState.set('profile', { familyName: fn, familyKana: fk });
+      window.glEvents.emit('profile:updated', { familyName: fn, familyKana: fk });
 
-      // ⭐【修正】state.profile にも name/displayName を含めて保存（下位互換）
-      const profileForState = {
+      // 2. GAS登録
+      const existingUserId = window.glStorage.readTriple(KEYS.userId);
+      const firebaseUid = _firebaseUid();
+      const email = _firebaseEmail();
+
+      const registerPayload = {
         familyName: fn,
         familyKana: fk,
-        name: fn,
-        displayName: fn,
+        firebaseUid,
+        email,
       };
-      window.glState.set('profile', profileForState);
-      window.glEvents.emit('profile:updated', profileForState);
-
-      const existingUserId = window.glStorage.readTriple(KEYS.userId);
 
       if (opts.syncWait) {
+        // ゲスト合流フロー: userId 発行を同期待ち
         try {
-          const result = await window.glandApi.registerUser({ familyName: fn, familyKana: fk });
+          const result = await window.glandApi.registerUser(registerPayload);
           const userId = result?.userId || existingUserId;
           if (userId) {
             window.glStorage.writeTriple(KEYS.userId, userId);
@@ -106,9 +109,10 @@
         }
       }
 
+      // 通常フロー: バックグラウンド登録
       (async () => {
         try {
-          const result = await window.glandApi.registerUser({ familyName: fn, familyKana: fk });
+          const result = await window.glandApi.registerUser(registerPayload);
           const userId = result?.userId;
           if (userId) {
             window.glStorage.writeTriple(KEYS.userId, userId);
@@ -116,33 +120,42 @@
             window.glEvents.emit('profile:registered', { userId });
           }
         } catch (err) {
+          // バックグラウンド失敗時はキューへ
           window.glErrors.handle(err, { silent: true, context: 'register.bg' });
-          window.glQueue.enqueue('updateUser', { familyName: fn, familyKana: fk });
+          window.glQueue.enqueue('updateUser', registerPayload);
         }
       })();
 
       return { userId: existingUserId, optimistic: true };
     },
 
+    /**
+     * プロフィール更新（既存ユーザー）
+     * 5項目のうち任意項目をマージ更新
+     */
     async update(profile) {
       const stored = _getStored();
       const merged = { ...stored, ...profile };
 
+      // 即localStorage反映
       _saveToStorage(profile);
-      // ⭐ name フィールド再構築
-      merged.name = _buildDisplayName(merged);
-      merged.displayName = merged.name;
-
       window.glState.set('profile', merged);
       window.glEvents.emit('profile:updated', merged);
 
       const userId = stored.userId;
       if (!userId) {
+        // userId未発行なら登録扱いに切替
         return this.register({ familyName: merged.familyName, familyKana: merged.familyKana });
       }
 
+      // バックグラウンド送信 or キュー
       try {
-        await window.glandApi.updateUser({ userId, ...profile });
+        await window.glandApi.updateUser({
+          userId,
+          firebaseUid: _firebaseUid(),
+          email: _firebaseEmail(),
+          ...profile,
+        });
         return { ok: true };
       } catch (err) {
         window.glErrors.handle(err, { silent: true, context: 'update.bg' });
@@ -151,14 +164,34 @@
       }
     },
 
+    /**
+     * 最低限の必須項目が揃っているか（合流可否・スコア入力可否）
+     * = 姓 + 姓のよみがな
+     */
     isMinimum() {
       const s = _getStored();
       return !!(s.familyName && s.familyKana);
     },
 
+    /**
+     * 履歴閲覧に必要な全項目が揃っているか
+     * = 姓 + 姓よみ + 名 + 名よみ + ニックネーム
+     */
     isFull() {
       const s = _getStored();
-      return !!(s.familyName && s.familyKana && s.firstName && s.firstKana && s.courseAdjust);
+      return !!(s.familyName && s.familyKana && s.firstName && s.firstKana && s.nickname);
+    },
+
+    /**
+     * 履歴閲覧時に不足している項目のキーを返す（プロンプトUI用）
+     */
+    getMissingForHistory() {
+      const s = _getStored();
+      const missing = [];
+      if (!s.firstName) missing.push('firstName');
+      if (!s.firstKana) missing.push('firstKana');
+      if (!s.nickname) missing.push('nickname');
+      return missing;
     },
 
     getStored() {
@@ -170,11 +203,16 @@
     },
 
     /**
-     * ⭐【新規公開API】表示名を統一的に取得
-     * 他モジュールから window.glProfile.getDisplayName(playerObj) で使う
+     * 表示名を取得
+     * @param {string} context - 'score' | 'history' | 'home' | 'mypage'
      */
-    getDisplayName(obj) {
-      return _buildDisplayName(obj);
+    getDisplayName(context = 'score') {
+      const s = _getStored();
+      if (context === 'home' || context === 'mypage') {
+        return s.nickname || s.familyName || 'ゲスト';
+      }
+      // score / history はデフォルトで姓
+      return s.familyName || 'ゲスト';
     },
   };
 
