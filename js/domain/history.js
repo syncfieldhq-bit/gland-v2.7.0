@@ -186,8 +186,7 @@
           const merged = { ...result.playerScores };
           // ★修正：自分と「自分の代理」の完璧な手入力データを、最後の同期から絶対守り抜く
           const myProxies = window.glState.get('proxyPlayers') || [];
-          // v2.7.24: 自分本人のみ保護（代理は Last Write Wins で全端末同期）
-　　　　　　const protectedIds = [myUserId];
+          const protectedIds = [myUserId, ...myProxies.map(p => p.userId)];
 
           
           protectedIds.forEach(pid => {
