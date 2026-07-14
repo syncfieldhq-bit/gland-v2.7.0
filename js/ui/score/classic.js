@@ -45,6 +45,7 @@
 
   // 入力パネル関連
   let inputSession = null; // { hole, playerQueue, currentIdx, isEditingPast }
+  let pollTimer = null; // v2.7.22: リアルタイム同期用ポーリングタイマー
 
   // ==== ヘルパー ====
 
@@ -1841,6 +1842,20 @@
       orientationMedia.addEventListener('change', this._orientationHandler);
 
       _startClockTimer();
+            // v2.7.22: 15秒ごとにサーバーから最新スコアを取得（他端末の入力を反映）
+      const roundId = window.glState.get('roundId');
+      if (roundId && window.glHistory && window.glHistory.syncScoresBeforeSave) {
+        pollTimer = setInterval(async () => {
+          // 入力パネルを開いている間は同期しない（自分の入力を上書きしないため）
+          if (inputSession) return;
+          try {
+            await window.glHistory.syncScoresBeforeSave(roundId, 8000);
+          } catch (e) {
+            window.glDebug && glDebug.warn('[classic] poll sync failed: ' + (e && e.message));
+          }
+        }, 15000);
+      }
+
     },
 
     hide() {
@@ -1851,6 +1866,7 @@
       }
       _closeInputPanel();
       _stopClockTimer();
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
       if (unsubScores) { unsubScores(); unsubScores = null; }
       if (unsubPlayers) { unsubPlayers(); unsubPlayers = null; }
       if (unsubProxies) { unsubProxies(); unsubProxies = null; }
