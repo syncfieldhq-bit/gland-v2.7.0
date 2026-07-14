@@ -1853,6 +1853,12 @@
       orientationMedia.addEventListener('change', this._orientationHandler);
 
       _startClockTimer();
+
+
+      // v2.7.25: リアルタイムポーリング無効化（紙のスコアカード方式）
+      // 各端末はローカルストレージで管理、最終保存時のみサーバー通信
+      /*
+
             // v2.7.22: 15秒ごとにサーバーから最新スコアを取得（他端末の入力を反映）
       const roundId = window.glState.get('roundId');
       if (roundId && window.glHistory && window.glHistory.syncScoresBeforeSave) {
@@ -1868,7 +1874,7 @@
           }
         }, 15000);
       }
-
+      */
     },
 
     hide() {
