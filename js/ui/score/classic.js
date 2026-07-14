@@ -1434,6 +1434,9 @@
       window.glState.set('scores', { ...scores });
     }
 
+    // ★ v2.7.24: 保存時刻を記録（ポーリングによる上書き防止）
+      window._lastSaveTime = Date.now();
+
     // v2.7.22: 保存直後にサーバーへ非同期同期（他端末へ即時反映）
     // await しないことで UI をブロックせず裏側で実行する
     try {
@@ -1856,6 +1859,8 @@
         pollTimer = setInterval(async () => {
           // 入力パネルを開いている間は同期しない（自分の入力を上書きしないため）
           if (inputSession) return;
+          // ★ v2.7.24: 保存直後5秒間はスキップ（自分の送信完了を待つ）
+          if (window._lastSaveTime && Date.now() - window._lastSaveTime < 5000) return;
           try {
             await window.glHistory.syncScoresBeforeSave(roundId, 8000);
           } catch (e) {
