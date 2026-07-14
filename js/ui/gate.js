@@ -193,6 +193,17 @@
         this.hide();
         return false;
       }
+    // ★ v2.7.26: ?join= または pendingJoin がある場合はゲートをスキップ
+    // iOS PWA で ?join= が失われる問題を回避するため、Safari のまま合流させる
+    try {
+      const urlJoin = new URLSearchParams(location.search).get('join');
+      const storedJoin = localStorage.getItem('gl_pending_join_v1');
+      if (urlJoin || storedJoin) {
+        console.log('[gate] Skipped: join parameter detected', { urlJoin, storedJoin });
+        return false;
+      }
+    } catch (e) { /* ignore */ }
+
       _injectStyles();
       gateEl = document.getElementById('install-gate');
       if (!gateEl) {
