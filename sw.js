@@ -4,7 +4,7 @@
  * Cache-first with network fallback.
  * v2.7.20: 整合性リセット（モーダル管理/自動スクロール/同伴者スコア同期/Gate UX/pendingJoin）
  */
-const CACHE_VERSION = 'gland-v2.7.20';
+const CACHE_VERSION = 'gland-v2.7.22-cors-fix';
 const CORE_ASSETS = [
   './',
   './index.html',
