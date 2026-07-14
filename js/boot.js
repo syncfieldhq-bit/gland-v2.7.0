@@ -7,6 +7,18 @@
 (function () {
   'use strict';
 
+  // ★ v2.7.26: iPhone 合流バグ対策
+  // Service Worker 登録より前に、URL の ?join= を localStorage に保存する
+  // これがないと、SW 更新時のリロードで ?join= が失われる
+  try {
+    const joinCode = new URLSearchParams(location.search).get('join');
+    if (joinCode) {
+      localStorage.setItem('gl_pending_join_v1', joinCode.trim().toUpperCase());
+      console.log('[boot] EARLY captured pending join:', joinCode);
+    }
+  } catch (e) { /* ignore */ }
+
+
   // ===== GAS URL 設定 =====
   // ⚠️ 本番デプロイ時は index.html 内の window.GLAND_GAS_URL を更新
   window.GLAND_GAS_URL = window.GLAND_GAS_URL || '';
