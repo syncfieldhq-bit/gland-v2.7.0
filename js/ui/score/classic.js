@@ -16,6 +16,11 @@
  *   - 上部情報バー: ⏰ 午後スタート時刻 + 🔑 ロッカー番号
  *   - 💚 LINE 途中経過共有ボタン
  *   - iPhone ノッチ対応の safe-area padding
+ *
+ * ▼ v2.7.21 修正:
+ *   - editable 判定を一元化（_isEditableByMe ヘルパー）
+ *   - self: editable=true / shared: editable=false / proxy: editable=true（誰でも代理入力可）
+ *   - パネルローテーションは self + proxy のみ対象（shared は除外）
  */
 (function () {
   'use strict';
@@ -133,13 +138,39 @@
   function _getPlayerType(player) {
     const myUserId = window.glProfile.getUserId();
     if (player.userId === myUserId) return 'self';
-    
+
     // 自分が作成した代理プレイヤーか判定
     const myProxies = window.glState.get('proxyPlayers') || [];
     const isMyProxy = myProxies.some(p => p.userId === player.userId);
-    
+
     if (isMyProxy) return 'proxy';
     return 'shared';
+  }
+
+  /**
+   * ★ v2.7.21 新規：このプレイヤーのスコアを「私が」入力できるかの一元判定
+   *   - self   : true  （自分のスコア）
+   *   - shared : false （相手本人のスマホで入力する）
+   *   - proxy  : true  （スマホを持たない人のため、参加者の誰もが代理入力可能）
+   *
+   * ※ ローカル判定の proxy は「自分が作った代理」だが、
+   *    参加している誰もが入力できる要件のため、
+   *    サーバから来る proxy 種別も含めて「代理は全員入力可」に統一する。
+   *    そのため、判定は player.isProxy / role === 'proxy' / _getPlayerType() の
+   *    いずれかで 'proxy' と見なせるものは true にする。
+   */
+  function _isEditableByMe(player) {
+    if (!player) return false;
+    const myUserId = window.glProfile.getUserId();
+    if (player.userId === myUserId) return true; // self
+
+    // proxy 判定（ローカルの proxyPlayers / サーバ由来の role / isProxy フラグ）
+    const myProxies = window.glState.get('proxyPlayers') || [];
+    const isMyProxy = myProxies.some(p => p.userId === player.userId);
+    const isServerProxy = player.role === 'proxy' || player.isProxy === true;
+    if (isMyProxy || isServerProxy) return true; // proxy（誰でも代理入力可）
+
+    return false; // shared（本人のスマホで入力）
   }
 
   function _getPlayers() {
@@ -165,13 +196,10 @@
 
   /**
    * 現在ホール = 「まだ入力が完了していない最小ホール」
-   * 自分と全ての代理プレイヤーがストローク入力済み → その次
+   * v2.7.21: 「私が入力を担当するプレイヤー（self + proxy）」全員が入力済みなら次ホールへ
    */
   function _computeCurrentHole() {
-    const players = _getPlayers().filter((p) => {
-      const t = _getPlayerType(p);
-      return t === 'self' || t === 'proxy';
-    });
+    const players = _getPlayers().filter((p) => _isEditableByMe(p));
     if (players.length === 0) return 1;
 
     for (let h = 1; h <= HOLES; h++) {
@@ -919,6 +947,9 @@
   function _renderPlayerRow(player, pars, currentHole) {
     const type = _getPlayerType(player);
     const isSelf = type === 'self';
+    // ★ v2.7.21: editable 判定を一元化ヘルパーに委譲
+    //   self: true / proxy: true / shared: false
+    const editable = _isEditableByMe(player);
     const displayName = window.glProfile.getDisplayName(player);
     const badge = isSelf
       ? '<span class="gl-cls-player-badge gl-cls-player-badge--self">自分</span>'
@@ -944,8 +975,7 @@
       const strokes = _getStrokes(player.userId, h);
       const par = pars[h - 1];
       const cur = h === currentHole ? ' gl-cls-cell--current' : '';
-      // ★ v2.7.13：共有プレイヤーは入力不可（相手のスマホで入力）
-      const editable = isSelf || type === 'proxy';
+      // ★ v2.7.21: editable は _isEditableByMe(player) で統一
       const readonlyCls = editable ? '' : ' gl-cls-cell--score--readonly';
       const emptyCls = strokes === null ? ' gl-cls-cell--score--empty' : '';
       const display = _cellDisplay(strokes, par);
@@ -990,8 +1020,7 @@
       const strokes = _getStrokes(player.userId, h);
       const par = pars[h - 1];
       const cur = h === currentHole ? ' gl-cls-cell--current' : '';
-      // ★ v2.7.13：共有プレイヤーは入力不可
-      const editable = isSelf || type === 'proxy';
+      // ★ v2.7.21: editable は _isEditableByMe(player) で統一（ループ外で判定済）
       const readonlyCls = editable ? '' : ' gl-cls-cell--score--readonly';
       const emptyCls = strokes === null ? ' gl-cls-cell--score--empty' : '';
       const display = _cellDisplay(strokes, par);
@@ -1237,11 +1266,9 @@
 
     const players = _getPlayers();
     window.glDebug && glDebug.log('[startSession] players count=' + players.length);
-    // ★ v2.7.15：自分と代理のみ（共有プレイヤーはローテーションから除外）
-    const editablePlayers = players.filter((p) => {
-      const t = _getPlayerType(p);
-      return t === 'self' || t === 'proxy';
-    });
+    // ★ v2.7.21：ローテーション対象は「私が入力できる人」のみ（self + proxy）
+    //   shared プレイヤーは本人のスマホで入力するため、パネルの順送りから除外する
+    const editablePlayers = players.filter((p) => _isEditableByMe(p));
     window.glDebug && glDebug.log('[startSession] editable count=' + editablePlayers.length);
 
     let queue;
@@ -1677,16 +1704,16 @@
       const safeSync = async () => {
         // 1. 同期する前に、スマホ内の完璧なデータ（手入力分）を金庫に退避
         const backupScores = JSON.parse(JSON.stringify(window.glState.get('scores') || {}));
-        
+
         // 2. サーバーから最新データを受信（共有プレイヤーのスコアをもらうため）
         await window.glHistory.syncScoresBeforeSave(roundId, 5000);
-        
+
         // 3. 同期後、退避しておいた「自分」と「代理」のスコアだけを強制的に復元して守り抜く
         const syncedScores = window.glState.get('scores') || {};
         const players = _getPlayers();
         players.forEach(p => {
-          const type = _getPlayerType(p);
-          if (type === 'self' || type === 'proxy') {
+          // ★ v2.7.21: 「私が入力を担当する人」を _isEditableByMe() で一元判定
+          if (_isEditableByMe(p)) {
             syncedScores[p.userId] = { ...(syncedScores[p.userId] || {}), ...(backupScores[p.userId] || {}) };
           }
         });
