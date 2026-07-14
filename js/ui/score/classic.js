@@ -1437,6 +1437,9 @@
     // ★ v2.7.24: 保存時刻を記録（ポーリングによる上書き防止）
       window._lastSaveTime = Date.now();
 
+            // v2.7.25: 都度同期を無効化（紙のスコアカード方式）
+      // 最終保存時のみサーバーへ一括送信
+      /*
     // v2.7.22: 保存直後にサーバーへ非同期同期（他端末へ即時反映）
     // await しないことで UI をブロックせず裏側で実行する
     try {
@@ -1450,7 +1453,7 @@
     } catch (e) {
       window.glDebug && glDebug.warn('[classic] post-save sync error: ' + (e && e.message));
     }
-
+      */
     if (inputSession.isEditingPast || inputSession.currentIdx >= inputSession.queue.length - 1) {
       _closeInputPanel(); return;
     }
