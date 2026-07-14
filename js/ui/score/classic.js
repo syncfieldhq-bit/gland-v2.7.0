@@ -1421,12 +1421,11 @@
     panelEl.querySelector('[data-panel-save]')?.addEventListener('click', _saveAndProceed);
   }
 
-  function _saveAndProceed() {
+    function _saveAndProceed() {
     if (!inputSession) return;
     const p = _loCurrentPlayer();
     if (!p || inputSession.selectedStrokes === null) return;
 
-    // 保存
     window.glScore.save(p.userId, inputSession.hole, inputSession.selectedStrokes);
     if (_getPlayerType(p) === 'self' && inputSession.selectedPutts !== null) {
       const scores = window.glState.get('scores') || {};
@@ -1435,17 +1434,26 @@
       window.glState.set('scores', { ...scores });
     }
 
-    // 過去修正 or 最後の人 → セッション終了
-    if (inputSession.isEditingPast || inputSession.currentIdx >= inputSession.queue.length - 1) {
-      _closeInputPanel();
-      return;
+    // v2.7.22: 保存直後にサーバーへ非同期同期（他端末へ即時反映）
+    // await しないことで UI をブロックせず裏側で実行する
+    try {
+      const roundId = window.glState.get('roundId');
+      if (roundId && window.glHistory && window.glHistory.syncScoresBeforeSave) {
+        Promise.resolve(window.glHistory.syncScoresBeforeSave(roundId, 8000))
+          .catch((e) => {
+            window.glDebug && glDebug.warn('[classic] post-save sync failed: ' + (e && e.message));
+          });
+      }
+    } catch (e) {
+      window.glDebug && glDebug.warn('[classic] post-save sync error: ' + (e && e.message));
     }
 
-    // 次の人へ
-    inputSession.currentIdx++;
-    _loadCurrentPlayerToPanel();
-    _renderInputPanel();
+    if (inputSession.isEditingPast || inputSession.currentIdx >= inputSession.queue.length - 1) {
+      _closeInputPanel(); return;
+    }
+    inputSession.currentIdx++; _loadCurrentPlayerToPanel(); _renderInputPanel();
   }
+
 
   function _cancelInputPanel() {
     _closeInputPanel();
