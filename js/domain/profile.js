@@ -144,7 +144,8 @@
      */
     isFull() {
       const s = _getStored();
-      return !!(s.familyName && s.familyKana && s.firstName && s.firstKana && s.courseAdjust);
+      // 姓（familyName）さえあればOKにする
+    return !!(s.familyName);
     },
 
     getStored() {
