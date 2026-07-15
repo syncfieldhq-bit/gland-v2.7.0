@@ -103,6 +103,26 @@
         window.glRound.setPendingJoin(joinCode.trim().toUpperCase());
       }
       // ★ v2.7.20 FIX: pendingJoin の自動クリアを削除（合流バグの原因）
+      // 6.5. 【v2.7.32】Google ログイン画面 判定
+      if (window.glAuth) {
+        try {
+          await window.glAuth.ready();
+          if (!window.glAuth.isLoggedIn() && window.glAuthUI) {
+            window.glAuthUI.show();
+            await new Promise((resolve) => {
+              const unsub = window.glAuth.onChange((user) => {
+                if (user && user.uid) {
+                  unsub();
+                  window.glAuthUI.hide();
+                  resolve();
+                }
+              });
+            });
+          }
+        } catch (err) {
+          console.warn('[boot] auth check failed:', err);
+        }
+      }
 
       // 7. Install Gate 判定
       const gateShown = window.glGate.show();
