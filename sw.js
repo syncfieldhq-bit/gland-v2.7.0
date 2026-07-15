@@ -4,7 +4,7 @@
  * Cache-first with network fallback.
  * v2.7.20: 整合性リセット（モーダル管理/自動スクロール/同伴者スコア同期/Gate UX/pendingJoin）
  */
-const CACHE_VERSION = 'gland-v2.7.30-accordion-settings';
+const CACHE_VERSION = 'gland-v2.7.31-firebase-init';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -19,15 +19,18 @@ const CORE_ASSETS = [
   './js/core/net.js',
   './js/core/errors.js',
   './js/core/queue.js',
+  './js/core/firebase.js',
   './js/domain/profile.js',
   './js/domain/round.js',
   './js/domain/score.js',
   './js/domain/history.js',
   './js/domain/course.js',
   './js/domain/ads.js',
+  './js/domain/auth.js',
   './js/ui/_debugbar.js',
   './js/ui/toast.js',
   './js/ui/gate.js',
+  './js/ui/auth.js',
   './js/ui/onboarding.js',
   './js/ui/ads.js',
   './js/ui/home.js',

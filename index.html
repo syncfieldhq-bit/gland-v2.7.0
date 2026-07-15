@@ -68,6 +68,8 @@
   <div id="toast-root"></div>
 
   <!-- ==== スクリプト読込 ==== -->
+  <!-- Layer 0: Firebase (ES Module) -->
+  <script type="module" src="js/core/firebase.js"></script>
   <!-- Layer 2: Infrastructure -->
   <script src="js/core/events.js"></script>
   <script src="js/core/storage.js"></script>
@@ -80,6 +82,7 @@
   <script src="js/api.js"></script>
 
   <!-- Layer 3: Domain -->
+  <script src="js/domain/auth.js"></script>
   <script src="js/domain/profile.js"></script>
   <script src="js/domain/round.js"></script>
   <script src="js/domain/score.js"></script>
@@ -91,6 +94,7 @@
   <script src="js/ui/_debugbar.js"></script>
   <script src="js/ui/toast.js"></script>
   <script src="js/ui/gate.js"></script>
+  <script src="js/ui/auth.js"></script>
   <script src="js/ui/onboarding.js"></script>
   <script src="js/ui/ads.js"></script>
   <script src="js/ui/home.js"></script>
