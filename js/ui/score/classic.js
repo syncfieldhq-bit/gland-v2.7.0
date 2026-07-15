@@ -248,10 +248,71 @@
       .gl-cls-info-item__count { font-size: 11px; color: #666; margin-left: 4px; }
       .gl-cls-info-item__count--over { color: #d32f2f; font-weight: 700; }
 
+      /* ===== v2.7.30 NEW: モード切替アコーディオン ===== */
+      .gl-cls-settings {
+        margin-bottom: 6px;
+        border-radius: 8px;
+        background: #f0e8d0;
+        border: 1px solid #d4c8a8;
+        overflow: hidden;
+      }
+      .gl-cls-settings-toggle {
+        width: 100%;
+        padding: 8px 12px;
+        background: transparent;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: #5a4a30;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .gl-cls-settings-toggle:active {
+        background: rgba(0,0,0,.04);
+      }
+      .gl-cls-settings-current {
+        font-size: 11px;
+        color: #1a5f3f;
+        font-weight: 600;
+        margin-left: 8px;
+      }
+      .gl-cls-settings-arrow {
+        font-size: 11px;
+        transition: transform 0.2s;
+        color: #5a4a30;
+      }
+      .gl-cls-settings-arrow--open {
+        transform: rotate(90deg);
+      }
+      .gl-cls-settings-body {
+        padding: 4px 6px 6px;
+        border-top: 1px solid #d4c8a8;
+        display: none;
+      }
+      .gl-cls-settings-body--open {
+        display: block;
+      }
+      .gl-cls-settings-section {
+        margin-bottom: 6px;
+      }
+      .gl-cls-settings-section:last-child {
+        margin-bottom: 0;
+      }
+      .gl-cls-settings-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #5a4a30;
+        margin: 4px 0 3px;
+        padding-left: 2px;
+      }
+
       /* ===== v2.7.27 NEW: 入力方式タブ ===== */
       .gl-cls-inputmodes {
         display: grid; grid-template-columns: 1fr 1fr 1fr;
-        gap: 4px; margin-bottom: 6px;
+        gap: 4px; margin-bottom: 0;
         background: #e8e0d0; padding: 4px; border-radius: 8px;
       }
       .gl-cls-inputmode-btn {
@@ -270,7 +331,7 @@
       /* ===== モード切替タブ ===== */
       .gl-cls-modes {
         display: grid; grid-template-columns: 1fr 1fr 1fr;
-        gap: 4px; margin-bottom: 8px;
+        gap: 4px; margin-bottom: 0;
         background: #e8e0d0; padding: 4px; border-radius: 8px;
       }
       .gl-cls-mode-btn {
@@ -633,7 +694,7 @@
         }
         .gl-cls-header,
         .gl-cls-info-bar,
-        .gl-cls-inputmodes,
+        .gl-cls-settings,
         .gl-cls-actions {
           display: none;
         }
@@ -819,7 +880,43 @@
     });
   }
 
-  // ==== v2.7.27 NEW: 入力方式タブ ====
+  // ==== v2.7.30 NEW: モード切替アコーディオン ====
+
+  function _inputModeShortLabel(mode) {
+    if (mode === INPUT_MODES.SIMPLE) return 'シンプル';
+    if (mode === INPUT_MODES.COUNTER) return 'カウンター';
+    return 'クラシック';
+  }
+
+  function _viewModeShortLabel(mode) {
+    if (mode === MODES.SIGN) return '-E+';
+    if (mode === MODES.SYMBOL) return '○─△';
+    return 'ストローク';
+  }
+
+  function _renderSettingsAccordion() {
+    const current = `${_inputModeShortLabel(currentInputMode)} / ${_viewModeShortLabel(currentMode)}`;
+    return `
+      <div class="gl-cls-settings">
+        <button class="gl-cls-settings-toggle" data-settings-toggle>
+          <span>🎯 モード切替 <span class="gl-cls-settings-current">[${current}]</span></span>
+          <span class="gl-cls-settings-arrow">▶</span>
+        </button>
+        <div class="gl-cls-settings-body">
+          <div class="gl-cls-settings-section">
+            <div class="gl-cls-settings-label">入力モード</div>
+            ${_renderInputModeButtons()}
+          </div>
+          <div class="gl-cls-settings-section">
+            <div class="gl-cls-settings-label">表示モード</div>
+            ${_renderModeButtons()}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==== v2.7.27: 入力方式タブ ====
 
   function _renderInputModeButtons() {
     const btn = (id, label, icon, active) => `
@@ -1049,9 +1146,7 @@
 
       ${_renderInfoBar()}
 
-      ${_renderInputModeButtons()}
-
-      ${_renderModeButtons()}
+      ${_renderSettingsAccordion()}
 
       <div class="gl-cls-table-wrap">
         <div class="gl-cls-table">
@@ -1121,6 +1216,23 @@
       }
     });
 
+    // v2.7.30: アコーディオン開閉
+    view.querySelector('[data-settings-toggle]')?.addEventListener('click', () => {
+      const body = view.querySelector('.gl-cls-settings-body');
+      const arrow = view.querySelector('.gl-cls-settings-arrow');
+      if (!body || !arrow) return;
+      const isOpen = body.classList.contains('gl-cls-settings-body--open');
+      if (isOpen) {
+        body.classList.remove('gl-cls-settings-body--open');
+        arrow.classList.remove('gl-cls-settings-arrow--open');
+        arrow.textContent = '▶';
+      } else {
+        body.classList.add('gl-cls-settings-body--open');
+        arrow.classList.add('gl-cls-settings-arrow--open');
+        arrow.textContent = '▼';
+      }
+    });
+
     // v2.7.27: 入力方式切替
     // ★ v2.7.28 修正: 画面全体を再描画すると入力パネルが壊れるため、
     //   タブのアクティブ表示だけ更新する軽量な処理に変更
@@ -1136,6 +1248,12 @@
         view.querySelectorAll('[data-inputmode]').forEach((b) => {
           b.classList.toggle('active', b.dataset.inputmode === currentInputMode);
         });
+
+        // v2.7.30: アコーディオンの現在表示も更新
+        const currentSpan = view.querySelector('.gl-cls-settings-current');
+        if (currentSpan) {
+          currentSpan.textContent = `[${_inputModeShortLabel(currentInputMode)} / ${_viewModeShortLabel(currentMode)}]`;
+        }
 
         // 入力パネルが開いていたら、その中身だけ更新
         if (inputSession && window.glScorePanel && window.glScorePanel.isOpen && window.glScorePanel.isOpen()) {
