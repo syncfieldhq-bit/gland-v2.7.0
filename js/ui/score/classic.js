@@ -1122,6 +1122,8 @@
     });
 
     // v2.7.27: 入力方式切替
+    // ★ v2.7.28 修正: 画面全体を再描画すると入力パネルが壊れるため、
+    //   タブのアクティブ表示だけ更新する軽量な処理に変更
     view.querySelectorAll('[data-inputmode]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const newMode = btn.dataset.inputmode;
@@ -1129,7 +1131,16 @@
         currentInputMode = newMode;
         window.glStorage.writeLocal(STORAGE_KEYS.inputMode, currentInputMode);
         window.glToast && window.glToast.info(`入力方式: ${_inputModeLabel(currentInputMode)}`);
-        _renderKeepScroll();
+
+        // タブのアクティブ表示だけ更新（全体再描画しない）
+        view.querySelectorAll('[data-inputmode]').forEach((b) => {
+          b.classList.toggle('active', b.dataset.inputmode === currentInputMode);
+        });
+
+        // 入力パネルが開いていたら、その中身だけ更新
+        if (inputSession && window.glScorePanel && window.glScorePanel.isOpen && window.glScorePanel.isOpen()) {
+          _renderInputPanel();
+        }
       });
     });
 
