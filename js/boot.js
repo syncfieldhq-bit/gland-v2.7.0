@@ -210,3 +210,20 @@
     console.error('[unhandled promise]', e.reason);
   });
 })();
+
+
+// v2.7.35: iOS Safari のプルダウン更新を無効化
+(function() {
+  let startY = 0;
+  document.addEventListener('touchstart', function(e) {
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  
+  document.addEventListener('touchmove', function(e) {
+    const currentY = e.touches[0].clientY;
+    // ページ最上部で下方向スワイプの場合のみブロック
+    if (window.scrollY <= 0 && currentY > startY) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+})();
