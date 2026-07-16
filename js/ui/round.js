@@ -143,7 +143,7 @@
     wrap.className = 'gl-modal show';
     wrap.setAttribute('data-modal-type', 'proxy-manager');
     wrap.innerHTML = _renderProxyModalContent();
-    document.body.appendChild(wrap);
+    (document.getElementById('modal-root') || document.body).appendChild(wrap);
 
     const close = () => wrap.remove();
     wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
