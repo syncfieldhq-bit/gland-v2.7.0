@@ -121,8 +121,9 @@
     // 【v2.8.0】iOS PWA (Standalone) では Google ログイン不可
     // Safari で開くよう案内する
     const isIOSPWA = window.glFirebase && window.glFirebase.isIOSStandalone && window.glFirebase.isIOSStandalone();
+    const isLoggedIn = window.glAuth && window.glAuth.isLoggedIn && window.glAuth.isLoggedIn();
 
-    if (isIOSPWA) {
+    if (isIOSPWA && !isLoggedIn) {
       containerEl.innerHTML = `
         <div class="gl-auth-card">
           <div class="gl-auth-logo">G-LAND</div>
