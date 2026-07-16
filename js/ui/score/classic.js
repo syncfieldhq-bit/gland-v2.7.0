@@ -1192,16 +1192,15 @@
     }, 50);
   }
 
-  function _renderKeepScroll() {
+    function _renderKeepScroll() {
     const oldScroller = document.getElementById('gl-cls-scroll');
     const savedScrollLeft = oldScroller ? oldScroller.scrollLeft : 0;
     _render();
-    requestAnimationFrame(() => {
-      const newScroller = document.getElementById('gl-cls-scroll');
-      if (newScroller && savedScrollLeft > 0) {
-        newScroller.scrollLeft = savedScrollLeft;
-      }
-    });
+    // v2.8.6: requestAnimationFrame を待たず、同期的に即座に戻す（揺れ防止）
+    const newScroller = document.getElementById('gl-cls-scroll');
+    if (newScroller && savedScrollLeft > 0) {
+      newScroller.scrollLeft = savedScrollLeft;
+    }
   }
 
   // ==== イベントバインド ====

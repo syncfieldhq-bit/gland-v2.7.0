@@ -4,7 +4,7 @@
  * Cache-first with network fallback.
  * v2.7.20: 整合性リセット（モーダル管理/自動スクロール/同伴者スコア同期/Gate UX/pendingJoin）
  */
-const CACHE_VERSION = 'gland-v2.8.5-safe-area-info-value';
+const CACHE_VERSION = 'gland-v2.8.6-classic-scroll-fix';
 const CORE_ASSETS = [
   './',
   './index.html',
