@@ -130,19 +130,19 @@ const glFirebase = {
     return currentUser;
   },
 
-  async signInWithGoogle() {
+    async signInWithGoogle() {
     await readyPromise;
-
-    // iOS PWA (Standalone) では Popup / Redirect ともに不安定
-    //   → 特殊エラーを投げてUI側で「Safari で開いてください」を出させる
-    if (_isIOSStandalone()) {
-      const err = new Error('iOS PWA では Google ログインができません');
-      err.code = 'auth/ios-standalone-unsupported';
-      throw err;
-    }
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
+
+    // 【v2.8.1】iOS PWAではポップアップを使わない。
+    // 最初からGoogleのリダイレクト認証を開始する。
+    if (_isIOSStandalone()) {
+      console.log('[firebase] iOS PWA: starting redirect login');
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
 
     // まず Popup を試す
     try {

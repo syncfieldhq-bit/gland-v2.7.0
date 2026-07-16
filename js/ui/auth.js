@@ -123,50 +123,86 @@
     const isIOSPWA = window.glFirebase && window.glFirebase.isIOSStandalone && window.glFirebase.isIOSStandalone();
     const isLoggedIn = window.glAuth && window.glAuth.isLoggedIn && window.glAuth.isLoggedIn();
 
-    if (isIOSPWA && !isLoggedIn) {
+        if (isIOSPWA && !isLoggedIn) {
       containerEl.innerHTML = `
         <div class="gl-auth-card">
           <div class="gl-auth-logo">G-LAND</div>
           <div class="gl-auth-tag">ゴルフスコア共有アプリ</div>
-          <h2 class="gl-auth-title" style="color:#d32f2f;">⚠️ Safari で開いてください</h2>
+
+          <h2 class="gl-auth-title">Google でログイン</h2>
+
           <p class="gl-auth-desc">
-            ホーム画面のアイコンからの起動では<br>
-            Google ログインができません。<br><br>
-            以下の手順で Safari で開いてください：
+            ホーム画面のアプリからもログインできます。<br>
+            下のボタンから Google 認証を進めてください。<br><br>
+            <span style="font-size:11px; color:#999;">
+              認証後は自動的に G-LAND へ戻ります。
+            </span>
           </p>
-          <ol style="text-align:left; font-size:13px; line-height:1.8; color:#333; padding-left:20px; margin:16px 0;">
-            <li>このアイコンを閉じる</li>
-            <li>Safari を開く</li>
-            <li>ブックマークまたはURLから G-LAND へ</li>
-            <li>Google ログインして登録</li>
-          </ol>
-          <p style="font-size:11px; color:#999; line-height:1.5; margin-top:12px;">
-            登録後はこのアイコンからも使えるようになります。<br>
-            （iOS の仕様上、PWA初回利用時は Safari での認証が必要です）
+
+          <button class="gl-auth-btn-google" id="gl-auth-google-signin">
+            Google でログイン
+          </button>
+
+          <p style="font-size:11px; color:#999; line-height:1.5; margin-top:20px;">
+            うまく戻れない場合の予備手段です。<br>
+            下のボタンでURLをコピーしてSafariで開けます。
           </p>
-          <button class="gl-auth-btn-google" id="gl-auth-copy-url" style="margin-top:16px; background:#1a5f3f; color:#fff; border:none;">
-            📋 URLをコピーして Safari で開く
+
+          <button class="gl-auth-btn-google" id="gl-auth-copy-url"
+                  style="margin-top:12px; background:#1a5f3f; color:#fff; border:none;">
+            URLをコピーして Safari で開く
           </button>
         </div>
       `;
-      const copyBtn = document.getElementById('gl-auth-copy-url');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-          const url = location.href;
+
+      const googleSignInBtn = document.getElementById('gl-auth-google-signin');
+
+      if (googleSignInBtn) {
+        googleSignInBtn.addEventListener('click', async () => {
+          googleSignInBtn.disabled = true;
+          googleSignInBtn.textContent = 'Google ログイン画面へ移動中...';
+
           try {
-            if (navigator.clipboard) {
-              await navigator.clipboard.writeText(url);
-              copyBtn.textContent = '✅ コピーしました！Safariで貼り付けてください';
-            } else {
-              copyBtn.textContent = 'URL: ' + url;
-            }
-          } catch (e) {
-            copyBtn.textContent = 'URL: ' + url;
+            await window.glAuth.signIn();
+
+            // Redirect認証では、この後にGoogle画面へ移動する。
+            // 認証完了後はG-LANDへ戻り、Firebase側がログイン状態を処理する。
+          } catch (err) {
+            console.error('[glAuthUI] iOS PWA login failed:', err);
+
+            googleSignInBtn.disabled = false;
+            googleSignInBtn.textContent = 'Google でログイン';
+
+            alert(
+              'ログインを開始できませんでした。\\n' +
+              '通信環境を確認して、もう一度お試しください。'
+            );
           }
         });
       }
+
+      const copyBtn = document.getElementById('gl-auth-copy-url');
+
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          const url = location.href;
+
+          try {
+            if (navigator.clipboard) {
+              await navigator.clipboard.writeText(url);
+              copyBtn.textContent = '✅ コピーしました。Safariで貼り付けてください';
+            } else {
+              copyBtn.textContent = 'URL：' + url;
+            }
+          } catch (e) {
+            copyBtn.textContent = 'URL：' + url;
+          }
+        });
+      }
+
       return;
     }
+
 
     // 通常のログイン画面
     containerEl.innerHTML = `
