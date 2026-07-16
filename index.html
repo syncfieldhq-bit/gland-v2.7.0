@@ -75,6 +75,114 @@
     font-weight: 800;
     color: #1a5f3f;
   }
+    /* --- モーダル内の見出し・段落・入力欄・ボタン --- */
+
+  #modal-root .gl-modal__body p {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.6;
+    margin: 0 0 12px;
+  }
+
+  #modal-root .gl-modal__body h3,
+  #modal-root .gl-modal__body h4 {
+    margin: 12px 0 8px;
+    color: #1a5f3f;
+  }
+
+  #modal-root .gl-modal__body input,
+  #modal-root .gl-modal__body textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    font-size: 15px;
+    border: 1px solid #d0d0d0;
+    border-radius: 10px;
+    background: #fff;
+    margin-bottom: 10px;
+  }
+
+  #modal-root .gl-modal__body button {
+    display: inline-block;
+    min-height: 44px;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    background: #f2f4f3;
+    color: #1a5f3f;
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(26, 95, 63, 0.15);
+    touch-action: manipulation;
+  }
+
+  #modal-root .gl-modal__body button:active {
+    transform: scale(0.98);
+  }
+
+  /* 追加系ボタン（緑） */
+  #modal-root .gl-modal__body button[data-add],
+  #modal-root .gl-modal__body .gl-btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, #1a5f3f, #2d7a56);
+    color: #fff;
+    margin-top: 6px;
+  }
+
+  /* 危険系ボタン（削除） */
+  #modal-root .gl-modal__body button[data-del],
+  #modal-root .gl-modal__body .gl-btn-danger {
+    background: #d64545;
+    color: #fff;
+    min-height: 36px;
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+
+  /* 終了・確定系ボタン */
+  #modal-root .gl-modal__body button[data-confirm],
+  #modal-root .gl-modal__body .gl-btn-confirm {
+    width: 100%;
+    background: #1a5f3f;
+    color: #fff;
+    margin-top: 8px;
+  }
+
+  /* 閉じる用のフッターボタン */
+  #modal-root .gl-modal__body button[data-close],
+  #modal-root .gl-modal__body .gl-btn-close {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    background: #f2f4f3;
+    color: #444;
+    font-weight: 600;
+  }
+
+  /* ラベル */
+  #modal-root .gl-modal__body label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin: 8px 0 4px;
+  }
+
+  /* リストの各アイテム（代理入力の名前カード） */
+  #modal-root .gl-modal__body .gl-form__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #faf7ec;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+  }
+
   </style>
 
   <!-- ⬇️⬇️⬇️ GAS URL 設定（デプロイ時に必ず埋める！）⬇️⬇️⬇️ -->
