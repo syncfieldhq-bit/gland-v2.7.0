@@ -27,6 +27,54 @@
     }
     button { font-family: inherit; }
     input, textarea { font-family: inherit; -webkit-appearance: none; }
+      /* ==========================================================
+     共通モーダル：招待・代理入力・ラウンド終了などで共通使用
+     必ず画面中央に固定表示する
+     ========================================================== */
+
+  #modal-root .gl-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overscroll-behavior: contain;
+  }
+
+  #modal-root .gl-modal.show {
+    display: flex;
+  }
+
+  #modal-root .gl-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.48);
+  }
+
+  #modal-root .gl-modal__body {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 520px);
+    max-height: 85vh;
+    max-height: 85dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 22px 18px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  #modal-root .gl-modal__title {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #1a5f3f;
+  }
   </style>
 
   <!-- ⬇️⬇️⬇️ GAS URL 設定（デプロイ時に必ず埋める！）⬇️⬇️⬇️ -->
