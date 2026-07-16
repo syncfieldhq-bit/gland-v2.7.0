@@ -183,8 +183,9 @@
     color: #333;
   }
 
-  /* ==========================================================
+   /* ==========================================================
      iPhoneのノッチ対応：すべてのビューの上端に安全な余白を確保
+     各画面ごとの個別CSSに負けないよう !important で強制
      ========================================================== */
 
   #view-home,
@@ -192,10 +193,26 @@
   #view-score,
   #view-history,
   #view-mypage {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
     box-sizing: border-box;
   }
+
+    /* ==========================================================================
+   スコア画面上部のインジケータ：数字だけ老眼対策で大きく
+========================================================================== */
+
+/* 数字（06:24 / 72 など）だけ拡大 */
+#view-score .gl-cls-info-item__value {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+}
+
+/* 未設定時（「--」表示など）も同じサイズ感で */
+#view-score .gl-cls-info-item__value--empty {
+  font-size: 20px !important;
+}
+
 
   </style>
 
