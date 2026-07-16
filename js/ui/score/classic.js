@@ -41,6 +41,7 @@
   let orientationMedia = null;
   let clockTimer = null;
   let isFirstRender = true;
+  let userHasScrolled = false; // v2.8.8: ユーザー操作後は自動スクロール禁止
 
   // 入力パネル関連
   let inputSession = null;
@@ -1176,7 +1177,9 @@
     }
   }
 
-  function _scrollToCurrentHole(currentHole) {
+  function _scrollToCurrentHole(currentHole, opts) {
+  // v2.8.8: ユーザーがスクロール済みなら、force指定がない限り自動スクロールを禁止
+  if (userHasScrolled && !(opts && opts.force)) return;
     setTimeout(() => {
       const scroller = document.getElementById('gl-cls-scroll');
       if (!scroller) return;
@@ -1300,9 +1303,20 @@
     view.querySelector('[data-finish]')?.addEventListener('click', _finishRound);
 
     view.querySelector('[data-focus-current]')?.addEventListener('click', () => {
-      const currentHole = _computeCurrentHole();
-      _scrollToCurrentHole(currentHole);
-    });
+  const currentHole = _computeCurrentHole();
+  _scrollToCurrentHole(currentHole, { force: true }); // v2.8.8: センターボタンは強制発火
+});
+
+    // v2.8.8: ユーザーがスクロールしたことを検知するフラグ
+    const scroller = document.getElementById('gl-cls-scroll');
+    if (scroller) {
+      scroller.addEventListener('scroll', () => {
+        userHasScrolled = true;
+      }, { passive: true });
+      scroller.addEventListener('touchstart', () => {
+        userHasScrolled = true;
+      }, { passive: true });
+    }
   }
 
   function _inputModeLabel(mode) {
@@ -2182,6 +2196,7 @@
 
     show() {
       isFirstRender = true;
+      userHasScrolled = false; // v2.8.8: 画面再表示時にフラグをリセット
       // v2.7.27: 保存済み入力方式を復元
       const savedMode = window.glStorage.readLocal(STORAGE_KEYS.inputMode);
       if (savedMode && Object.values(INPUT_MODES).includes(savedMode)) {
