@@ -205,6 +205,12 @@
           console.log('[gate] Skipped for iOS: join parameter detected', { urlJoin, storedJoin });
           return false;
         }
+              // 【v2.7.33】ログイン済みなら Safari のまま使わせる
+      const isLoggedIn = window.glAuth && window.glAuth.isLoggedIn && window.glAuth.isLoggedIn();
+      if (isLoggedIn) {
+        console.log('[gate] Skipped for iOS: user already logged in');
+        return false;
+      }
       }
     } catch (e) { /* ignore */ }
 
