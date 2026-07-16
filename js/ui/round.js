@@ -413,7 +413,8 @@
         <button class="gl-btn-primary" data-ok>${okLabel || 'OK'}</button>
       </div>
     `;
-    document.body.appendChild(wrap);
+    const modalRoot = document.getElementById('modal-root') || document.body;
+modalRoot.appendChild(wrap);
 
     const close = () => {
       wrap.classList.remove('show');
