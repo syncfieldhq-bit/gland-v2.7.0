@@ -212,7 +212,16 @@
 #view-score .gl-cls-info-item__value--empty {
   font-size: 20px !important;
 }
+/* ==========================================================================
+   v2.8.6: 🎯 センターボタンを終了・保存ボタンから離す（誤タップ防止）
+========================================================================== */
 
+/* センターボタン（.gl-cls-focus-btn / [data-focus-current]）を上に浮かせる */
+#view-score .gl-cls-focus-btn {
+  bottom: 76px !important;  /* 元の位置 + 約1cm */
+  right: 16px !important;
+  z-index: 100 !important;
+}
 
   </style>
 
