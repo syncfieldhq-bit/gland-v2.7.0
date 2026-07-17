@@ -1171,8 +1171,9 @@
     _bindEvents();
     _bindInfoBarEvents();
 
+        // v2.8.11: 常に現在ホールへ戻る（15秒ポーリング後も維持）
+    _scrollToCurrentHole(currentHole, { force: true });
     if (isFirstRender) {
-      _scrollToCurrentHole(currentHole);
       isFirstRender = false;
     }
   }
