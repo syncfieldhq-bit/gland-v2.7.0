@@ -1,18 +1,15 @@
 /**
- * G-LAND v2.8.11 - MyPage View UI
+ * G-LAND v2.8.13 - MyPage View UI
  * ===============================
- * プロフィール表示・編集モーダル・バージョン表示（最下部）
- * v2.8.11: マイページ大改造
- *   - スコアカード デザイン欄を削除
- *   - コース調整値 → HC（ハンディキャップ）に改名
- *   - ニックネーム項目を追加（ライブリーダーボード用）
- *   - ユーザーIDをタイトル直下に移動
- *   - 広告枠 ad-slot-mypage を空いたスペースに配置
+ * v2.8.13: モーダル・ボタン・フォームの CSS を復元
+ *   - v2.8.11 で欠落していた .gl-modal / .gl-btn-primary / .gl-form__* を再定義
+ *   - モーダルが position:fixed で正しく画面上に表示されるように修正
+ *   - 編集ボタンの緑色・大きさを復元
  */
 (function () {
   'use strict';
 
-  const VERSION_LABEL = 'v2.8.11 (build: 20260717)';
+  const VERSION_LABEL = 'v2.8.13 (build: 20260717)';
 
   function _injectStyles() {
     if (document.getElementById('gl-mypage-styles')) return;
@@ -45,6 +42,59 @@
         text-align: center; color: #999; font-size: 11px;
       }
       #ad-slot-mypage { margin-top: 18px; }
+
+      /* v2.8.13: ボタン CSS 復元 */
+      #view-mypage .gl-btn-primary {
+        width: 100%; padding: 14px; font-size: 16px; font-weight: 700;
+        background: #1a5f3f; color: #fff; border: none; border-radius: 10px;
+        cursor: pointer; box-shadow: 0 4px 12px rgba(26,95,63,.25);
+      }
+      #view-mypage .gl-btn-primary:active { background: #14472f; }
+
+      /* v2.8.13: モーダル CSS 復元 */
+      .gl-modal {
+        display: none;
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        z-index: 9999;
+      }
+      .gl-modal.show { display: block; }
+      .gl-modal__backdrop {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,.5);
+      }
+      .gl-modal__body {
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 92%; max-width: 420px; max-height: 88vh;
+        background: #fff; border-radius: 14px; padding: 20px;
+        box-sizing: border-box; overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,.2);
+      }
+      .gl-modal__title {
+        font-size: 18px; font-weight: 700; color: #1a5f3f;
+        margin: 0 0 14px;
+      }
+      .gl-modal .gl-btn-primary {
+        width: 100%; padding: 14px; font-size: 16px; font-weight: 700;
+        background: #1a5f3f; color: #fff; border: none; border-radius: 10px;
+        cursor: pointer; margin-top: 8px;
+      }
+      .gl-modal .gl-btn-primary:active { background: #14472f; }
+
+      /* v2.8.13: フォーム CSS 復元 */
+      .gl-form__group { margin-bottom: 12px; }
+      .gl-form__label {
+        display: block; font-size: 13px; color: #666;
+        margin-bottom: 4px;
+      }
+      .gl-form__input {
+        width: 100%; padding: 10px 12px; font-size: 15px;
+        border: 1px solid #ddd; border-radius: 8px;
+        box-sizing: border-box; background: #fafafa;
+      }
+      .gl-form__input:focus {
+        outline: none; border-color: #1a5f3f; background: #fff;
+      }
     `;
     document.head.appendChild(style);
   }
