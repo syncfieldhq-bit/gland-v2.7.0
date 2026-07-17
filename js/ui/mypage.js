@@ -1,52 +1,36 @@
 /**
- * G-LAND v2.7.0 - MyPage View UI
- * ==============================
+ * G-LAND v2.8.11 - MyPage View UI
+ * ===============================
  * プロフィール表示・編集モーダル・バージョン表示（最下部）
+ * v2.8.11: マイページ大改造
+ *   - スコアカード デザイン欄を削除
+ *   - コース調整値 → HC（ハンディキャップ）に改名
+ *   - ニックネーム項目を追加（ライブリーダーボード用）
+ *   - ユーザーIDをタイトル直下に移動
+ *   - 広告枠 ad-slot-mypage を空いたスペースに配置
  */
 (function () {
   'use strict';
 
-  const VERSION_LABEL = 'v2.7.0 (build: 20260709)';
+  const VERSION_LABEL = 'v2.8.11 (build: 20260717)';
 
   function _injectStyles() {
     if (document.getElementById('gl-mypage-styles')) return;
     const style = document.createElement('style');
     style.id = 'gl-mypage-styles';
     style.textContent = `
-      /* テーマ切替セクション */
-      .gl-mypage__theme-card { padding: 16px 18px; }
-      .gl-mypage__theme-title {
-        font-size: 15px; font-weight: 700; color: #1a5f3f; margin-bottom: 4px;
-      }
-      .gl-mypage__theme-hint {
-        font-size: 12px; color: #888; margin-bottom: 12px;
-      }
-      .gl-mypage__theme-option {
-        display: flex; align-items: flex-start; gap: 10px;
-        padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;
-        margin-bottom: 8px; cursor: pointer; transition: all .15s;
-      }
-      .gl-mypage__theme-option:hover { background: #fafafa; }
-      .gl-mypage__theme-option.active {
-        border-color: #1a5f3f; background: #f0f7f2;
-      }
-      .gl-mypage__theme-option input[type="radio"] {
-        margin-top: 2px; accent-color: #1a5f3f;
-      }
-      .gl-mypage__theme-option-body { flex: 1; }
-      .gl-mypage__theme-option-name {
-        font-size: 15px; font-weight: 700; color: #222; margin-bottom: 2px;
-      }
-      .gl-mypage__theme-option-desc {
-        font-size: 12px; color: #666;
-      }
-
       #view-mypage {
         min-height: 100vh; padding: 16px; box-sizing: border-box;
         background: #f8f9fa; display: none; flex-direction: column;
       }
       #view-mypage.show { display: flex; }
-      .gl-mypage__title { font-size: 22px; font-weight: 700; color: #1a5f3f; margin: 0 0 16px; }
+      .gl-mypage__title { font-size: 22px; font-weight: 700; color: #1a5f3f; margin: 0 0 8px; }
+      .gl-mypage__userid-card {
+        background: #fff; padding: 10px 14px; border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.05); margin-bottom: 14px;
+        font-size: 12px; color: #888;
+      }
+      .gl-mypage__userid-card span { font-family: monospace; color: #333; }
       .gl-mypage__card {
         background: #fff; padding: 18px; border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,.08); margin-bottom: 12px;
@@ -60,7 +44,7 @@
         margin-top: auto; padding: 20px 0 8px;
         text-align: center; color: #999; font-size: 11px;
       }
-      #ad-slot-mypage { margin-top: 12px; }
+      #ad-slot-mypage { margin-top: 18px; }
     `;
     document.head.appendChild(style);
   }
@@ -73,6 +57,9 @@
     const p = window.glProfile.getStored();
     const userId = p.userId || '未発行';
 
+    // v2.8.11: 互換維持 - courseAdjust があれば hc として表示
+    const hcValue = p.hc || p.courseAdjust || '';
+
     const row = (label, value) =>
       `<div class="gl-mypage__row">
         <span class="gl-mypage__label">${label}</span>
@@ -83,24 +70,19 @@
       <button class="gl-round__back" data-back>← ホームへ戻る</button>
       <h1 class="gl-mypage__title">👤 マイページ</h1>
 
-      <div class="gl-mypage__card">
-        ${row('苗字（漢字）', p.familyName)}
-        ${row('苗字（ひらがな）', p.familyKana)}
-        ${row('名前（漢字）', p.firstName)}
-        ${row('名前（ひらがな）', p.firstKana)}
-        ${row('コース調整値', p.courseAdjust)}
+      <div class="gl-mypage__userid-card">
+        ユーザーID: <span>${userId}</span>
       </div>
 
       <button class="gl-btn-primary" data-edit>✏️ プロフィールを編集</button>
 
-      <div class="gl-mypage__card gl-mypage__theme-card" style="margin-top:18px;">
-        <div class="gl-mypage__theme-title">🎨 スコアカード デザイン</div>
-        <div class="gl-mypage__theme-hint">お好みのスコアカードを選べます（いつでも変更可能）</div>
-        <div id="gl-theme-options"></div>
-      </div>
-
-      <div class="gl-mypage__card" style="margin-top:14px;font-size:12px;color:#888;">
-        <div>ユーザーID: <span style="font-family:monospace;">${userId}</span></div>
+      <div class="gl-mypage__card" style="margin-top:14px;">
+        ${row('苗字（漢字）', p.familyName)}
+        ${row('苗字（ひらがな）', p.familyKana)}
+        ${row('名前（漢字）', p.firstName)}
+        ${row('名前（ひらがな）', p.firstKana)}
+        ${row('ニックネーム', p.nickname)}
+        ${row('HC（ハンディキャップ）', hcValue)}
       </div>
 
       <div id="ad-slot-mypage"></div>
@@ -113,45 +95,15 @@
     });
     view.querySelector('[data-edit]').addEventListener('click', () => _showEditModal());
 
-    _renderThemeOptions();
-
     const adSlot = document.getElementById('ad-slot-mypage');
     if (adSlot) window.glAdsUI.mount(adSlot, 'mypage');
   }
 
-  /**
-   * ⭐ スコアカード テーマ切替 UI
-   */
-  function _renderThemeOptions() {
-    const container = document.getElementById('gl-theme-options');
-    if (!container || !window.glScoreUI) return;
-
-    const themes = window.glScoreUI.listAvailable();
-    const currentId = window.glScoreUI.getCurrentThemeId();
-
-    container.innerHTML = themes.map((t) => `
-      <label class="gl-mypage__theme-option ${t.id === currentId ? 'active' : ''}">
-        <input type="radio" name="gl-theme" value="${t.id}" ${t.id === currentId ? 'checked' : ''}>
-        <div class="gl-mypage__theme-option-body">
-          <div class="gl-mypage__theme-option-name">${t.name}</div>
-          <div class="gl-mypage__theme-option-desc">${t.description || ''}</div>
-        </div>
-      </label>
-    `).join('');
-
-    container.querySelectorAll('input[name="gl-theme"]').forEach((radio) => {
-      radio.addEventListener('change', () => {
-        const themeId = radio.value;
-        if (window.glScoreUI.setTheme(themeId)) {
-          window.glToast?.success(`テーマを「${themes.find(t => t.id === themeId)?.name}」に変更しました`);
-          _renderThemeOptions(); // activeクラス更新
-        }
-      });
-    });
-  }
-
   function _showEditModal() {
     const p = window.glProfile.getStored();
+    // v2.8.11: 互換維持 - courseAdjust があれば hc として初期表示
+    const hcValue = p.hc || p.courseAdjust || '';
+
     const wrap = document.createElement('div');
     wrap.className = 'gl-modal show';
     wrap.innerHTML = `
@@ -175,8 +127,12 @@
           <input class="gl-form__input" id="ed-first-kana" value="${p.firstKana || ''}">
         </div>
         <div class="gl-form__group">
-          <label class="gl-form__label">コース調整値（任意）</label>
-          <input class="gl-form__input" id="ed-adjust" value="${p.courseAdjust || ''}" placeholder="例: -2">
+          <label class="gl-form__label">ニックネーム（ライブリーダーボード用）</label>
+          <input class="gl-form__input" id="ed-nickname" value="${p.nickname || ''}" placeholder="例: たろちゃん">
+        </div>
+        <div class="gl-form__group">
+          <label class="gl-form__label">HC（ハンディキャップ・任意）</label>
+          <input class="gl-form__input" id="ed-hc" value="${hcValue}" placeholder="例: -2">
         </div>
         <button class="gl-btn-primary" data-save>保存</button>
         <button style="width:100%;padding:12px;margin-top:8px;background:none;border:none;color:#666;" data-cancel>キャンセル</button>
@@ -194,7 +150,8 @@
         familyKana: document.getElementById('ed-family-kana').value.trim(),
         firstName: document.getElementById('ed-first-name').value.trim(),
         firstKana: document.getElementById('ed-first-kana').value.trim(),
-        courseAdjust: document.getElementById('ed-adjust').value.trim(),
+        nickname: document.getElementById('ed-nickname').value.trim(),
+        hc: document.getElementById('ed-hc').value.trim(),
       };
       if (!patch.familyName || !patch.familyKana) {
         window.glToast.warn('苗字は必須です');

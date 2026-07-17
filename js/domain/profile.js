@@ -17,6 +17,9 @@
     firstName: 'gl_profile_firstName',
     firstKana: 'gl_profile_firstNameKana',
     courseAdjust: 'gl_profile_courseAdjust',
+    nickname: 'gl_profile_nickname',
+    hc: 'gl_profile_hc',
+    leaderboardDisplay: 'gl_profile_leaderboardDisplay',
   };
 
   function _getStored() {
@@ -28,6 +31,9 @@
       firstName: s.readTriple(KEYS.firstName),
       firstKana: s.readTriple(KEYS.firstKana),
       courseAdjust: s.readTriple(KEYS.courseAdjust),
+      nickname: s.readTriple(KEYS.nickname),
+      hc: s.readTriple(KEYS.hc),
+      leaderboardDisplay: s.readTriple(KEYS.leaderboardDisplay) || 'realName',
     };
   }
 
@@ -38,6 +44,9 @@
     if (profile.firstName !== undefined) s.writeTriple(KEYS.firstName, profile.firstName || '');
     if (profile.firstKana !== undefined) s.writeTriple(KEYS.firstKana, profile.firstKana || '');
     if (profile.courseAdjust !== undefined) s.writeTriple(KEYS.courseAdjust, String(profile.courseAdjust || ''));
+    if (profile.nickname !== undefined) s.writeTriple(KEYS.nickname, profile.nickname || '');
+    if (profile.hc !== undefined) s.writeTriple(KEYS.hc, String(profile.hc || ''));
+    if (profile.leaderboardDisplay !== undefined) s.writeTriple(KEYS.leaderboardDisplay, profile.leaderboardDisplay || 'realName');
   }
 
   const glProfile = {
@@ -169,6 +178,11 @@
       if (arg == null || typeof arg === 'string') {
         const context = arg || 'score';
         const s = _getStored();
+          if (context === 'leaderboard') {
+          if (s.leaderboardDisplay === 'anonymous') return '匿名';
+          if (s.leaderboardDisplay === 'nickname') return s.nickname || s.familyName || 'ゲスト';
+          return s.familyName || 'ゲスト';
+        }
         if (context === 'home' || context === 'mypage') {
           return s.nickname || s.familyName || 'ゲスト';
         }
