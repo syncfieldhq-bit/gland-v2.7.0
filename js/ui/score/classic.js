@@ -1654,6 +1654,11 @@
 
     if (inputSession.isEditingPast || inputSession.currentIdx >= inputSession.queue.length - 1) {
       _closeInputPanel();
+      // v2.8.9: 保存後は必ず現在ホールに戻る（スマートさん提案）
+      setTimeout(() => {
+        const currentHole = _computeCurrentHole();
+        _scrollToCurrentHole(currentHole, { force: true });
+      }, 100);
       return;
     }
     inputSession.currentIdx++;
