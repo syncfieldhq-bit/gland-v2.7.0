@@ -277,18 +277,85 @@
     });
   }
 
-  /**
-   * v2.8.14: コース選択後の確認モーダル → ラウンド開始
+    /**
+   * v2.8.15: コース選択後、複数タイプがあればスタートタイプ選択モーダルを出す
    */
   function _confirmStartWithCourse(course) {
+    if (!course) {
+      _showFinalConfirm(null, null);
+      return;
+    }
+    // タイプが2つ以上ある場合はスタート選択
+    if (course.types && course.types.length >= 2) {
+      _showStartTypeSelector(course);
+    } else {
+      // タイプが1つだけならそのまま
+      _showFinalConfirm(course, course.types ? course.types[0].name : null);
+    }
+  }
+
+  /**
+   * v2.8.15: スタートタイプ選択モーダル（東 or 西 など）
+   */
+  function _showStartTypeSelector(course) {
+    const wrap = document.createElement('div');
+    wrap.className = 'gl-modal show';
+
+    const typeButtons = course.types.map((type, i) => `
+      <button class="gl-btn-primary" data-start-type="${type.name}"
+        style="width:100%;margin-bottom:8px;background:${i === 0 ? '#1a5f3f' : '#2d7a56'};">
+        🌅 ${type.name} スタート
+        <div style="font-size:11px;opacity:.9;margin-top:2px;">
+          ${type.name}コース → ${course.types.filter((_, j) => j !== i).map(t => t.name).join(' → ')}
+        </div>
+      </button>
+    `).join('');
+
+    wrap.innerHTML = `
+      <div class="gl-modal__backdrop"></div>
+      <div class="gl-modal__body">
+        <h2 class="gl-modal__title">🏁 スタートを選択</h2>
+        <p style="color:#666;font-size:13px;margin:0 0 12px;">
+          <strong>${course.name}</strong><br>
+          どちらのコースからスタートしますか？
+        </p>
+        ${typeButtons}
+        <button style="width:100%;padding:12px;margin-top:8px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer;" data-cancel>キャンセル</button>
+      </div>
+    `;
+    (document.getElementById('modal-root') || document.body).appendChild(wrap);
+
+    const close = () => wrap.remove();
+    wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
+    wrap.querySelector('[data-cancel]').addEventListener('click', close);
+
+    wrap.querySelectorAll('[data-start-type]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const startType = btn.dataset.startType;
+        close();
+        _showFinalConfirm(course, startType);
+      });
+    });
+  }
+
+  /**
+   * v2.8.15: 最終確認モーダル → ラウンド開始
+   */
+  function _showFinalConfirm(course, startType) {
     const stored = window.glProfile.getStored();
     const hostName = stored.familyName || 'ホスト';
-    const courseInfo = course
-      ? `<p style="background:#e8f5e9;padding:8px;border-radius:6px;margin:8px 0;">
-           ⛳ <strong>${course.name}</strong><br>
-           <span style="font-size:12px;color:#666;">${course.prefecture} | ${course.totalHoles}ホール</span>
-         </p>`
-      : '';
+
+    let courseInfo = '';
+    if (course) {
+      const orderInfo = startType && course.types && course.types.length >= 2
+        ? `<br><span style="font-size:12px;color:#1a5f3f;">🏁 ${startType} スタート</span>`
+        : '';
+      courseInfo = `<p style="background:#e8f5e9;padding:8px;border-radius:6px;margin:8px 0;">
+        ⛳ <strong>${course.name}</strong><br>
+        <span style="font-size:12px;color:#666;">${course.prefecture} | ${course.totalHoles}ホール</span>
+        ${orderInfo}
+      </p>`;
+    }
 
     _modalPrompt({
       title: '新しいラウンドを開始',
@@ -301,15 +368,26 @@
       onOk: async () => {
         window.glToast.info('ラウンドを開始中...');
         try {
-          // 選択したコースを state と localStorage に保存
+          // v2.8.15: コース + スタートタイプを保存
           if (course) {
-            window.glState.set('currentCourse', course);
-            window.glStorage.writeLocal('gl_current_course_v1', course);
+            const courseWithStart = { ...course, startType };
+            // タイプの並び替え（選択したスタートを先頭に）
+            if (startType && course.types && course.types.length >= 2) {
+              const startIdx = course.types.findIndex(t => t.name === startType);
+              if (startIdx > 0) {
+                courseWithStart.types = [
+                  course.types[startIdx],
+                  ...course.types.filter((_, i) => i !== startIdx),
+                ];
+              }
+            }
+            window.glState.set('currentCourse', courseWithStart);
+            window.glStorage.writeLocal('gl_current_course_v1', courseWithStart);
           }
           const result = await window.glRound.start(hostName);
           window.glToast.success('ラウンドを開始しました');
           _renderIndex();
-          _showInviteModal(); // 開始直後に招待表示
+          _showInviteModal();
         } catch (err) {
           // errors.handle 済み
         }

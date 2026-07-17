@@ -49,7 +49,20 @@
 
   // ==== ヘルパー ====
 
-  function _getPars() {
+    function _getPars() {
+    // v2.8.15: コースデータから pars を読み込む
+    const course = window.glState.get('currentCourse')
+                || window.glStorage.readLocal('gl_current_course_v1');
+
+    if (course && course.types && course.types.length > 0) {
+      // 全タイプのパーを結合（東9H + 西9H = 18H など）
+      const pars = course.types.flatMap(type => type.pars || []);
+      // 18ホール分に調整（足りなければ PAR4 で埋める）
+      while (pars.length < HOLES) pars.push(DEFAULT_PAR);
+      return pars.slice(0, HOLES);
+    }
+
+    // コース未選択時は従来通り全PAR4
     return new Array(HOLES).fill(DEFAULT_PAR);
   }
 
