@@ -483,7 +483,7 @@
 
       /* 現在ホールへフォーカスボタン */
       .gl-cls-focus-btn {
-        position: fixed; right: 16px; bottom: 82px;
+        position: fixed; right: 16px; bottom: 130px;   /* v2.8.10: 終了・保存ボタンから離す */
         width: 48px; height: 48px; border-radius: 50%;
         background: #1a5f3f; color: #fff; border: none;
         font-size: 22px; cursor: pointer;
