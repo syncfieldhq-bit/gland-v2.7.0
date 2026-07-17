@@ -267,16 +267,45 @@
     });
   }
 
+    /**
+   * v2.8.14: ラウンド開始前にコース選択画面を表示
+   */
   function _showStartConfirm() {
+    // まずコース選択画面を出す
+    window.glCourseUI.showMyCourses((selectedCourse) => {
+      _confirmStartWithCourse(selectedCourse);
+    });
+  }
+
+  /**
+   * v2.8.14: コース選択後の確認モーダル → ラウンド開始
+   */
+  function _confirmStartWithCourse(course) {
     const stored = window.glProfile.getStored();
     const hostName = stored.familyName || 'ホスト';
+    const courseInfo = course
+      ? `<p style="background:#e8f5e9;padding:8px;border-radius:6px;margin:8px 0;">
+           ⛳ <strong>${course.name}</strong><br>
+           <span style="font-size:12px;color:#666;">${course.prefecture} | ${course.totalHoles}ホール</span>
+         </p>`
+      : '';
+
     _modalPrompt({
       title: '新しいラウンドを開始',
-      body: `<p>${hostName}さんがホストとして開始します。</p><p style="color:#666;font-size:13px;">開始後、招待コードが発行されます。</p>`,
+      body: `
+        ${courseInfo}
+        <p>${hostName}さんがホストとして開始します。</p>
+        <p style="color:#666;font-size:13px;">開始後、招待コードが発行されます。</p>
+      `,
       okLabel: '開始する',
       onOk: async () => {
         window.glToast.info('ラウンドを開始中...');
         try {
+          // 選択したコースを state と localStorage に保存
+          if (course) {
+            window.glState.set('currentCourse', course);
+            window.glStorage.writeLocal('gl_current_course_v1', course);
+          }
           const result = await window.glRound.start(hostName);
           window.glToast.success('ラウンドを開始しました');
           _renderIndex();
@@ -287,6 +316,7 @@
       },
     });
   }
+
 
   function _showJoinModal() {
     _modalPrompt({

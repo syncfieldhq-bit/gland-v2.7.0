@@ -105,6 +105,34 @@
         return { ok: false };
       }
     },
+
+    /**
+     * v2.8.14: ローカルで新規コースを作成（マイコースに即追加）
+     * サーバー未登録のローカルコース。将来サーバー連携時にアップロード可能。
+     */
+    async createLocalCourse({ name, prefecture, totalHoles, types }) {
+      if (!name || !prefecture || !totalHoles || !types || !types.length) {
+        return { ok: false, error: '必須項目が不足しています' };
+      }
+
+      const localId = 'local-' + Date.now();
+      const course = {
+        courseId: localId,
+        name,
+        prefecture,
+        totalHoles,
+        types,
+        isLocal: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      const arr = _readMyCourses();
+      arr.push(course);
+      _writeMyCourses(arr);
+      window.glEvents.emit('course:mycourse-updated', { courses: arr });
+
+      return { ok: true, course };
+    },
   };
 
   window.glCourse = glCourse;
