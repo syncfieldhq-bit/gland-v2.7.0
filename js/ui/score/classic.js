@@ -1468,7 +1468,7 @@
       strokeKeys.push(`<button class="gl-cls-panel-key${sel}" data-stroke="${i}">${i}</button>`);
     }
     return `
-      <div class="gl-cls-panel-section-label">ストローク数</div>
+      <div class="gl-cls-panel-section-label">ストローク数（Par ${par}）</div>
       <div class="gl-cls-panel-keys">${strokeKeys.join('')}</div>
     `;
   }
