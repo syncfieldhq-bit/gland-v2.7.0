@@ -1,10 +1,10 @@
 /**
- * G-LAND v2.7.20 - Service Worker
+ * G-LAND v2.8.17 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * v2.7.20: 整合性リセット（モーダル管理/自動スクロール/同伴者スコア同期/Gate UX/pendingJoin）
+ * v2.8.17: 9ホール履歴表示対応 (hasOut/hasIn 検出、IN非表示)
  */
-const CACHE_VERSION = 'gland-v2.8.16-classic-par-display';
+const CACHE_VERSION = 'gland-v2.8.17-nine-hole-display';
 const CORE_ASSETS = [
   './',
   './index.html',

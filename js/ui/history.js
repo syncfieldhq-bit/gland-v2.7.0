@@ -1,13 +1,18 @@
 /**
- * G-LAND v2.7.19 - History View UI
+ * G-LAND v2.8.17 - History View UI
  * ================================
  * Phase 2A: 履歴一覧（KPI・コース/期間フィルタ・BESTバッジ）
- * Phase 2B: 履歴詳細（18Hスコアカード、Par/Score/Putt、記号切替）
+ * Phase 2B: 履歴詳細（動的ホール範囲対応、Par/Score/Putt、記号切替）
  * Phase 2C: ベスト更新演出（🏆モーダル）
  *
- * v2.7.19 変更点:
- *   - 一覧の「打数/±Par」切替トグル削除
- *   - 一覧のコースフィルタ残す + 期間フィルタ残す
+ * v2.8.17 変更点:
+ *   - 履歴詳細で、入力されたホール範囲だけ表示（9Hラウンド対応）
+ *   - OUT/IN セクションを動的に表示切替
+ *   - ヘッダーサマリーの OUT/IN 表示も動的化
+ *   - 東スタート9H → OUT のみ / 西スタート9H → IN のみ / 18H → 両方
+ *   - 未入力データはフォールバックで従来通り両方表示
+ *
+ * v2.7.19 変更点（履歴）:
  *   - 詳細のスコアカードに「打数/±Par/記号」3段階切替トグル追加
  *   - 記号モード: アルバトロス⭐/イーグル◎/バーディー⚪/パー ー/ボギー△/ダブルボギー□/+3以上=数字
  *   - 同伴者表示: A案改良版 + パターン1（スコア無しでも「参加のみ」表示）
@@ -472,7 +477,7 @@
 
   // ==== 詳細描画 ====
 
-  function _renderDetail(view, roundId) {
+    function _renderDetail(view, roundId) {
     const r = window.glHistory.get(roundId);
     if (!r) {
       _renderList(view);
@@ -483,6 +488,18 @@
     try { holes = JSON.parse(r.holesJson || '{}'); } catch (e) { holes = {}; }
     let companions = [];
     try { companions = JSON.parse(r.companionsJson || '[]'); } catch (e) { companions = []; }
+
+    // ★ v2.8.17: 入力されたホール範囲を検出
+    let hasOut = false;
+    let hasIn = false;
+    for (let h = 1; h <= 9; h++) {
+      if (_num(holes['h' + h]?.strokes) > 0) { hasOut = true; break; }
+    }
+    for (let h = 10; h <= 18; h++) {
+      if (_num(holes['h' + h]?.strokes) > 0) { hasIn = true; break; }
+    }
+    // 両方とも未入力の履歴は、従来通り両方表示（フォールバック）
+    if (!hasOut && !hasIn) { hasOut = true; hasIn = true; }
 
     const buildTable = (from, to, label) => {
       let head = `<th class="glh-sc-label">H</th>`;
@@ -533,8 +550,20 @@
       `;
     };
 
-    const outTable = buildTable(1, 9, 'OUT');
-    const inTable = buildTable(10, 18, 'IN');
+    // ★ v2.8.17: 必要なテーブルだけ生成
+    const outTableHTML = hasOut ? `
+      <div class="glh-card">
+        <div class="glh-card__title">OUT (1-9)</div>
+        ${buildTable(1, 9, 'OUT')}
+      </div>
+    ` : '';
+
+    const inTableHTML = hasIn ? `
+      <div class="glh-card">
+        <div class="glh-card__title">IN (10-18)</div>
+        ${buildTable(10, 18, 'IN')}
+      </div>
+    ` : '';
 
     // 同伴者カード (A案改良版 + パターン1)
     const compHTML = companions.length === 0 ? '' : `
@@ -594,8 +623,8 @@
             </div>
             <div class="glh-detail__diff">${_num(r.totalStrokes) ? _diffStr(diff) : ''}</div>
             <div style="margin-left:auto;text-align:right;font-size:11px;opacity:.9;">
-              OUT ${_num(r.outStrokes) || '-'}<br>
-              IN ${_num(r.inStrokes) || '-'}<br>
+              ${hasOut ? `OUT ${_num(r.outStrokes) || '-'}<br>` : ''}
+              ${hasIn ? `IN ${_num(r.inStrokes) || '-'}<br>` : ''}
               Putts ${_num(r.totalPutts) || '-'}
             </div>
           </div>
@@ -604,14 +633,8 @@
 
         ${toggleHTML}
 
-        <div class="glh-card">
-          <div class="glh-card__title">OUT (1-9)</div>
-          ${outTable}
-        </div>
-        <div class="glh-card">
-          <div class="glh-card__title">IN (10-18)</div>
-          ${inTable}
-        </div>
+        ${outTableHTML}
+        ${inTableHTML}
 
         ${compHTML ? `<div class="glh-card">${compHTML}</div>` : ''}
       </div>
@@ -628,6 +651,7 @@
       });
     });
   }
+
 
   // ==== 2C: BEST 更新演出 ====
 
