@@ -1462,16 +1462,18 @@
 
   // v2.7.27: Classic 入力 UI (10ボタン)
   function _buildStrokeUI_classic() {
-    const strokeKeys = [];
-    for (let i = 1; i <= 10; i++) {
-      const sel = inputSession.selectedStrokes === i ? ' selected' : '';
-      strokeKeys.push(`<button class="gl-cls-panel-key${sel}" data-stroke="${i}">${i}</button>`);
-    }
-    return `
-      <div class="gl-cls-panel-section-label">ストローク数（Par ${par}）</div>
-      <div class="gl-cls-panel-keys">${strokeKeys.join('')}</div>
-    `;
+  const pars = _getPars();
+  const par = pars[inputSession.hole - 1];
+  const strokeKeys = [];
+  for (let i = 1; i <= 10; i++) {
+    const sel = inputSession.selectedStrokes === i ? ' selected' : '';
+    strokeKeys.push(`<button class="gl-cls-panel-key${sel}" data-stroke="${i}">${i}</button>`);
   }
+  return `
+    <div class="gl-cls-panel-section-label">ストローク数 (Par ${par})</div>
+    <div class="gl-cls-panel-keys">${strokeKeys.join('')}</div>
+  `;
+}
 
   // v2.7.27: Simple 入力 UI (5パステルボタン)
   function _buildStrokeUI_simple() {
