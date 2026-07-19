@@ -94,6 +94,53 @@
           hostUserId: userId,
         });
 
+       
+      // v2.8.18.2: コース情報から state.pars / state.totalHoles をセット
+      try {
+        const currentCourse = window.glStorage.readLocalJSON('gl_current_course_v1');
+        if (currentCourse) {
+          let totalHoles = currentCourse.totalHoles || 18;
+          let types = currentCourse.types;
+          let startType = currentCourse.startType;
+
+          // holesJson があればパース（新形式対応）
+          if (currentCourse.holesJson) {
+            try {
+              const holesData = JSON.parse(currentCourse.holesJson);
+              totalHoles = holesData.totalHoles || totalHoles;
+              types = types || holesData.types;
+              startType = startType || holesData.startType;
+            } catch (e) {
+              console.warn('[round.start] holesJson parse error', e);
+            }
+          }
+
+          // state.totalHoles をセット
+          window.glState.set('totalHoles', totalHoles);
+
+          // state.pars をセット
+          if (Array.isArray(types) && types.length > 0) {
+            const selectedType = types.find(function(t) { return t.name === startType; }) || types[0];
+            if (selectedType && Array.isArray(selectedType.pars)) {
+              const pars = {};
+              // 前半9ホール
+              selectedType.pars.forEach(function(p, i) {
+                pars['hole' + (i + 1)] = p;
+              });
+              // 後半9ホール（18ホール & pars9個の場合、同じ配列を再利用）
+              if (totalHoles === 18 && selectedType.pars.length === 9) {
+                selectedType.pars.forEach(function(p, i) {
+                  pars['hole' + (i + 10)] = p;
+                });
+              }
+              window.glState.set('pars', pars);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[round.start] course info setup error', e);
+      }
+ 
         window.glEvents.emit('round:started', { roundId, groupCode });
         return { roundId, groupCode };
       } catch (err) {
