@@ -110,9 +110,9 @@
     },
 
     // ==== Round ====
-    async startRound({ userId, hostName, existingRoundId }) {
-      return _post('startRound', { userId, hostName, existingRoundId });
-    },
+    async startRound({ userId, hostName, existingRoundId, course }) {
+    return _post('startRound', { userId, hostName, existingRoundId, course });
+　　},
     async joinRound({ userId, groupCode, guestName }) {
       return _post('joinRound', { userId, groupCode, guestName });
     },

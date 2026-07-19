@@ -1,10 +1,10 @@
 /**
- * G-LAND v2.8.17 - Service Worker
+ * G-LAND v2.8.18 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * v2.8.17: 9ホール履歴表示対応 (hasOut/hasIn 検出、IN非表示)
+ * v2.8.18: コース情報同期対応 (STEP A: ホスト→サーバー送信)
  */
-const CACHE_VERSION = 'gland-v2.8.17-nine-hole-display';
+const CACHE_VERSION = 'gland-v2.8.18-course-sync-step-a';
 const CORE_ASSETS = [
   './',
   './index.html',
