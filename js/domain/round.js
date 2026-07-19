@@ -70,11 +70,11 @@
       _startInProgress = true;
       try {
         const result = await window.glandApi.startRound({
-    　　　userId,
-    　　　hostName,
-    　　　existingRoundId: existingRoundId || undefined,
-    　　　course: window.glState.get('currentCourse') || undefined,
-　　　　});
+         userId,
+         hostName,
+         existingRoundId: existingRoundId || undefined,
+         course: window.glState.get('currentCourse') || undefined,
+      });
 
         const roundId = _extractRoundId(result);
         const groupCode = _extractGroupCode(result);

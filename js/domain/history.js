@@ -55,8 +55,34 @@
     const userId = window.glProfile.getUserId();
     const roundId = args.roundId || window.glState.get('roundId') || '';
     const scores = args.scores || window.glState.get('scores') || {};
-    const pars = args.pars || window.glState.get('pars') || {};
+    let pars = args.pars || window.glState.get('pars') || {};
     const players = args.players || [];
+
+    // v2.8.18.1: gl_current_course_v1 からコース情報とPar情報を補完
+    const currentCourse = window.glStorage.readLocalJSON('gl_current_course_v1') || null;
+    let courseId = args.courseId || window.glState.get('courseId') || '';
+    let courseName = args.courseName || window.glState.get('courseName') || '';
+
+    if (currentCourse) {
+      if (!courseId) courseId = currentCourse.courseId || '';
+      if (!courseName) courseName = currentCourse.name || '';
+
+      // Par情報がstate側で空なら、選択中ティーのpars配列から生成
+      const parsIsEmpty = !pars || Object.keys(pars).length === 0;
+      if (parsIsEmpty && Array.isArray(currentCourse.types) && currentCourse.types.length > 0) {
+        const startType = currentCourse.startType || currentCourse.types[0].name;
+        const selectedType = currentCourse.types.find(function(t) { return t.name === startType; }) || currentCourse.types[0];
+        if (selectedType && Array.isArray(selectedType.pars)) {
+          pars = {};
+          selectedType.pars.forEach(function(p, i) {
+            pars['hole' + (i + 1)] = p;
+          });
+        }
+      }
+    }
+
+    if (!courseName) courseName = 'コース未設定';
+
 
     // 自分のスコアデータ（打数もパット数も同じオブジェクトの中）
     const myData = scores[userId] || {};
@@ -126,8 +152,8 @@
     return {
       userId,
       roundId,
-      courseId: args.courseId || window.glState.get('courseId') || '',
-      courseName: args.courseName || window.glState.get('courseName') || 'コース未設定',
+      courseId: courseId,
+      courseName: courseName,
       startedAt: args.startedAt || window.glState.get('startedAt') || new Date().toISOString(),
       endedAt: new Date().toISOString(),
       totalStrokes,

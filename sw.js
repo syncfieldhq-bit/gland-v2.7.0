@@ -2,9 +2,9 @@
  * G-LAND v2.8.18 - Service Worker
  * ==============================
  * Cache-first with network fallback.
- * v2.8.18: コース情報同期対応 (STEP A: ホスト→サーバー送信)
+ * v2.8.18.1: 履歴のコース名・Par情報表示バグ修正
  */
-const CACHE_VERSION = 'gland-v2.8.18-course-sync-step-a';
+const CACHE_VERSION = 'gland-v2.8.18.1-history-course-fix';
 const CORE_ASSETS = [
   './',
   './index.html',
