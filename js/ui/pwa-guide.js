@@ -1,5 +1,15 @@
 // PWA未起動時に「ホーム画面に追加」を強制するモーダル
+// v2.8.21.1: iOS Safari のみ表示、Android等は対象外
 (function() {
+  // ★ iOS判定: iPhone / iPad / iPod のみ対象
+  const isIOS = 
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    // iPad Pro等、iPadOS 13+ ではMacと同じUA になるので追加判定
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  
+  if (!isIOS) return; // iOS以外は何もしない (Android/PC/etc.)
+
+  // PWA起動判定
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
