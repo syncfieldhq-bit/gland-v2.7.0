@@ -138,11 +138,11 @@ const glFirebase = {
 
     // 【v2.8.1】iOS PWAではポップアップを使わない。
     // 最初からGoogleのリダイレクト認証を開始する。
-    if (_isIOSStandalone()) {
-      console.log('[firebase] iOS PWA: starting redirect login');
-      await signInWithRedirect(auth, provider);
-      return null;
-    }
+    // if (_isIOSStandalone()) {
+    //   console.log('[firebase] iOS PWA: starting redirect login');
+    //   await signInWithRedirect(auth, provider);
+    //   return null;
+    // }
 
     // まず Popup を試す
     try {

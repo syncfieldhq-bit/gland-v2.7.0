@@ -4,7 +4,7 @@
  * Cache-first with network fallback.
  * v2.8.18.1: 履歴のコース名・Par情報表示バグ修正
  */
-const CACHE_VERSION = 'gland-v2.8.19.2-debounce-render';
+const CACHE_VERSION = 'gland-v2.8.19.3-pwa-popup-fix';
 const CORE_ASSETS = [
   './',
   './index.html',
