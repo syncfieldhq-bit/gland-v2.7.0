@@ -237,6 +237,9 @@
     try {
       const result = await window.glandApi.listRoundMembers({ roundId });
       let members = result.members || result || [];
+      
+    // v2.8.22: GASの displayName を name にマッピング
+    members = members.map(m => ({ ...m, name: m.name || m.displayName || 'ゲスト' }));
 
       // ★ここからID統一ロジック（神の手）
       const localPlayers = window.glState.get('players') || [];
