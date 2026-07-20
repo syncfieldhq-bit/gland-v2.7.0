@@ -13,7 +13,8 @@
 (function () {
   'use strict';
 
-  const PEER_POLL_MS = 15000;
+  // 変更後（v2.8.21）
+  const PEER_POLL_MS = 300000; // v2.8.21: 15秒→5分。手動更新ボタン(🔄最新取得)と併用
   const MEMBER_REFRESH_EVERY = 10;
 
   let pollTimer = null;

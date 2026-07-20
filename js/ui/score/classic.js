@@ -490,9 +490,20 @@
         padding: 10px 6px; border-radius: 6px; border: none;
         font-size: 13px; font-weight: 600; cursor: pointer;
       }
-      .gl-cls-btn-invite { background: #fff; color: #1a5f3f; border: 2px solid #1a5f3f; }
-      .gl-cls-btn-line { background: #06c755; color: #fff; }
-      .gl-cls-btn-finish { background: #1a5f3f; color: #fff; }
+      .gl-cls-btn-refresh {
+       background: #fff;
+       color: #1a5f3f;
+       border: 2px solid #1a5f3f;
+       transition: background 0.15s;
+     }
+     .gl-cls-btn-refresh:disabled {
+      background: #f5f5f5;
+      color: #999;
+      border-color: #ccc;
+      cursor: not-allowed;
+     }
+     .gl-cls-btn-line { background: #06c755; color: #fff; }
+     .gl-cls-btn-finish { background: #1a5f3f; color: #fff; }
 
       /* 現在ホールへフォーカスボタン */
       .gl-cls-focus-btn {
@@ -1173,9 +1184,9 @@
       </div>
 
       <div class="gl-cls-actions">
-        <button class="gl-cls-btn-invite" data-invite>📤 招待</button>
-        <button class="gl-cls-btn-line" data-line>💚 LINE共有</button>
-        <button class="gl-cls-btn-finish" data-finish>🏁 終了・保存</button>
+       <button class="gl-cls-btn-refresh" data-refresh>🔄 最新取得</button>
+       <button class="gl-cls-btn-line" data-line>💚 LINE共有</button>
+       <button class="gl-cls-btn-finish" data-finish>🏁 終了・保存</button>
       </div>
 
       <button class="gl-cls-focus-btn" data-focus-current title="現在ホールへ">🎯</button>
