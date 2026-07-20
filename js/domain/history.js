@@ -199,7 +199,7 @@
      * @param {number} timeoutMs - タイムアウト（デフォルト5秒）
      * @returns {Promise<Object|null>} 最新スコア or null（失敗時）
      */
-    async syncScoresBeforeSave(roundId, timeoutMs = 5000) {
+    async syncScoresBeforeSave(roundId, timeoutMs = 15000) {  // v2.8.22.1: 5秒→15秒
       if (!roundId || !navigator.onLine) return null;
       try {
         const result = await Promise.race([
