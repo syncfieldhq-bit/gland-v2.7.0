@@ -4,7 +4,7 @@
  * Cache-first with network fallback.
  * v2.8.18.1: 履歴のコース名・Par情報表示バグ修正
  */
-const CACHE_VERSION = 'gland-v2.8.19-course-sync-step-b';
+const CACHE_VERSION = 'gland-v2.8.19.1-perf-rollback';
 const CORE_ASSETS = [
   './',
   './index.html',
