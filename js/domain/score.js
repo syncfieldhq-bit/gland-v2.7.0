@@ -14,8 +14,9 @@
   'use strict';
 
   // 変更後（v2.8.21）
-  const PEER_POLL_MS = 300000; // v2.8.21: 15秒→5分。手動更新ボタン(🔄最新取得)と併用
-  const MEMBER_REFRESH_EVERY = 10;
+  const PEER_POLL_MS = 60000;       // 1分(スコア+メンバー両方)
+  const MEMBER_REFRESH_EVERY = 1;   // 毎回メンバー更新
+
 
   let pollTimer = null;
   let pollCount = 0;

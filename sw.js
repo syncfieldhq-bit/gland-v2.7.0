@@ -4,7 +4,7 @@
  * Cache-first with network fallback.
  * v2.8.18.1: 履歴のコース名・Par情報表示バグ修正
  */
-const CACHE_VERSION = 'gland-v2.8.21.1-ios-only-guide';
+const CACHE_VERSION = 'gland-v2.8.22-instant-member-sync';
 const CORE_ASSETS = [
   './',
   './index.html',
