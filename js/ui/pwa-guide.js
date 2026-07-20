@@ -10,17 +10,43 @@
   const modalRoot = document.getElementById('modal-root') || document.body;
   const wrapper = document.createElement('div');
   wrapper.className = 'gl-modal gl-modal--pwa-guide gl-modal-show';
-  wrapper.style.zIndex = '99999'; // 最前面
+
+  // ★ 既存CSSに依存せず、確実に全画面表示させる
+  Object.assign(wrapper.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100vw',
+    height: '100vh',
+    zIndex: '99999',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(0, 0, 0, 0.6)'
+  });
+
   wrapper.innerHTML = `
-    <div class="gl-modal__backdrop"></div>
-    <div class="gl-modal__body">
-      <h2 class="gl-modal__title">📱 ホーム画面に追加してください</h2>
-      <p>G-LAND は<strong>ホーム画面アイコンから</strong>起動する必要があります。</p>
-      <h3>手順</h3>
-      <p>
-        1️⃣ Safari下部の <strong>共有ボタン（⬆️）</strong> をタップ<br>
+    <div class="gl-modal__body" style="
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 340px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      font-family: -apple-system, sans-serif;
+      line-height: 1.6;
+    ">
+      <h2 style="margin:0 0 12px; font-size:18px; color:#2e7d32;">
+        📱 ホーム画面に追加してください
+      </h2>
+      <p style="margin:0 0 12px; font-size:14px;">
+        G-LAND は<strong>ホーム画面アイコンから</strong>起動する必要があります。
+      </p>
+      <h3 style="margin:12px 0 8px; font-size:15px;">手順</h3>
+      <p style="margin:0; font-size:14px;">
+        1️⃣ Safari下部の <strong>共有ボタン(⬆️)</strong> をタップ<br>
         2️⃣ 「<strong>ホーム画面に追加</strong>」を選択<br>
-        3️⃣ ホーム画面に追加された <strong>G-LANDアイコン</strong> から起動
+        3️⃣ ホーム画面の <strong>G-LANDアイコン</strong> から起動
       </p>
       <p style="color:#d32f2f; font-size:13px; margin-top:12px;">
         ※ ホーム画面から起動しないと、登録が2回必要になります。<br>
@@ -29,7 +55,7 @@
     </div>
   `;
 
-  // #modal-root に追加（なければ body に）
+  // #modal-root に追加(なければ body に)
   if (modalRoot.id === 'modal-root') {
     modalRoot.appendChild(wrapper);
   } else {
