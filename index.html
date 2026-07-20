@@ -213,6 +213,17 @@
   font-size: 20px !important;
 }
 
+
+/* v2.8.22: 🔄最新取得ボタンのスピナー */
+.spinner {
+  display: inline-block;
+  animation: gl-spin 1s linear infinite;
+}
+@keyframes gl-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
   </style>
 
   <!-- ⬇️⬇️⬇️ GAS URL 設定（デプロイ時に必ず埋める！）⬇️⬇️⬇️ -->
