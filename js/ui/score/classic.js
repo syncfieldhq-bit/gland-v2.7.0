@@ -2228,9 +2228,14 @@
       document.getElementById('view-score')?.classList.add('show');
       window.glState.set('phase', 'S6');
 
-      unsubScores = window.glState.subscribe('scores', () => _renderKeepScroll());
-      unsubPlayers = window.glState.subscribe('players', () => _renderKeepScroll());
-      unsubProxies = window.glState.subscribe('proxyPlayers', () => _renderKeepScroll());
+      let _renderTimer = null;
+      const _debouncedRender = () => {
+      if (_renderTimer) clearTimeout(_renderTimer);
+      _renderTimer = setTimeout(() => _renderKeepScroll(), 300);
+     };
+      unsubScores = window.glState.subscribe('scores', _debouncedRender);
+      unsubPlayers = window.glState.subscribe('players', _debouncedRender);
+      unsubProxies = window.glState.subscribe('proxyPlayers', _debouncedRender);
 
       orientationMedia = window.matchMedia('(orientation: landscape)');
       this._orientationHandler = () => {
