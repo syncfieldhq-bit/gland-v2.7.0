@@ -1327,6 +1327,31 @@
     view.querySelector('[data-line]')?.addEventListener('click', _showLineShareModal);
     view.querySelector('[data-finish]')?.addEventListener('click', _finishRound);
 
+        // v2.8.22: 🔄最新取得ボタン(視覚フィードバック + メンバー更新)
+    view.querySelector('[data-refresh]')?.addEventListener('click', async (e) => {
+      const target = e.currentTarget;
+      const originalHTML = target.innerHTML;
+      
+      target.disabled = true;
+      target.innerHTML = '<span class="spinner">⟳</span> 更新中...';
+      
+      try {
+        if (window.glScore?.fetchPeers) {
+          await window.glScore.fetchPeers();
+        }
+        if (window.glRound?.refreshMembers) {
+          await window.glRound.refreshMembers();
+        }
+        window.glToast?.info?.('✅ 最新データを取得しました');
+      } catch (err) {
+        console.error('[refresh] error:', err);
+        window.glToast?.info?.('❌ 更新に失敗しました');
+      } finally {
+        target.disabled = false;
+        target.innerHTML = originalHTML;
+      }
+    });
+
     view.querySelector('[data-focus-current]')?.addEventListener('click', () => {
   const currentHole = _computeCurrentHole();
   _scrollToCurrentHole(currentHole, { force: true }); // v2.8.8: センターボタンは強制発火
