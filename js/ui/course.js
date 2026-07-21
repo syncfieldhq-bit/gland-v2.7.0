@@ -253,8 +253,9 @@
           </div>
           <button class="gl-btn-primary" data-do-search>検索</button>
           <div id="cs-results" style="margin-top:12px;"></div>
-          <button style="width:100%;margin-top:12px;padding:12px;background:#fff;border:2px solid #ff9800;color:#ff9800;border-radius:8px;font-weight:600;" data-request>
-            ✉️ 運営にコース追加を依頼
+          <button style="width:100%;margin-top:12px;padding:12px;background:#fff;border:2px solid #1a5f3f;color:#1a5f3f;border-radius:8px;font-weight:600;" data-create-new>
+            ➕ 新規コース追加登録
+          </button>
           </button>
         </div>
       `;
@@ -290,10 +291,10 @@
         });
       });
 
-      wrap.querySelector('[data-request]').addEventListener('click', () => {
-        close();
-        this.showRequestForm();
-      });
+      wrap.querySelector('[data-create-new]').addEventListener('click', () => {
+       close();
+       this.showCreateForm(onSelect);
+     });
     },
 
     showRequestForm() {
