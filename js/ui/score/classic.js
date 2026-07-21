@@ -50,21 +50,37 @@
   // ==== ヘルパー ====
 
     function _getPars() {
-    // v2.8.15: コースデータから pars を読み込む
-    const course = window.glState.get('currentCourse')
-                || window.glStorage.readLocal('gl_current_course_v1');
+  // v2.8.15: コースデータから pars を読み込む
+  // v2.8.25: holesJson 文字列パースに対応
+  const course = window.glState.get('currentCourse')
+                 || window.glStorage.readLocal('gl_current_course_v1');
 
-    if (course && course.types && course.types.length > 0) {
-      // 全タイプのパーを結合（東9H + 西9H = 18H など）
-      const pars = course.types.flatMap(type => type.pars || []);
-      // 18ホール分に調整（足りなければ PAR4 で埋める）
+  if (course) {
+    // types が直接ある場合(旧形式)と、holesJson の中にある場合(新形式)に対応
+    let types = course.types;
+    if (!types && course.holesJson) {
+      try {
+        const parsed = typeof course.holesJson === 'string'
+                       ? JSON.parse(course.holesJson)
+                       : course.holesJson;
+        types = parsed.types;
+      } catch (e) {
+        types = null;
+      }
+    }
+
+    if (types && types.length > 0) {
+      // 全タイプのパーを結合 (東9H + 西9H = 18H など)
+      const pars = types.flatMap(type => type.pars || []);
+      // 18ホール分に調整 (足りなければ PAR4 で埋める)
       while (pars.length < HOLES) pars.push(DEFAULT_PAR);
       return pars.slice(0, HOLES);
     }
-
-    // コース未選択時は従来通り全PAR4
-    return new Array(HOLES).fill(DEFAULT_PAR);
   }
+
+  // コース未選択時は従来通り全PAR4
+  return new Array(HOLES).fill(DEFAULT_PAR);
+}
 
   function _parSum(pars, from, to) {
     let s = 0;
