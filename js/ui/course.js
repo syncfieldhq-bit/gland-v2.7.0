@@ -34,7 +34,9 @@
 
         </div>
       `;
-      (document.getElementById('modal-root') || document.body).appendChild(wrap);
+      const modalRoot = document.getElementById('modal-root') || document.body;
+      modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
+      modalRoot.appendChild(wrap);
 
       const close = () => wrap.remove();
       wrap.querySelectorAll('[data-modal-close]').forEach(el => el.addEventListener('click', close));
@@ -119,7 +121,9 @@
           <button style="width:100%;padding:12px;margin-top:8px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer;" data-cancel>キャンセル</button>
         </div>
       `;
-      (document.getElementById('modal-root') || document.body).appendChild(wrap);
+      const modalRoot = document.getElementById('modal-root') || document.body;
+      modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
+      modalRoot.appendChild(wrap);
 
       const close = () => wrap.remove();
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
@@ -263,7 +267,9 @@
           </button>
         </div>
       `;
-      (document.getElementById('modal-root') || document.body).appendChild(wrap);
+      const modalRoot = document.getElementById('modal-root') || document.body;
+      modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
+      modalRoot.appendChild(wrap);
 
       const close = () => wrap.remove();
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
