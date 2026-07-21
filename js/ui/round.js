@@ -104,7 +104,7 @@
           </div>
           <div class="gl-round__card" data-action="course-add">
            <h3>⛳ ゴルフ場を追加登録</h3>
-           <p>マイコースに追加(検索/新規申請)</p>
+           <p>マイコースに追加(検索/新規追加登録)</p>
           </div>
         `}
       </div>
@@ -148,7 +148,9 @@
     wrap.className = 'gl-modal show';
     wrap.setAttribute('data-modal-type', 'proxy-manager');
     wrap.innerHTML = _renderProxyModalContent();
-    (document.getElementById('modal-root') || document.body).appendChild(wrap);
+    const modalRoot = document.getElementById('modal-root') || document.body;
+    modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
+    modalRoot.appendChild(wrap);
 
     const close = () => wrap.remove();
     wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
@@ -328,7 +330,9 @@
         <button style="width:100%;padding:12px;margin-top:8px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer;" data-cancel>キャンセル</button>
       </div>
     `;
-    (document.getElementById('modal-root') || document.body).appendChild(wrap);
+    const modalRoot = document.getElementById('modal-root') || document.body;
+    modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
+    modalRoot.appendChild(wrap);
 
     const close = () => wrap.remove();
     wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
@@ -538,7 +542,8 @@ function _showCourseAdd() {
       </div>
     `;
     const modalRoot = document.getElementById('modal-root') || document.body;
-modalRoot.appendChild(wrap);
+    modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
+    modalRoot.appendChild(wrap);
 
     const close = () => {
       wrap.classList.remove('show');
