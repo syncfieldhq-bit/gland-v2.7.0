@@ -75,6 +75,35 @@
     font-weight: 800;
     color: #1a5f3f;
   }
+
+#modal-root .gl-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s;
+  z-index: 10;
+  padding: 0;
+}
+
+#modal-root .gl-modal__close:hover,
+#modal-root .gl-modal__close:active {
+  background: rgba(0, 0, 0, 0.08);
+  color: #1a5f3f;
+}
+
+ 
     /* --- モーダル内の見出し・段落・入力欄・ボタン --- */
 
   #modal-root .gl-modal__body p {

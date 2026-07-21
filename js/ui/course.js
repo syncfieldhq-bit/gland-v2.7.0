@@ -242,6 +242,7 @@
       wrap.innerHTML = `
         <div class="gl-modal__backdrop"></div>
         <div class="gl-modal__body">
+        <button class="gl-modal__close" data-modal-close aria-label="閉じる">×</button>
           <h2 class="gl-modal__title">🔍 コース検索</h2>
           <div class="gl-form__group">
             <label class="gl-form__label">都道府県</label>
@@ -256,14 +257,13 @@
           <button style="width:100%;margin-top:12px;padding:12px;background:#fff;border:2px solid #1a5f3f;color:#1a5f3f;border-radius:8px;font-weight:600;" data-create-new>
             ➕ 新規コース追加登録
           </button>
-          </button>
         </div>
       `;
       (document.getElementById('modal-root') || document.body).appendChild(wrap);
 
       const close = () => wrap.remove();
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
-
+      wrap.querySelectorAll('[data-modal-close]').forEach(el => el.addEventListener('click', close));
       wrap.querySelector('[data-do-search]').addEventListener('click', async () => {
         const pref = document.getElementById('cs-pref').value.trim();
         const kana = document.getElementById('cs-kana').value.trim();
