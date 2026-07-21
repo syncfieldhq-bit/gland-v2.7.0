@@ -4,7 +4,7 @@
  * Cache-first with network fallback.
  * v2.8.18.1: 履歴のコース名・Par情報表示バグ修正
  */
-const CACHE_VERSION = 'gland-v2.8.33-view-padding-2px';
+const CACHE_VERSION = 'gland-v2.8.34-view-padding-restore-4px';
 const CORE_ASSETS = [
   './',
   './index.html',
