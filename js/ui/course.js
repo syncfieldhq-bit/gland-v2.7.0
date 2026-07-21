@@ -26,6 +26,7 @@
       wrap.innerHTML = `
         <div class="gl-modal__backdrop"></div>
         <div class="gl-modal__body">
+        <button class="gl-modal__close" data-modal-close aria-label="閉じる">×</button>
           <h2 class="gl-modal__title">⛳ コース選択</h2>
           <div>${items}</div>
           <button class="gl-btn-primary" data-search style="margin-top:12px;">🔍 全国コースから探す</button>
@@ -36,6 +37,7 @@
       (document.getElementById('modal-root') || document.body).appendChild(wrap);
 
       const close = () => wrap.remove();
+      wrap.querySelectorAll('[data-modal-close]').forEach(el => el.addEventListener('click', close));
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
 
       wrap.querySelectorAll('[data-course-id]').forEach((el) => {
@@ -71,6 +73,7 @@
       wrap.innerHTML = `
         <div class="gl-modal__backdrop"></div>
         <div class="gl-modal__body" style="max-height:88vh;overflow-y:auto;">
+        <button class="gl-modal__close" data-modal-close aria-label="閉じる">×</button>
           <h2 class="gl-modal__title">📝 新しいコースを作る</h2>
           <p style="color:#666;font-size:12px;margin:0 0 12px;">自分専用のコースを登録します</p>
 
@@ -120,6 +123,7 @@
 
       const close = () => wrap.remove();
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
+      wrap.querySelectorAll('[data-modal-close]').forEach(el => el.addEventListener('click', close));
       wrap.querySelector('[data-cancel]').addEventListener('click', close);
 
       // ホール数選択のビジュアル切り替え
