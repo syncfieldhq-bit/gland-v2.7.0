@@ -1756,7 +1756,7 @@
         </div>
       </div>
     `;
-    document.body.appendChild(modal);
+    (document.getElementById('modal-root') || document.body).appendChild(modal);
     const close = () => modal.remove();
     modal.querySelector('[data-close]').addEventListener('click', close);
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
@@ -1778,7 +1778,7 @@
         </div>
       </div>
     `;
-    document.body.appendChild(modal);
+    (document.getElementById('modal-root') || document.body).appendChild(modal);
     const close = () => modal.remove();
     modal.querySelector('[data-cancel]').addEventListener('click', close);
     modal.querySelector('[data-save]').addEventListener('click', () => {
@@ -1874,7 +1874,7 @@
         </div>
       </div>
     `;
-    document.body.appendChild(modal);
+    (document.getElementById('modal-root') || document.body).appendChild(modal);
 
     const ITEM_H = 44;
     const hourScroller = modal.querySelector('#wheel-hour-scroller');
@@ -1962,7 +1962,7 @@
         </div>
       </div>
     `;
-    document.body.appendChild(modal);
+    (document.getElementById('modal-root') || document.body).appendChild(modal);
     const close = () => modal.remove();
     modal.querySelector('[data-cancel]')?.addEventListener('click', close);
     modal.querySelector('[data-clear]')?.addEventListener('click', () => {
@@ -2014,7 +2014,7 @@
         </div>
       </div>
     `;
-    document.body.appendChild(modal);
+    (document.getElementById('modal-root') || document.body).appendChild(modal);
     const close = () => modal.remove();
     modal.querySelectorAll('input[name="lineType"]').forEach((radio) => {
       radio.addEventListener('change', () => {
@@ -2139,7 +2139,7 @@
 
       const currentStatus = _computeInputStatus();
       modal.innerHTML = renderContent(currentStatus);
-      document.body.appendChild(modal);
+      (document.getElementById('modal-root') || document.body).appendChild(modal);
 
       const close = (result) => {
         modal.remove();

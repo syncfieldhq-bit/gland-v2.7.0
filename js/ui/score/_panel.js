@@ -80,14 +80,14 @@
       overlay.addEventListener('click', () => {
         glScorePanel.close();
       });
-      document.body.appendChild(overlay);
+      (document.getElementById('modal-root') || document.body).appendChild(overlay);
     }
 
     let panel = document.getElementById(PANEL_ID);
     if (!panel) {
       panel = document.createElement('div');
       panel.id = PANEL_ID;
-      document.body.appendChild(panel);
+      (document.getElementById('modal-root') || document.body).appendChild(panel);
     }
 
     return { overlay, panel };

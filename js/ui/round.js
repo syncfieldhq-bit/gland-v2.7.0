@@ -102,6 +102,10 @@
             <h3>👥 招待コードで合流</h3>
             <p>ホストから受け取った4桁コードを入力</p>
           </div>
+          <div class="gl-round__card" data-action="course-add">
+           <h3>⛳ ゴルフ場を追加登録</h3>
+           <p>マイコースに追加(検索/新規申請)</p>
+          </div>
         `}
       </div>
     `;
@@ -128,6 +132,7 @@
     if (action === 'score') return window.glEvents.emit('ui:navigate', { view: 'score' });
     if (action === 'leave') return _confirmLeave();
     if (action === 'proxy') return _showProxyManagerModal();
+    if (action === 'course-add') return _showCourseAdd();
   }
 
   /**
@@ -502,6 +507,17 @@
       },
     });
   }
+
+// v2.8.23: ラウンド前のコース事前追加
+function _showCourseAdd() {
+  if (!window.glCourseUI?.showSearch) {
+    window.glToast?.warn?.('コース追加機能が読み込まれていません');
+    return;
+  }
+  window.glCourseUI.showSearch((c) => {
+    window.glToast?.info?.(`「${c.name}」をマイコースに追加しました`);
+  });
+}
 
   /**
    * 汎用モーダル（round.js内共用）

@@ -670,7 +670,7 @@
         <button class="glh-best-modal__btn" data-close>やった！</button>
       </div>
     `;
-    document.body.appendChild(modal);
+    (document.getElementById('modal-root') || document.body).appendChild(modal);
     requestAnimationFrame(() => modal.classList.add('show'));
     const close = () => {
       modal.classList.remove('show');

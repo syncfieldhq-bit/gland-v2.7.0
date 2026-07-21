@@ -33,7 +33,7 @@
 
         </div>
       `;
-      document.body.appendChild(wrap);
+      (document.getElementById('modal-root') || document.body).appendChild(wrap);
 
       const close = () => wrap.remove();
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
@@ -116,7 +116,7 @@
           <button style="width:100%;padding:12px;margin-top:8px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer;" data-cancel>キャンセル</button>
         </div>
       `;
-      document.body.appendChild(wrap);
+      (document.getElementById('modal-root') || document.body).appendChild(wrap);
 
       const close = () => wrap.remove();
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
@@ -258,7 +258,7 @@
           </button>
         </div>
       `;
-      document.body.appendChild(wrap);
+      (document.getElementById('modal-root') || document.body).appendChild(wrap);
 
       const close = () => wrap.remove();
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
@@ -319,7 +319,7 @@
           <button class="gl-btn-primary" data-submit>依頼を送信</button>
         </div>
       `;
-      document.body.appendChild(wrap);
+      (document.getElementById('modal-root') || document.body).appendChild(wrap);
 
       const close = () => wrap.remove();
       wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
