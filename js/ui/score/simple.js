@@ -14,72 +14,8 @@
   let orientationMedia = null;
 
   function _injectStyles() {
-    if (document.getElementById('gl-score-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-score-styles';
-    style.textContent = `
-      #view-score {
-        min-height: 100vh; padding: 12px 12px 16px; box-sizing: border-box;
-        background: #f8f9fa; display: none; flex-direction: column;
-      }
-      #view-score.show { display: flex; }
-      .gl-score__topbar {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 10px;
-      }
-      .gl-score__back { background: none; border: none; color: #1a5f3f; font-size: 15px; cursor: pointer; padding: 6px 0; }
-      .gl-score__code { font-size: 13px; color: #666; }
-      .gl-score__code b { color: #1a5f3f; font-family: monospace; font-size: 16px; }
-      .gl-score__table-wrap {
-        background: #fff; border-radius: 10px; overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,.08);
-        flex-shrink: 0;
-      }
-      .gl-score__table { width: 100%; border-collapse: collapse; font-size: 13px; }
-      .gl-score__table th, .gl-score__table td {
-        padding: 8px 4px; text-align: center; border-bottom: 1px solid #eee;
-      }
-      .gl-score__table th { background: #1a5f3f; color: #fff; font-weight: 600; font-size: 12px; }
-      .gl-score__table td.gl-name {
-        text-align: left; padding-left: 10px; font-weight: 600; color: #333;
-        max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      }
-      .gl-score__cell {
-        width: 32px; height: 32px; padding: 0; text-align: center;
-        border: 1px solid #ddd; border-radius: 6px; font-size: 15px;
-        background: #fff;
-      }
-      .gl-score__cell:focus { border-color: #1a5f3f; outline: none; background: #fffdf0; }
-      .gl-score__cell--mine { background: #f0f8f4; font-weight: 700; }
-      .gl-score__cell--peer { background: #fafafa; color: #666; }
-      .gl-score__hole-nav {
-        display: flex; justify-content: space-between; align-items: center;
-        background: #fff; padding: 12px; border-radius: 10px; margin-top: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.06);
-      }
-      .gl-score__hole-nav button {
-        padding: 10px 18px; background: #1a5f3f; color: #fff;
-        border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
-      }
-      .gl-score__hole-nav button:disabled { background: #ccc; }
-      .gl-score__hole-current { font-size: 20px; font-weight: 700; color: #1a5f3f; }
-      .gl-score__bottom-actions {
-        margin-top: 12px; display: flex; gap: 8px;
-      }
-      .gl-score__bottom-actions button {
-        flex: 1; padding: 12px; border-radius: 8px; border: none;
-        font-size: 14px; font-weight: 600; cursor: pointer;
-      }
-      .gl-score__btn-invite { background: #fff; color: #1a5f3f; border: 2px solid #1a5f3f; }
-      .gl-score__btn-finish { background: #1a5f3f; color: #fff; }
-
-      /* 横向き時: 下部マージン活用 */
-      #ad-slot-score-landscape { display: none; margin-top: 12px; }
-      @media (orientation: landscape) and (min-height: 500px) {
-        #ad-slot-score-landscape { display: block; }
-      }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _renderTable() {
@@ -110,9 +46,9 @@
       <div class="gl-score__table-wrap">
         <table class="gl-score__table">
           <thead>
-            <tr><th style="text-align:left;padding-left:10px;">プレイヤー</th><th>スコア</th></tr>
+            <tr><th class="gl-u-97">プレイヤー</th><th>スコア</th></tr>
           </thead>
-          <tbody>${rows || '<tr><td colspan="2" style="padding:20px;color:#999;">メンバーを読み込み中...</td></tr>'}</tbody>
+          <tbody>${rows || '<tr><td colspan="2" class="gl-u-98">メンバーを読み込み中...</td></tr>'}</tbody>
         </table>
       </div>
     `;

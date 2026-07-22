@@ -36,29 +36,20 @@
   });
 
   wrapper.innerHTML = `
-    <div class="gl-modal__body" style="
-      background: #fff;
-      border-radius: 12px;
-      padding: 24px;
-      max-width: 340px;
-      width: 90%;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-      font-family: -apple-system, sans-serif;
-      line-height: 1.6;
-    ">
-      <h2 style="margin:0 0 12px; font-size:18px; color:#2e7d32;">
+    <div class="gl-modal__body gl-u-59">
+      <h2 class="gl-u-60">
         📱 ホーム画面に追加してください
       </h2>
-      <p style="margin:0 0 12px; font-size:14px;">
+      <p class="gl-u-61">
         G-LAND は<strong>ホーム画面アイコンから</strong>起動する必要があります。
       </p>
-      <h3 style="margin:12px 0 8px; font-size:15px;">手順</h3>
-      <p style="margin:0; font-size:14px;">
+      <h3 class="gl-u-62">手順</h3>
+      <p class="gl-u-63">
         1️⃣ Safari下部の <strong>共有ボタン(⬆️)</strong> をタップ<br>
         2️⃣ 「<strong>ホーム画面に追加</strong>」を選択<br>
         3️⃣ ホーム画面の <strong>G-LANDアイコン</strong> から起動
       </p>
-      <p style="color:#d32f2f; font-size:13px; margin-top:12px;">
+      <p class="gl-u-64">
         ※ ホーム画面から起動しないと、登録が2回必要になります。<br>
         ※ この画面は閉じられません。
       </p>

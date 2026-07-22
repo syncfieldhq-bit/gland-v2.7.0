@@ -1,0 +1,1185 @@
+/* =========================================================================
+   G-LAND v3.0.0 — screens.css
+   ---------------------------------------------------------------------------
+   各 view（home / golf / score / history / mypage）と Classic テーマの
+   画面固有スタイルを集約。上下 padding は base.css の --gl-view-pad-* に委譲。
+   ========================================================================= */
+
+/* =======================================================================
+   #view-home（js/ui/home.js から移管）
+   ======================================================================= */
+
+      #view-home {
+        min-height: 100vh;
+        padding-left: 16px; padding-right: 16px;
+        /* 上下 padding は base.css の --gl-view-pad-* が担当 */
+        padding-top: calc(var(--gl-view-pad-top) + 16px);
+        padding-bottom: calc(var(--gl-view-pad-bottom) + 20px);
+        box-sizing: border-box;
+        background: linear-gradient(180deg, #f8f9fa 0%, #eef2f0 100%);
+        display: none; flex-direction: column;
+      }
+      #view-home.show { display: flex; }
+      .gl-home__header {
+        text-align: center; margin-bottom: 16px;
+        padding-top: 8px;
+      }
+      .gl-home__logo {
+        font-size: 32px; font-weight: 800; color: #1a5f3f;
+        letter-spacing: 2px; line-height: 1.2;
+      }
+      .gl-home__tagline {
+        font-size: 12px; color: #666; margin-top: 4px;
+      }
+      .gl-home__menu {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        margin-bottom: 16px;
+        position: relative;
+        z-index: 10;
+      }
+      .gl-home__btn {
+        padding: 20px 12px; border: none; border-radius: 14px;
+        background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        cursor: pointer; font-family: inherit;
+        transition: transform .15s, box-shadow .15s;
+        -webkit-tap-highlight-color: rgba(0,0,0,.1);
+        touch-action: manipulation;
+        position: relative;
+        z-index: 11;
+      }
+      .gl-home__btn:active { transform: scale(.97); }
+      .gl-home__btn-icon { font-size: 32px; line-height: 1; pointer-events: none; }
+      .gl-home__btn-label { font-size: 14px; font-weight: 700; color: #222; pointer-events: none; }
+      .gl-home__btn-sub { font-size: 11px; color: #888; pointer-events: none; }
+      .gl-home__btn--primary { background: linear-gradient(135deg, #1a5f3f, #2d7a56); }
+      .gl-home__btn--primary .gl-home__btn-label { color: #fff; }
+      .gl-home__btn--primary .gl-home__btn-sub { color: rgba(255,255,255,.85); }
+      .gl-home__ads-title {
+        font-size: 12px; color: #888; text-align: center; margin: 4px 0 8px;
+        letter-spacing: 1px;
+      }
+      .gl-home__ads {
+        flex: 1; display: flex; align-items: stretch;
+        min-height: 240px;
+        position: relative;
+        z-index: 1;
+      }
+      #ad-slot-home { width: 100%; }
+
+      /* 配布QRモーダル */
+      .gl-distqr-overlay {
+        position: fixed; inset: 0; z-index: 9500;
+        background: rgba(0,0,0,.5);
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+      }
+      .gl-distqr-modal {
+        background: #fff; border-radius: 16px; padding: 24px;
+        max-width: 340px; width: 100%;
+        box-shadow: 0 8px 32px rgba(0,0,0,.3);
+        text-align: center;
+      }
+      .gl-distqr-title {
+        font-size: 18px; font-weight: 800; color: #1a5f3f;
+        margin-bottom: 8px;
+      }
+      .gl-distqr-desc {
+        font-size: 13px; color: #666; margin-bottom: 16px;
+      }
+      .gl-distqr-canvas {
+        background: #fff; padding: 12px; border-radius: 10px;
+        display: inline-block; margin-bottom: 12px;
+        border: 1px solid #e0e0e0;
+      }
+      .gl-distqr-url {
+        font-size: 11px; color: #888; word-break: break-all;
+        background: #f5f5f5; padding: 8px; border-radius: 6px;
+        margin-bottom: 12px;
+      }
+      .gl-distqr-actions {
+        display: flex; gap: 8px; justify-content: center;
+      }
+      .gl-distqr-btn {
+        flex: 1; padding: 12px; border: none; border-radius: 8px;
+        font-size: 14px; font-weight: 700; cursor: pointer;
+        font-family: inherit;
+      }
+      .gl-distqr-btn--primary { background: #1a5f3f; color: #fff; }
+      .gl-distqr-btn--secondary { background: #eee; color: #333; }
+    
+
+
+/* =======================================================================
+   #view-golf（js/ui/round.js から移管）
+   ======================================================================= */
+
+      #view-golf {
+        min-height: 100vh;
+        padding-left: 16px; padding-right: 16px;
+        padding-top: calc(var(--gl-view-pad-top) + 12px);
+        padding-bottom: calc(var(--gl-view-pad-bottom) + 12px);
+        box-sizing: border-box;
+        background: #f8f9fa; display: none;
+      }
+      #view-golf.show { display: block; }
+      .gl-round__back {
+        background: none; border: none; color: #1a5f3f; font-size: 16px;
+        cursor: pointer; padding: 8px 4px; margin-bottom: 12px;
+        -webkit-tap-highlight-color: rgba(0,0,0,.1);
+        touch-action: manipulation;
+      }
+      .gl-round__title { font-size: 22px; font-weight: 700; color: #1a5f3f; margin: 0 0 16px; }
+      .gl-round__actions { display: flex; flex-direction: column; gap: 12px; }
+      .gl-round__card {
+        background: #fff; padding: 20px 18px; border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.08); cursor: pointer;
+        -webkit-tap-highlight-color: rgba(26,95,63,.1);
+        touch-action: manipulation;
+        transition: transform .1s;
+      }
+      .gl-round__card:active { transform: scale(.98); }
+      .gl-round__card h3 { margin: 0 0 6px; color: #1a5f3f; font-size: 17px; pointer-events: none; }
+      .gl-round__card p { margin: 0; color: #666; font-size: 13px; pointer-events: none; }
+      .gl-invite-box {
+        background: linear-gradient(135deg, #1a5f3f, #2d7a56);
+        color: #fff; padding: 24px 20px; border-radius: 14px; text-align: center;
+      }
+      .gl-invite-box__code {
+        font-size: 48px; font-weight: 800; letter-spacing: 6px;
+        margin: 12px 0; font-family: 'Courier New', monospace;
+      }
+      .gl-invite-box__qr { background: #fff; padding: 12px; border-radius: 10px; display: inline-block; margin: 8px 0; }
+      .gl-invite-box__qr canvas, .gl-invite-box__qr img { display: block; }
+      .gl-invite-box__hint { font-size: 13px; opacity: .9; }
+      .gl-input-code {
+        width: 100%; padding: 14px; font-size: 22px; text-align: center;
+        letter-spacing: 6px; border: 2px solid #ddd; border-radius: 10px;
+        box-sizing: border-box; text-transform: uppercase;
+        font-family: 'Courier New', monospace;
+      }
+      .gl-spinner {
+        display: inline-block; width: 32px; height: 32px;
+        border: 3px solid rgba(255,255,255,.3); border-top-color: #fff;
+        border-radius: 50%; animation: gl-spin 0.8s linear infinite;
+      }
+      @keyframes gl-spin { to { transform: rotate(360deg); } }
+    
+
+
+/* =======================================================================
+   #view-mypage（js/ui/mypage.js から移管）
+   ======================================================================= */
+
+      #view-mypage {
+        min-height: 100vh;
+        padding-left: 16px; padding-right: 16px;
+        padding-top: calc(var(--gl-view-pad-top) + 12px);
+        padding-bottom: calc(var(--gl-view-pad-bottom) + 12px);
+        box-sizing: border-box;
+        background: #f8f9fa; display: none; flex-direction: column;
+      }
+      #view-mypage.show { display: flex; }
+      .gl-mypage__title { font-size: 22px; font-weight: 700; color: #1a5f3f; margin: 0 0 8px; }
+      .gl-mypage__userid-card {
+        background: #fff; padding: 10px 14px; border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.05); margin-bottom: 14px;
+        font-size: 12px; color: #888;
+      }
+      .gl-mypage__userid-card span { font-family: monospace; color: #333; }
+      .gl-mypage__card {
+        background: #fff; padding: 18px; border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.08); margin-bottom: 12px;
+      }
+      .gl-mypage__row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+      .gl-mypage__row:last-child { border-bottom: none; }
+      .gl-mypage__label { color: #666; font-size: 14px; }
+      .gl-mypage__value { color: #333; font-weight: 600; font-size: 14px; }
+      .gl-mypage__value--empty { color: #ccc; font-weight: 400; }
+      .gl-mypage__version {
+        margin-top: auto; padding: 20px 0 8px;
+        text-align: center; color: #999; font-size: 11px;
+      }
+      #ad-slot-mypage { margin-top: 18px; }
+
+      /* v2.8.13: ボタン CSS 復元 */
+      #view-mypage .gl-btn-primary {
+        width: 100%; padding: 14px; font-size: 16px; font-weight: 700;
+        background: #1a5f3f; color: #fff; border: none; border-radius: 10px;
+        cursor: pointer; box-shadow: 0 4px 12px rgba(26,95,63,.25);
+      }
+      #view-mypage .gl-btn-primary:active { background: #14472f; }
+      /* v3.0.0: .gl-modal / .gl-modal__* / .gl-modal .gl-btn-primary は modal.css に集約 */
+      /* v3.0.0: .gl-form__* は components.css に集約 */
+    
+
+
+/* =======================================================================
+   #view-history（js/ui/history.js から移管、${COLOR_*} は実値へ展開済み）
+   ======================================================================= */
+
+      #view-history {
+        min-height: 100vh;
+        padding-left: 14px; padding-right: 14px;
+        padding-top: calc(var(--gl-view-pad-top) + 8px);
+        padding-bottom: calc(var(--gl-view-pad-bottom) + 60px);
+        box-sizing: border-box;
+        background: #faf6ec;
+        display: none; overflow-y: auto;
+        font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+      }
+      #view-history.show { display: block; }
+
+      .glh-back {
+        background: transparent; border: none;
+        color: #1a5f3f; font-size: 15px; font-weight: 700;
+        padding: 8px 4px; cursor: pointer; margin-bottom: 4px;
+      }
+      .glh-title {
+        font-size: 22px; font-weight: 800;
+        color: #1a5f3f; margin: 4px 0 12px;
+      }
+
+      .glh-kpi {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 8px; margin-bottom: 12px;
+      }
+      .glh-kpi__card {
+        background: #fff; border-radius: 10px; padding: 10px 8px;
+        text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        border: 1px solid #e8e0cc;
+      }
+      .glh-kpi__label {
+        font-size: 10px; color: #888; letter-spacing: .5px;
+        margin-bottom: 4px;
+      }
+      .glh-kpi__value {
+        font-size: 22px; font-weight: 800; color: #1a5f3f;
+        line-height: 1;
+      }
+      .glh-kpi__unit { font-size: 11px; color: #888; margin-left: 2px; font-weight: 500; }
+      .glh-kpi__sub { font-size: 11px; color: #999; margin-top: 3px; }
+
+      .glh-filter {
+        display: flex; gap: 6px; margin-bottom: 10px; align-items: center;
+        overflow-x: auto; white-space: nowrap; padding-bottom: 4px;
+      }
+      .glh-filter__label { font-size: 11px; color: #666; flex-shrink: 0; }
+      .glh-filter__chip {
+        background: #fff; border: 1px solid #d5c98c;
+        padding: 4px 11px; border-radius: 14px;
+        font-size: 12px; color: #1a5f3f;
+        cursor: pointer; flex-shrink: 0;
+      }
+      .glh-filter__chip.active {
+        background: #1a5f3f; color: #fff; border-color: #1a5f3f;
+      }
+
+      .glh-item {
+        background: #fff; border-radius: 10px;
+        padding: 12px 14px; margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+        border-left: 4px solid transparent;
+        cursor: pointer;
+        transition: transform .1s;
+      }
+      .glh-item:active { transform: scale(.98); }
+      .glh-item.is-best { border-left-color: #c9a959; background: linear-gradient(90deg, #fff9e6 0%, #fff 40%); }
+
+      .glh-item__row1 {
+        display: flex; justify-content: space-between; align-items: baseline;
+        margin-bottom: 4px;
+      }
+      .glh-item__date { font-size: 12px; color: #888; }
+      .glh-item__best {
+        font-size: 11px; font-weight: 700; color: #c9a959;
+        background: #fff3d6; padding: 2px 8px; border-radius: 10px;
+      }
+      .glh-item__course {
+        font-size: 15px; font-weight: 700; color: #222;
+        margin-bottom: 6px; letter-spacing: .3px;
+      }
+      .glh-item__row3 {
+        display: flex; justify-content: space-between; align-items: flex-end;
+      }
+      .glh-item__score {
+        font-size: 28px; font-weight: 800; color: #1a5f3f; line-height: 1;
+      }
+      .glh-item__diff {
+        font-size: 14px; font-weight: 700; margin-left: 6px;
+      }
+      .glh-item__meta {
+        font-size: 11px; color: #999; text-align: right;
+      }
+
+      .glh-empty {
+        text-align: center; padding: 60px 20px;
+        color: #999; font-size: 14px;
+      }
+      .glh-empty__icon { font-size: 48px; margin-bottom: 12px; }
+
+      /* ==== 詳細 ==== */
+      .glh-detail { padding: 4px 2px; }
+      .glh-detail__header {
+        background: #1a5f3f; color: #fff;
+        padding: 14px 16px; border-radius: 12px;
+        margin-bottom: 14px; position: relative; overflow: hidden;
+      }
+      .glh-detail__header.is-best::before {
+        content: '🏆'; position: absolute; right: 8px; top: 4px;
+        font-size: 44px; opacity: .25;
+      }
+      .glh-detail__date { font-size: 11px; opacity: .8; }
+      .glh-detail__course {
+        font-size: 18px; font-weight: 700; margin: 4px 0 8px;
+      }
+      .glh-detail__stats {
+        display: flex; gap: 14px; align-items: baseline;
+      }
+      .glh-detail__total {
+        font-size: 34px; font-weight: 800; line-height: 1;
+      }
+      .glh-detail__diff { font-size: 18px; font-weight: 700; }
+
+      /* v2.7.19: 詳細画面のスコア表示切替トグル */
+      .glh-detail__toggle {
+        display: flex; background: #fff;
+        border: 1px solid #d5c98c; border-radius: 20px;
+        overflow: hidden; margin: 0 auto 10px;
+        width: max-content;
+      }
+      .glh-detail__toggle-btn {
+        background: transparent; border: none;
+        padding: 6px 16px; cursor: pointer;
+        color: #1a5f3f; font-weight: 700; font-size: 12px;
+        min-width: 60px;
+      }
+      .glh-detail__toggle-btn.active {
+        background: #1a5f3f; color: #fff;
+      }
+
+      .glh-card {
+        background: #fff; border-radius: 10px; padding: 8px;
+        margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.06);
+        overflow-x: auto;
+      }
+      .glh-card__title {
+        font-size: 12px; color: #666; font-weight: 700;
+        padding: 4px 6px 6px; letter-spacing: .5px;
+      }
+      table.glh-scorecard {
+        width: 100%; border-collapse: collapse; font-size: 12px;
+      }
+      .glh-scorecard th, .glh-scorecard td {
+        border: 1px solid #e6e0d0;
+        padding: 5px 3px; text-align: center;
+        min-width: 28px;
+      }
+      .glh-scorecard th {
+        background: #f5efd8; color: #1a5f3f; font-weight: 700;
+      }
+      .glh-scorecard .glh-sc-out, .glh-scorecard .glh-sc-in, .glh-scorecard .glh-sc-tot {
+        background: #ecf7ef; font-weight: 700; color: #1a5f3f;
+      }
+      .glh-scorecard .glh-sc-label {
+        text-align: left; padding-left: 8px; font-weight: 700; background: #fbf7e6;
+      }
+      .glh-scorecard .glh-sc-par-row td { background: #f8f4e0; color: #666; font-size: 11px; }
+
+      /* v2.7.19: スコア色分け */
+      .glh-scorecard .glh-eagle  { color: #c0392b; font-weight: 800; }
+      .glh-scorecard .glh-birdie { color: #c0392b; font-weight: 700; }
+      .glh-scorecard .glh-bogey  { color: #444; }
+      .glh-scorecard .glh-dbogey { color: #666; }
+
+      /* 同伴者 */
+      .glh-comp {
+        display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px;
+      }
+      .glh-comp__item {
+        min-width: 130px; flex-shrink: 0;
+        background: #fff; border-radius: 8px; padding: 8px 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        border: 1px solid #e8e0cc;
+      }
+      .glh-comp__item.no-score {
+        background: #f7f5eb; opacity: .82;
+      }
+      .glh-comp__name { font-size: 13px; font-weight: 700; color: #333; }
+      .glh-comp__score { font-size: 20px; font-weight: 800; color: #1a5f3f; margin-top: 2px; }
+      .glh-comp__diff { font-size: 13px; font-weight: 700; margin-left: 4px; }
+      .glh-comp__nostore { font-size: 12px; color: #999; margin-top: 4px; font-weight: 600; }
+      .glh-comp__type { font-size: 10px; color: #999; margin-top: 2px; }
+
+      /* BEST モーダル */
+      .glh-best-modal {
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(0,0,0,.65);
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity .3s;
+      }
+      .glh-best-modal.show { opacity: 1; }
+      .glh-best-modal__box {
+        background: linear-gradient(160deg, #faf6ec 0%, #fff9e6 100%);
+        padding: 30px 28px 22px; border-radius: 16px;
+        text-align: center; max-width: 320px; width: 84%;
+        box-shadow: 0 8px 40px rgba(0,0,0,.4);
+      }
+      .glh-best-modal__icon { font-size: 68px; line-height: 1; }
+      .glh-best-modal__title {
+        font-size: 22px; font-weight: 800; color: #c9a959;
+        margin: 8px 0 4px;
+      }
+      .glh-best-modal__msg { font-size: 14px; color: #555; margin-bottom: 16px; }
+      .glh-best-modal__btn {
+        background: #1a5f3f; color: #fff; border: none;
+        padding: 10px 32px; border-radius: 22px;
+        font-size: 15px; font-weight: 700; cursor: pointer;
+      }
+    
+
+
+/* =======================================================================
+   #view-score（Simple テーマ、js/ui/score/simple.js から移管）
+   ======================================================================= */
+
+      #view-score {
+        min-height: 100vh;
+        padding-left: 12px; padding-right: 12px;
+        padding-top: calc(var(--gl-view-pad-top) + 8px);
+        padding-bottom: calc(var(--gl-view-pad-bottom) + 16px);
+        box-sizing: border-box;
+        background: #f8f9fa; display: none; flex-direction: column;
+      }
+      #view-score.show { display: flex; }
+      .gl-score__topbar {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 10px;
+      }
+      .gl-score__back { background: none; border: none; color: #1a5f3f; font-size: 15px; cursor: pointer; padding: 6px 0; }
+      .gl-score__code { font-size: 13px; color: #666; }
+      .gl-score__code b { color: #1a5f3f; font-family: monospace; font-size: 16px; }
+      .gl-score__table-wrap {
+        background: #fff; border-radius: 10px; overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        flex-shrink: 0;
+      }
+      .gl-score__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .gl-score__table th, .gl-score__table td {
+        padding: 8px 4px; text-align: center; border-bottom: 1px solid #eee;
+      }
+      .gl-score__table th { background: #1a5f3f; color: #fff; font-weight: 600; font-size: 12px; }
+      .gl-score__table td.gl-name {
+        text-align: left; padding-left: 10px; font-weight: 600; color: #333;
+        max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .gl-score__cell {
+        width: 32px; height: 32px; padding: 0; text-align: center;
+        border: 1px solid #ddd; border-radius: 6px; font-size: 15px;
+        background: #fff;
+      }
+      .gl-score__cell:focus { border-color: #1a5f3f; outline: none; background: #fffdf0; }
+      .gl-score__cell--mine { background: #f0f8f4; font-weight: 700; }
+      .gl-score__cell--peer { background: #fafafa; color: #666; }
+      .gl-score__hole-nav {
+        display: flex; justify-content: space-between; align-items: center;
+        background: #fff; padding: 12px; border-radius: 10px; margin-top: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      }
+      .gl-score__hole-nav button {
+        padding: 10px 18px; background: #1a5f3f; color: #fff;
+        border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+      }
+      .gl-score__hole-nav button:disabled { background: #ccc; }
+      .gl-score__hole-current { font-size: 20px; font-weight: 700; color: #1a5f3f; }
+      .gl-score__bottom-actions {
+        margin-top: 12px; display: flex; gap: 8px;
+      }
+      .gl-score__bottom-actions button {
+        flex: 1; padding: 12px; border-radius: 8px; border: none;
+        font-size: 14px; font-weight: 600; cursor: pointer;
+      }
+      .gl-score__btn-invite { background: #fff; color: #1a5f3f; border: 2px solid #1a5f3f; }
+      .gl-score__btn-finish { background: #1a5f3f; color: #fff; }
+
+      /* 横向き時: 下部マージン活用 */
+      #ad-slot-score-landscape { display: none; margin-top: 12px; }
+      @media (orientation: landscape) and (min-height: 500px) {
+        #ad-slot-score-landscape { display: block; }
+      }
+    
+
+
+/* =======================================================================
+   #view-score.gl-classic（Classic テーマ、js/ui/score/classic.js から移管）
+   Classic 内モーダル (.gl-cls-modal) は modal.css の .gl-modal--cls で継承。
+   下位互換のため .gl-cls-modal クラスも残置。
+   ======================================================================= */
+
+      /* ===== 全体レイアウト ===== */
+      #view-score.gl-classic {
+        min-height: 100vh; box-sizing: border-box;
+        padding-left: 8px; padding-right: 8px;
+        padding-top: calc(var(--gl-view-pad-top) + 4px);
+        padding-bottom: calc(var(--gl-view-pad-bottom) + 4px);
+        background: #f5f2ea;
+        display: none; flex-direction: column;
+      }
+      #view-score.gl-classic.show { display: flex; }
+
+      /* ===== ヘッダー ===== */
+      .gl-cls-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 4px 8px; margin-bottom: 6px;
+      }
+      .gl-cls-back {
+        background: none; border: none; color: #1a5f3f;
+        font-size: 15px; cursor: pointer; padding: 4px 0;
+      }
+      .gl-cls-logo {
+        font-size: 15px; font-weight: 700; color: #1a5f3f; letter-spacing: 1px;
+      }
+      .gl-cls-logo small { font-size: 11px; opacity: .7; margin-left: 6px; }
+      .gl-cls-code { font-size: 12px; color: #666; }
+      .gl-cls-code b { color: #1a5f3f; font-family: monospace; font-size: 14px; }
+
+      /* ===== 情報バー ===== */
+      .gl-cls-info-bar {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 8px 12px; margin-bottom: 8px;
+        background: #f0e8d0; border-radius: 8px;
+        border: 1px solid #d4c8a8;
+      }
+      .gl-cls-info-item {
+        display: flex; align-items: center; gap: 6px;
+        cursor: pointer; padding: 4px 8px;
+        border-radius: 6px; transition: background .15s;
+        font-size: 13px; color: #5a4a30;
+      }
+      .gl-cls-info-item:active { background: rgba(0,0,0,.06); }
+      .gl-cls-info-item__icon { font-size: 16px; }
+      .gl-cls-info-item__value { font-weight: 700; color: #1a5f3f; }
+      .gl-cls-info-item__value--empty { color: #999; font-weight: 500; }
+      .gl-cls-info-item__count { font-size: 11px; color: #666; margin-left: 4px; }
+      .gl-cls-info-item__count--over { color: #d32f2f; font-weight: 700; }
+
+      /* ===== v2.7.30 NEW: モード切替アコーディオン ===== */
+      .gl-cls-settings {
+        margin-bottom: 6px;
+        border-radius: 8px;
+        background: #f0e8d0;
+        border: 1px solid #d4c8a8;
+        overflow: hidden;
+      }
+      .gl-cls-settings-toggle {
+        width: 100%;
+        padding: 8px 12px;
+        background: transparent;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: #5a4a30;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .gl-cls-settings-toggle:active {
+        background: rgba(0,0,0,.04);
+      }
+      .gl-cls-settings-current {
+        font-size: 11px;
+        color: #1a5f3f;
+        font-weight: 600;
+        margin-left: 8px;
+      }
+      .gl-cls-settings-arrow {
+        font-size: 11px;
+        transition: transform 0.2s;
+        color: #5a4a30;
+      }
+      .gl-cls-settings-arrow--open {
+        transform: rotate(90deg);
+      }
+      .gl-cls-settings-body {
+        padding: 4px 6px 6px;
+        border-top: 1px solid #d4c8a8;
+        display: none;
+      }
+      .gl-cls-settings-body--open {
+        display: block;
+      }
+      .gl-cls-settings-section {
+        margin-bottom: 6px;
+      }
+      .gl-cls-settings-section:last-child {
+        margin-bottom: 0;
+      }
+      .gl-cls-settings-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #5a4a30;
+        margin: 4px 0 3px;
+        padding-left: 2px;
+      }
+
+      /* ===== v2.7.27 NEW: 入力方式タブ ===== */
+      .gl-cls-inputmodes {
+        display: grid; grid-template-columns: 1fr 1fr 1fr;
+        gap: 4px; margin-bottom: 0;
+        background: #e8e0d0; padding: 4px; border-radius: 8px;
+      }
+      .gl-cls-inputmode-btn {
+        padding: 10px 4px; border: none; border-radius: 6px;
+        background: transparent; cursor: pointer;
+        font-family: inherit; font-size: 13px; font-weight: 700;
+        color: #5a4a30; transition: all .15s;
+        display: flex; align-items: center; justify-content: center; gap: 4px;
+      }
+      .gl-cls-inputmode-btn.active {
+        background: #1a5f3f; color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,.15);
+      }
+      .gl-cls-inputmode-btn__icon { font-size: 14px; }
+
+      /* ===== モード切替タブ ===== */
+      .gl-cls-modes {
+        display: grid; grid-template-columns: 1fr 1fr 1fr;
+        gap: 4px; margin-bottom: 0;
+        background: #e8e0d0; padding: 4px; border-radius: 8px;
+      }
+      .gl-cls-mode-btn {
+        padding: 8px 4px; border: none; border-radius: 6px;
+        background: transparent; cursor: pointer;
+        font-family: inherit; font-size: 13px; font-weight: 600;
+        color: #5a4a30; transition: background .15s;
+      }
+      .gl-cls-mode-btn.active {
+        background: #1a5f3f; color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,.15);
+      }
+      .gl-cls-mode-btn__symbols {
+        display: inline-flex; gap: 6px; font-size: 14px;
+      }
+
+      /* ===== スコアカード表 ===== */
+      .gl-cls-table-wrap {
+        flex: 1; overflow: hidden; border-radius: 8px;
+        background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        border: 1px solid #d4c8a8;
+      }
+      .gl-cls-table {
+        display: grid; width: 100%; height: 100%;
+        grid-template-columns: 92px 1fr 88px;
+      }
+      .gl-cls-col-fixed-left,
+      .gl-cls-col-fixed-right,
+      .gl-cls-col-scroll {
+        display: flex; flex-direction: column;
+      }
+      .gl-cls-col-scroll {
+        overflow-x: auto; overflow-y: hidden;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+      }
+      .gl-cls-scroll-inner {
+        display: grid;
+        grid-template-columns: repeat(9, 52px) 62px repeat(9, 52px) 62px;
+        min-width: min-content;
+      }
+
+      /* ===== セル共通 ===== */
+      .gl-cls-cell {
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        border-right: 1px solid #e8dfc7;
+        border-bottom: 1px solid #e8dfc7;
+        text-align: center; box-sizing: border-box;
+        padding: 2px; position: relative;
+      }
+      .gl-cls-cell--head {
+        background: #1a5f3f; color: #fff;
+        font-weight: 700; font-size: 13px;
+        height: 32px;
+      }
+      .gl-cls-cell--par {
+        background: #f0e8d0; color: #5a4a30;
+        font-weight: 700; font-size: 15px;
+        height: 32px;
+      }
+      .gl-cls-cell--player {
+        background: #faf6ec; color: #333;
+        font-weight: 700; font-size: 15px;
+        padding: 4px 6px;
+        justify-content: center; align-items: flex-start;
+        text-align: left; cursor: pointer;
+      }
+      .gl-cls-cell--player small {
+        display: block; font-size: 10px; font-weight: 500;
+        margin-top: 2px;
+      }
+      .gl-cls-player-badge {
+        display: inline-block; padding: 1px 5px;
+        border-radius: 3px; font-size: 9px; font-weight: 600;
+      }
+      .gl-cls-player-badge--self { background: #1a5f3f; color: #fff; }
+      .gl-cls-player-badge--shared { background: #999; color: #fff; }
+      .gl-cls-player-badge--proxy { background: #ff9800; color: #fff; }
+
+      /* ===== スコア入力セル ===== */
+      .gl-cls-cell--score {
+        height: 54px; background: #fff; cursor: pointer;
+        font-size: 22px; font-weight: 700;
+        transition: background .15s;
+      }
+      .gl-cls-cell--score:active { background: #e8f5e9; }
+      .gl-cls-cell--putt {
+        height: 30px; background: #fafafa; cursor: pointer;
+        font-size: 13px; color: #666;
+      }
+      .gl-cls-cell--score--readonly,
+      .gl-cls-cell--putt--readonly {
+        cursor: default; background: #f5f5f5;
+      }
+      .gl-cls-cell--score--empty { color: #ccc; font-size: 16px; }
+      .gl-cls-cell--putt-label {
+        font-size: 9px; color: #999; margin-right: 3px;
+      }
+
+      /* ===== 集計セル ===== */
+      .gl-cls-cell--sum {
+        height: 54px; background: #ede4c7; color: #333;
+        font-weight: 800; font-size: 20px;
+        border-left: 2px solid #b8a878;
+      }
+      .gl-cls-cell--sum-putt {
+        height: 30px; background: #e8dfbf;
+        font-size: 12px; color: #5a4a30;
+        border-left: 2px solid #b8a878;
+      }
+      .gl-cls-cell--sum-diff {
+        font-size: 11px; font-weight: 600; margin-top: -2px;
+      }
+
+      /* ===== 現在ホールハイライト ===== */
+      .gl-cls-cell--head.gl-cls-cell--current {
+        background: #fff59d !important;
+        color: #1a5f3f !important;
+        font-weight: 800;
+      }
+      .gl-cls-cell--par.gl-cls-cell--current {
+        background: #fff59d !important;
+        color: #1a5f3f !important;
+        font-weight: 800;
+        box-shadow: inset 0 -2px 0 #f9a825;
+      }
+      .gl-cls-cell--score.gl-cls-cell--current {
+        background: #fffde7 !important;
+        box-shadow: inset 0 0 0 2px #f9a825;
+      }
+      .gl-cls-cell--putt.gl-cls-cell--current {
+        background: #fff8e1 !important;
+      }
+
+      /* ===== 下部アクション ===== */
+      .gl-cls-actions {
+        display: grid; grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px; margin-top: 8px;
+      }
+      .gl-cls-actions button {
+        padding: 10px 6px; border-radius: 6px; border: none;
+        font-size: 13px; font-weight: 600; cursor: pointer;
+      }
+      .gl-cls-btn-refresh {
+       background: #fff;
+       color: #1a5f3f;
+       border: 2px solid #1a5f3f;
+       transition: background 0.15s;
+     }
+     .gl-cls-btn-refresh:disabled {
+      background: #f5f5f5;
+      color: #999;
+      border-color: #ccc;
+      cursor: not-allowed;
+     }
+     .gl-cls-btn-line { background: #06c755; color: #fff; }
+     .gl-cls-btn-finish { background: #1a5f3f; color: #fff; }
+
+      /* 現在ホールへフォーカスボタン */
+      .gl-cls-focus-btn {
+        position: fixed; right: 16px; bottom: 130px;   /* v2.8.10: 終了・保存ボタンから離す */
+        width: 48px; height: 48px; border-radius: 50%;
+        background: #1a5f3f; color: #fff; border: none;
+        font-size: 22px; cursor: pointer;
+        box-shadow: 0 4px 12px rgba(26,95,63,.4);
+        z-index: 100;
+        display: flex; align-items: center; justify-content: center;
+        transition: transform .15s;
+      }
+      .gl-cls-focus-btn:active { transform: scale(.92); }
+
+      /* ===== 入力パネル: 共通ヘッダー ===== */
+      .gl-cls-panel-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 12px; padding-bottom: 8px;
+        border-bottom: 2px solid #f0e8d0;
+      }
+      .gl-cls-panel-hole {
+        font-size: 20px; font-weight: 800; color: #1a5f3f;
+      }
+      .gl-cls-panel-progress {
+        font-size: 12px; color: #888;
+        background: #f0e8d0; padding: 3px 8px;
+        border-radius: 12px;
+      }
+      .gl-cls-panel-player {
+        font-size: 16px; font-weight: 700; color: #333;
+        margin-bottom: 10px;
+        display: flex; align-items: center; gap: 6px;
+      }
+      .gl-cls-panel-section-label {
+        font-size: 13px; font-weight: 600; color: #5a4a30;
+        margin: 10px 0 6px;
+      }
+      .gl-cls-panel-actions {
+        display: grid; grid-template-columns: 1fr 2fr; gap: 8px;
+        margin-top: 14px;
+      }
+      .gl-cls-panel-btn-cancel {
+        padding: 14px; background: #f5f5f5; border: none;
+        border-radius: 8px; font-size: 14px; color: #666;
+        cursor: pointer;
+      }
+      .gl-cls-panel-btn-save {
+        padding: 14px; background: #1a5f3f; color: #fff;
+        border: none; border-radius: 8px;
+        font-size: 15px; font-weight: 700; cursor: pointer;
+      }
+      .gl-cls-panel-btn-save:disabled {
+        background: #ccc; cursor: default;
+      }
+
+      /* ===== 入力パネル: Classic (10ボタン) ===== */
+      .gl-cls-panel-keys {
+        display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+        margin-bottom: 4px;
+      }
+      .gl-cls-panel-key {
+        padding: 14px 0; background: #f0f0f0; border: 2px solid transparent;
+        border-radius: 8px; font-size: 18px; font-weight: 700;
+        cursor: pointer; transition: all .1s;
+      }
+      .gl-cls-panel-key:active { transform: scale(.95); }
+      .gl-cls-panel-key.selected {
+        background: #1a5f3f; color: #fff;
+        border-color: #0f4028;
+      }
+      .gl-cls-panel-key--putt.selected {
+        background: #f9a825; color: #fff;
+        border-color: #c17900;
+      }
+
+      /* ===== v2.7.27 NEW: Simple モード (5パステルボタン) ===== */
+      .gl-cls-simple {
+        display: grid;
+        grid-template-columns: 52px 1fr 1fr 1fr 52px;
+        gap: 6px;
+        align-items: stretch;
+        margin-bottom: 4px;
+      }
+      .gl-cls-simple__btn {
+        min-height: 62px;
+        border-radius: 10px;
+        border: 2px solid transparent;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 2px;
+        transition: transform 0.08s, box-shadow 0.12s;
+        cursor: pointer;
+      }
+      .gl-cls-simple__btn:active { transform: scale(0.94); }
+      .gl-cls-simple__btn .num {
+        font-size: 22px; font-weight: 800;
+        color: #212121; line-height: 1;
+      }
+      .gl-cls-simple__btn .lbl {
+        font-size: 10px; font-weight: 600;
+        color: #616161;
+      }
+      /* 中央3個: パステル */
+      .gl-cls-simple__btn--birdie { background: #F8BBD0; }
+      .gl-cls-simple__btn--par    { background: #FFF9C4; }
+      .gl-cls-simple__btn--bogey  { background: #C5CAE9; }
+      /* 両端: 赤丸・緑丸 */
+      .gl-cls-simple__btn--minus {
+        background: #EF5350;
+        border-radius: 50%;
+        min-height: 52px; max-height: 62px;
+        aspect-ratio: 1 / 1;
+        align-self: center; justify-self: center;
+      }
+      .gl-cls-simple__btn--minus .num {
+        color: #fff; font-size: 28px; font-weight: 800;
+      }
+      .gl-cls-simple__btn--plus {
+        background: #3BB774;
+        border-radius: 50%;
+        min-height: 52px; max-height: 62px;
+        aspect-ratio: 1 / 1;
+        align-self: center; justify-self: center;
+      }
+      .gl-cls-simple__btn--plus .num {
+        color: #fff; font-size: 28px; font-weight: 800;
+      }
+      .gl-cls-simple__btn--active {
+        outline: 3px solid #F9A825;
+        outline-offset: -3px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.10);
+      }
+
+      /* ===== v2.7.27 NEW: Counter モード (+/− カウント) ===== */
+      .gl-cls-counter {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 8px 0;
+        margin-bottom: 4px;
+      }
+      .gl-cls-counter__btn {
+        width: 62px; height: 62px;
+        border-radius: 50%;
+        font-size: 30px; font-weight: 800;
+        color: #fff; border: none; cursor: pointer;
+        transition: transform 0.08s;
+      }
+      .gl-cls-counter__btn:active { transform: scale(0.92); }
+      .gl-cls-counter__btn--minus { background: #EF5350; }
+      .gl-cls-counter__btn--plus  { background: #3BB774; }
+      .gl-cls-counter__display {
+        flex: 1; max-width: 160px;
+        min-height: 62px;
+        border-radius: 10px;
+        background: #FFECB3;
+        border: 2px solid #F9A825;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        color: #C62828;
+      }
+      .gl-cls-counter__display .num {
+        font-size: 32px; font-weight: 800; line-height: 1;
+      }
+      .gl-cls-counter__display .lbl {
+        font-size: 11px; color: #616161;
+        font-weight: 700; margin-top: 2px;
+      }
+
+      /* ===== v2.7.27 NEW: 共通パットボタン (Simple/Counter用) ===== */
+      .gl-cls-putt-row {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr;
+        gap: 5px;
+        margin-top: 10px;
+      }
+      .gl-cls-putt-label {
+        display: flex; align-items: center; justify-content: center;
+        font-size: 15px; font-weight: 800;
+        color: #2E9B5B;
+        min-height: 44px; letter-spacing: 1px;
+      }
+      .gl-cls-putt-btn {
+        min-height: 44px;
+        border-radius: 10px;
+        font-size: 16px; font-weight: 700;
+        color: #212121;
+        background: #F5F5F5;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: transform 0.08s;
+      }
+      .gl-cls-putt-btn:active { transform: scale(0.94); }
+      .gl-cls-putt-btn--active {
+        background: #3BB774; color: #fff;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
+      }
+      .gl-cls-putt-btn--plus {
+        background: #3BB774; color: #fff;
+        font-size: 20px; font-weight: 800;
+      }
+      .gl-cls-putt-btn--plus.gl-cls-putt-btn--active {
+        background: #2E9B5B;
+        outline: 3px solid #F9A825;
+        outline-offset: -3px;
+      }
+
+      /* ===== 横画面: 閲覧専用ダッシュボード ===== */
+      @media (orientation: landscape) and (min-height: 400px) {
+        #view-score.gl-classic {
+          padding: 4px;
+        }
+        .gl-cls-header,
+        .gl-cls-info-bar,
+        .gl-cls-settings,
+        .gl-cls-actions {
+          display: none;
+        }
+        .gl-cls-table {
+          grid-template-columns: 100px 1fr 92px;
+        }
+        .gl-cls-scroll-inner {
+          grid-template-columns: repeat(9, minmax(58px, 1fr)) 72px;
+          min-width: 100%;
+        }
+        .gl-cls-cell--score {
+          height: 44px; font-size: 20px; cursor: default;
+        }
+        .gl-cls-cell--putt,
+        .gl-cls-cell--sum-putt { display: none; }
+        .gl-cls-cell--sum { height: 44px; font-size: 18px; }
+        .gl-cls-cell--player { font-size: 14px; }
+      }
+
+      /* ===== モーダル共通 ===== */
+      .gl-cls-modal {
+        position: fixed; inset: 0; z-index: 9800;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(0,0,0,.5); padding: 20px;
+      }
+      .gl-cls-modal__body {
+        background: #fff; padding: 24px; border-radius: 12px;
+        max-width: 400px; width: 100%;
+        box-shadow: 0 12px 40px rgba(0,0,0,.3);
+      }
+      .gl-cls-modal__title {
+        font-size: 18px; font-weight: 700; color: #1a5f3f;
+        margin: 0 0 12px;
+      }
+      .gl-cls-modal__kana {
+        font-size: 32px; font-weight: 700; text-align: center;
+        color: #1a5f3f; padding: 20px 0; letter-spacing: 4px;
+      }
+      .gl-cls-modal__name-big {
+        font-size: 22px; font-weight: 700; text-align: center;
+        margin-bottom: 4px;
+      }
+      .gl-cls-modal input {
+        width: 100%; padding: 12px; font-size: 16px;
+        border: 2px solid #ddd; border-radius: 6px;
+        box-sizing: border-box; margin-bottom: 10px;
+      }
+      .gl-cls-modal input:focus { border-color: #1a5f3f; outline: none; }
+      .gl-cls-modal__actions {
+        display: flex; gap: 8px; margin-top: 12px;
+      }
+      .gl-cls-modal__actions button {
+        flex: 1; padding: 12px; border-radius: 6px; border: none;
+        font-size: 14px; font-weight: 600; cursor: pointer;
+      }
+      .gl-cls-modal__btn-ok { background: #1a5f3f; color: #fff; }
+      .gl-cls-modal__btn-cancel { background: #f0f0f0; color: #333; }
+
+      /* ===== 時刻ホイールピッカー ===== */
+      .gl-cls-timepicker {
+        display: flex; justify-content: center; gap: 8px;
+        margin: 16px 0;
+      }
+      .gl-cls-timepicker-col {
+        flex: 1; max-width: 90px;
+        border: 2px solid #ddd; border-radius: 8px;
+        overflow: hidden; background: #fafafa;
+      }
+      .gl-cls-timepicker-label {
+        text-align: center; padding: 4px;
+        background: #1a5f3f; color: #fff;
+        font-size: 12px; font-weight: 600;
+      }
+      .gl-cls-timepicker-input {
+        width: 100% !important;
+        text-align: center;
+        font-size: 32px !important;
+        font-weight: 700 !important;
+        padding: 12px 4px !important;
+        border: none !important;
+        margin: 0 !important;
+        background: transparent !important;
+        color: #1a5f3f !important;
+        -moz-appearance: textfield;
+      }
+      .gl-cls-timepicker-input::-webkit-outer-spin-button,
+      .gl-cls-timepicker-input::-webkit-inner-spin-button {
+        -webkit-appearance: none; margin: 0;
+      }
+
+      /* ===== LINE 共有モーダル ===== */
+      .gl-cls-line-option {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+        margin-bottom: 8px; cursor: pointer;
+      }
+      .gl-cls-line-option.active {
+        border-color: #06c755; background: #f0fdf4;
+      }
+      .gl-cls-line-option input { width: auto !important; margin: 4px 0 0 !important; accent-color: #06c755; }
+      .gl-cls-line-option-body { flex: 1; }
+      .gl-cls-line-option-title { font-weight: 700; margin-bottom: 4px; }
+      .gl-cls-line-option-desc { font-size: 12px; color: #666; }
+    
+
+        .gl-wheel-wrap {
+          display: flex; justify-content: center; gap: 16px;
+          margin: 20px 0; padding: 0 10px;
+        }
+        .gl-wheel-col { flex: 1; max-width: 120px; text-align: center; }
+        .gl-wheel-label { font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 600; }
+        .gl-wheel {
+          position: relative; height: 220px; overflow: hidden;
+          background: linear-gradient(180deg, #f5f0e1 0%, #fff 50%, #f5f0e1 100%);
+          border-radius: 12px; border: 1px solid #e0d5b8;
+          -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%);
+        }
+        .gl-wheel::before {
+          content: ''; position: absolute; left: 8px; right: 8px;
+          top: 88px; height: 44px;
+          border-top: 2px solid #1a5f3f; border-bottom: 2px solid #1a5f3f;
+          pointer-events: none; z-index: 2;
+        }
+        .gl-wheel-scroller {
+          height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory;
+          -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        .gl-wheel-scroller::-webkit-scrollbar { display: none; }
+        .gl-wheel-item {
+          height: 44px; display: flex; align-items: center; justify-content: center;
+          scroll-snap-align: center;
+          font-size: 26px; font-weight: 700; color: #333;
+          font-variant-numeric: tabular-nums;
+        }
+        .gl-wheel-item--active { color: #1a5f3f; font-size: 32px; }
+      
+
+
+/* =======================================================================
+   スコア画面上部のインジケータ：数字だけ老眼対策で大きく
+   （元 index.html <style> より移管）
+   ======================================================================= */
+#view-score .gl-cls-info-item__value {
+  font-size: 20px;
+  font-weight: 700;
+}
+#view-score .gl-cls-info-item__value--empty {
+  font-size: 20px;
+}
+
+/* =======================================================================
+   v2.8.22: 🔄最新取得ボタンのスピナー（元 index.html <style> より移管）
+   ======================================================================= */
+.spinner {
+  display: inline-block;
+  animation: gl-spin 1s linear infinite;
+}
+@keyframes gl-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

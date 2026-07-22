@@ -1,5 +1,5 @@
 /**
- * G-LAND v2.7.3 - Home View UI
+ * G-LAND v3.0.0 - Home View UI
  * ============================
  * レイアウト:
  *   ┌────────────────────────┐
@@ -9,117 +9,23 @@
  *   │   広告カルーセル (下半分)  │
  *   └────────────────────────┘
  *
- * v2.7.3 変更:
+ * v3.0.0 変更点:
+ *   - _injectStyles() を no-op 化（CSS は css/screens.css / css/modal.css へ移管）
+ *   - 配布QRモーダルを window.glModal.open() へ移行
+ *   - 文言・QR生成ロジック・URLコピー・閉じる挙動は 100% 現行維持
+ *
+ * v2.7.3 からの継承機能:
  *   - セーフエリアマージンでロゴが切れない
  *   - 「共有」→「配布用QRコード」に変更（アプリのURLをQR表示）
- *   - ナビゲーションを PubSub + 直接呼出のハイブリッド化（イベント未購読でも動作）
+ *   - ナビゲーションを PubSub + 直接呼出のハイブリッド化
  *   - 広告枠が pointer-events を奪わないように修正
  */
 (function () {
   'use strict';
 
   function _injectStyles() {
-    if (document.getElementById('gl-home-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-home-styles';
-    style.textContent = `
-      #view-home {
-        min-height: 100vh;
-        padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px calc(env(safe-area-inset-bottom, 0px) + 24px);
-        box-sizing: border-box;
-        background: linear-gradient(180deg, #f8f9fa 0%, #eef2f0 100%);
-        display: none; flex-direction: column;
-      }
-      #view-home.show { display: flex; }
-      .gl-home__header {
-        text-align: center; margin-bottom: 16px;
-        padding-top: 8px;
-      }
-      .gl-home__logo {
-        font-size: 32px; font-weight: 800; color: #1a5f3f;
-        letter-spacing: 2px; line-height: 1.2;
-      }
-      .gl-home__tagline {
-        font-size: 12px; color: #666; margin-top: 4px;
-      }
-      .gl-home__menu {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-        margin-bottom: 16px;
-        position: relative;
-        z-index: 10;
-      }
-      .gl-home__btn {
-        padding: 20px 12px; border: none; border-radius: 14px;
-        background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.08);
-        display: flex; flex-direction: column; align-items: center; gap: 6px;
-        cursor: pointer; font-family: inherit;
-        transition: transform .15s, box-shadow .15s;
-        -webkit-tap-highlight-color: rgba(0,0,0,.1);
-        touch-action: manipulation;
-        position: relative;
-        z-index: 11;
-      }
-      .gl-home__btn:active { transform: scale(.97); }
-      .gl-home__btn-icon { font-size: 32px; line-height: 1; pointer-events: none; }
-      .gl-home__btn-label { font-size: 14px; font-weight: 700; color: #222; pointer-events: none; }
-      .gl-home__btn-sub { font-size: 11px; color: #888; pointer-events: none; }
-      .gl-home__btn--primary { background: linear-gradient(135deg, #1a5f3f, #2d7a56); }
-      .gl-home__btn--primary .gl-home__btn-label { color: #fff; }
-      .gl-home__btn--primary .gl-home__btn-sub { color: rgba(255,255,255,.85); }
-      .gl-home__ads-title {
-        font-size: 12px; color: #888; text-align: center; margin: 4px 0 8px;
-        letter-spacing: 1px;
-      }
-      .gl-home__ads {
-        flex: 1; display: flex; align-items: stretch;
-        min-height: 240px;
-        position: relative;
-        z-index: 1;
-      }
-      #ad-slot-home { width: 100%; }
-
-      /* 配布QRモーダル */
-      .gl-distqr-overlay {
-        position: fixed; inset: 0; z-index: 9500;
-        background: rgba(0,0,0,.5);
-        display: flex; align-items: center; justify-content: center;
-        padding: 20px;
-      }
-      .gl-distqr-modal {
-        background: #fff; border-radius: 16px; padding: 24px;
-        max-width: 340px; width: 100%;
-        box-shadow: 0 8px 32px rgba(0,0,0,.3);
-        text-align: center;
-      }
-      .gl-distqr-title {
-        font-size: 18px; font-weight: 800; color: #1a5f3f;
-        margin-bottom: 8px;
-      }
-      .gl-distqr-desc {
-        font-size: 13px; color: #666; margin-bottom: 16px;
-      }
-      .gl-distqr-canvas {
-        background: #fff; padding: 12px; border-radius: 10px;
-        display: inline-block; margin-bottom: 12px;
-        border: 1px solid #e0e0e0;
-      }
-      .gl-distqr-url {
-        font-size: 11px; color: #888; word-break: break-all;
-        background: #f5f5f5; padding: 8px; border-radius: 6px;
-        margin-bottom: 12px;
-      }
-      .gl-distqr-actions {
-        display: flex; gap: 8px; justify-content: center;
-      }
-      .gl-distqr-btn {
-        flex: 1; padding: 12px; border: none; border-radius: 8px;
-        font-size: 14px; font-weight: 700; cursor: pointer;
-        font-family: inherit;
-      }
-      .gl-distqr-btn--primary { background: #1a5f3f; color: #fff; }
-      .gl-distqr-btn--secondary { background: #eee; color: #333; }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _render() {
@@ -186,48 +92,65 @@
   /**
    * 配布用QRコードモーダル
    * このアプリのURL（?join= などのパラメータ無し）をQRコードで表示
+   *
+   * v3.0.0: glModal.open() に移行。以下は 100% 現行維持:
+   *   - タイトル文言「📱 アプリを配る」
+   *   - 説明文言「このQRコードを読み取ると G-LAND を開けます」
+   *   - QR 生成タイミング（open 後 100ms）
+   *   - URL 表示、コピー処理、閉じる挙動、モーダル外タップで閉じる
    */
   function _openDistributionQR() {
     const url = location.origin + location.pathname;
 
-    // 既存があれば除去
-    const existing = document.getElementById('gl-distqr-overlay');
-    if (existing) existing.remove();
+    // 既存があれば除去（多層化防止）
+    window.glModal.closeByType && window.glModal.closeByType('distqr');
+    // 旧仕様互換: 旧 overlay が残っていたら除去
+    var legacy = document.getElementById('gl-distqr-overlay');
+    if (legacy && legacy.parentNode) legacy.parentNode.removeChild(legacy);
 
-    const overlay = document.createElement('div');
-    overlay.id = 'gl-distqr-overlay';
-    overlay.className = 'gl-distqr-overlay';
-    overlay.innerHTML = `
-      <div class="gl-distqr-modal">
-        <div class="gl-distqr-title">📱 アプリを配る</div>
-        <div class="gl-distqr-desc">このQRコードを読み取ると G-LAND を開けます</div>
-        <div id="gl-distqr-canvas" class="gl-distqr-canvas">
-          <div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;color:#888;">生成中…</div>
-        </div>
-        <div class="gl-distqr-url">${url}</div>
-        <div class="gl-distqr-actions">
-          <button type="button" class="gl-distqr-btn gl-distqr-btn--secondary" data-action="copy">🔗 コピー</button>
-          <button type="button" class="gl-distqr-btn gl-distqr-btn--primary" data-action="close">閉じる</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
+    var body = ''
+      + '<div class="gl-distqr-title">📱 アプリを配る</div>'
+      + '<div class="gl-distqr-desc">このQRコードを読み取ると G-LAND を開けます</div>'
+      + '<div id="gl-distqr-canvas" class="gl-distqr-canvas">'
+      +   '<div class="gl-u-56">生成中…</div>'
+      + '</div>'
+      + '<div class="gl-distqr-url">' + url + '</div>'
+      + '<div class="gl-distqr-actions">'
+      +   '<button type="button" class="gl-distqr-btn gl-distqr-btn--secondary" data-action="copy">🔗 コピー</button>'
+      +   '<button type="button" class="gl-distqr-btn gl-distqr-btn--primary" data-action="close">閉じる</button>'
+      + '</div>';
 
-    // モーダル外タップで閉じる
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.remove();
+    var handle = window.glModal.open({
+      body: body,
+      modalType: 'distqr',
+      variant: 'distqr',
+      dismissible: true, // 背景クリックで閉じる（従来仕様）
+      showClose: false,  // × は出さない（従来はフッター「閉じる」ボタンのみ）
+      onBind: function (root) {
+        // 閉じるボタン
+        var closeBtn = root.querySelector('[data-action="close"]');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function () { handle.close(); });
+        }
+        // コピーボタン（従来仕様: navigator.clipboard 失敗時は toast で URL 表示）
+        var copyBtn = root.querySelector('[data-action="copy"]');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', function () {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(url).then(function () {
+                window.glToast && window.glToast.success('URLをコピーしました');
+              }).catch(function () {
+                window.glToast && window.glToast.info('URL: ' + url);
+              });
+            } else {
+              window.glToast && window.glToast.info('URL: ' + url);
+            }
+          });
+        }
+        // QR 生成（従来と同じく 100ms 遅延）
+        setTimeout(function () { _generateDistQR(url); }, 100);
+      },
     });
-    overlay.querySelector('[data-action="close"]').addEventListener('click', () => overlay.remove());
-    overlay.querySelector('[data-action="copy"]').addEventListener('click', () => {
-      navigator.clipboard?.writeText(url).then(() => {
-        window.glToast?.success('URLをコピーしました');
-      }).catch(() => {
-        window.glToast?.info('URL: ' + url);
-      });
-    });
-
-    // QR生成
-    setTimeout(() => _generateDistQR(url), 100);
   }
 
   function _generateDistQR(url) {

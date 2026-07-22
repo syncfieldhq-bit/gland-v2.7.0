@@ -25,26 +25,17 @@
 
   function _showFallbackUI(errorMsg) {
     document.body.innerHTML = `
-      <div style="
-        position:fixed;inset:0;display:flex;flex-direction:column;
-        align-items:center;justify-content:center;
-        background:linear-gradient(135deg,#1a5f3f 0%,#2d7a56 100%);
-        color:#fff;padding:20px;text-align:center;font-family:sans-serif;
-      ">
-        <div style="font-size:48px;font-weight:800;letter-spacing:3px;margin-bottom:12px;">G-LAND</div>
-        <div style="font-size:14px;opacity:.9;margin-bottom:32px;">ゴルフスコア共有アプリ</div>
-        <div style="background:rgba(255,255,255,.15);padding:20px;border-radius:12px;max-width:340px;margin-bottom:24px;">
-          <div style="font-size:15px;line-height:1.6;">
+      <div class="gl-u-11">
+        <div class="gl-u-12">G-LAND</div>
+        <div class="gl-u-13">ゴルフスコア共有アプリ</div>
+        <div class="gl-u-14">
+          <div class="gl-u-15">
             起動時にエラーが発生しました。<br>
             再読み込みしてください。
           </div>
-          ${errorMsg ? `<div style="font-size:11px;opacity:.7;margin-top:12px;font-family:monospace;">${errorMsg}</div>` : ''}
+          ${errorMsg ? `<div class="gl-u-16">${errorMsg}</div>` : ''}
         </div>
-        <button onclick="location.reload()" style="
-          padding:16px 40px;background:#fff;color:#1a5f3f;
-          border:none;border-radius:10px;font-size:17px;font-weight:700;
-          box-shadow:0 4px 12px rgba(0,0,0,.2);cursor:pointer;
-        ">🔄 再読み込み</button>
+        <button onclick="location.reload()" class="gl-u-17">🔄 再読み込み</button>
       </div>
     `;
   }

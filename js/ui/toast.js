@@ -22,64 +22,8 @@
   const recentMessages = new Map(); // msg -> timestamp
 
   function _injectStyles() {
-    if (document.getElementById('gl-toast-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-toast-styles';
-    style.textContent = `
-      #gl-toast-root {
-        position: fixed;
-        top: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 99999;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        pointer-events: none;
-        width: min(92vw, 480px);
-      }
-      .gl-toast {
-        background: #fff;
-        color: #222;
-        padding: 14px 18px;
-        border-radius: 10px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-        font-size: 15px;
-        line-height: 1.4;
-        border-left: 5px solid #2196f3;
-        pointer-events: auto;
-        animation: gl-toast-in 0.25s ease-out;
-        word-break: break-word;
-      }
-      .gl-toast--info { border-left-color: #2196f3; }
-      .gl-toast--success { border-left-color: #4caf50; }
-      .gl-toast--warn { border-left-color: #ff9800; background: #fff8e1; }
-      .gl-toast--error { border-left-color: #f44336; background: #ffebee; }
-      .gl-toast--fadeout { animation: gl-toast-out 0.3s ease-in forwards; }
-      @keyframes gl-toast-in {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes gl-toast-out {
-        to { opacity: 0; transform: translateY(-10px); }
-      }
-      #gl-offline-badge {
-        position: fixed;
-        top: 12px;
-        right: 12px;
-        z-index: 99998;
-        background: #f44336;
-        color: #fff;
-        padding: 6px 12px;
-        border-radius: 16px;
-        font-size: 12px;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        display: none;
-      }
-      #gl-offline-badge.show { display: block; }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _ensureRoot() {

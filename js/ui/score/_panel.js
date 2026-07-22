@@ -32,41 +32,8 @@
   let _onCloseCallback = null;
 
   function _injectStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    // ★ ここが根本解決の核心：
-    //   - transform / transition / will-change を一切使わない
-    //   - position: fixed で bottom:0 / left:0 / right:0 に固定
-    //   - display の切替だけで表示/非表示
-    //   - z-index は十分高く（他モーダルよりも高くしない = 9500）
-    style.textContent = `
-      #${OVERLAY_ID} {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0, 0, 0, 0.4);
-        z-index: 9500;
-      }
-      #${OVERLAY_ID}.gl-panel-open { display: block; }
-
-      #${PANEL_ID} {
-        display: none;
-        position: fixed;
-        left: 0; right: 0; bottom: 0;
-        background: #ffffff;
-        border-radius: 16px 16px 0 0;
-        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
-        z-index: 9600;
-        max-height: 80vh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
-        box-sizing: border-box;
-      }
-      #${PANEL_ID}.gl-panel-open { display: block; }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _ensureDom() {

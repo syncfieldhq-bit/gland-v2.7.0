@@ -107,227 +107,8 @@
   }
 
   function _injectStyles() {
-    if (document.getElementById('gl-history-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-history-styles';
-    style.textContent = `
-      #view-history {
-        min-height: 100vh; padding: 12px 14px 60px;
-        box-sizing: border-box;
-        background: ${COLOR_CREAM};
-        display: none; overflow-y: auto;
-        font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
-      }
-      #view-history.show { display: block; }
-
-      .glh-back {
-        background: transparent; border: none;
-        color: ${COLOR_DARK}; font-size: 15px; font-weight: 700;
-        padding: 8px 4px; cursor: pointer; margin-bottom: 4px;
-      }
-      .glh-title {
-        font-size: 22px; font-weight: 800;
-        color: ${COLOR_DARK}; margin: 4px 0 12px;
-      }
-
-      .glh-kpi {
-        display: grid; grid-template-columns: repeat(3, 1fr);
-        gap: 8px; margin-bottom: 12px;
-      }
-      .glh-kpi__card {
-        background: #fff; border-radius: 10px; padding: 10px 8px;
-        text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-        border: 1px solid #e8e0cc;
-      }
-      .glh-kpi__label {
-        font-size: 10px; color: #888; letter-spacing: .5px;
-        margin-bottom: 4px;
-      }
-      .glh-kpi__value {
-        font-size: 22px; font-weight: 800; color: ${COLOR_DARK};
-        line-height: 1;
-      }
-      .glh-kpi__unit { font-size: 11px; color: #888; margin-left: 2px; font-weight: 500; }
-      .glh-kpi__sub { font-size: 11px; color: #999; margin-top: 3px; }
-
-      .glh-filter {
-        display: flex; gap: 6px; margin-bottom: 10px; align-items: center;
-        overflow-x: auto; white-space: nowrap; padding-bottom: 4px;
-      }
-      .glh-filter__label { font-size: 11px; color: #666; flex-shrink: 0; }
-      .glh-filter__chip {
-        background: #fff; border: 1px solid #d5c98c;
-        padding: 4px 11px; border-radius: 14px;
-        font-size: 12px; color: ${COLOR_DARK};
-        cursor: pointer; flex-shrink: 0;
-      }
-      .glh-filter__chip.active {
-        background: ${COLOR_DARK}; color: #fff; border-color: ${COLOR_DARK};
-      }
-
-      .glh-item {
-        background: #fff; border-radius: 10px;
-        padding: 12px 14px; margin-bottom: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.06);
-        border-left: 4px solid transparent;
-        cursor: pointer;
-        transition: transform .1s;
-      }
-      .glh-item:active { transform: scale(.98); }
-      .glh-item.is-best { border-left-color: ${COLOR_ACCENT}; background: linear-gradient(90deg, #fff9e6 0%, #fff 40%); }
-
-      .glh-item__row1 {
-        display: flex; justify-content: space-between; align-items: baseline;
-        margin-bottom: 4px;
-      }
-      .glh-item__date { font-size: 12px; color: #888; }
-      .glh-item__best {
-        font-size: 11px; font-weight: 700; color: ${COLOR_ACCENT};
-        background: #fff3d6; padding: 2px 8px; border-radius: 10px;
-      }
-      .glh-item__course {
-        font-size: 15px; font-weight: 700; color: #222;
-        margin-bottom: 6px; letter-spacing: .3px;
-      }
-      .glh-item__row3 {
-        display: flex; justify-content: space-between; align-items: flex-end;
-      }
-      .glh-item__score {
-        font-size: 28px; font-weight: 800; color: ${COLOR_DARK}; line-height: 1;
-      }
-      .glh-item__diff {
-        font-size: 14px; font-weight: 700; margin-left: 6px;
-      }
-      .glh-item__meta {
-        font-size: 11px; color: #999; text-align: right;
-      }
-
-      .glh-empty {
-        text-align: center; padding: 60px 20px;
-        color: #999; font-size: 14px;
-      }
-      .glh-empty__icon { font-size: 48px; margin-bottom: 12px; }
-
-      /* ==== 詳細 ==== */
-      .glh-detail { padding: 4px 2px; }
-      .glh-detail__header {
-        background: ${COLOR_DARK}; color: #fff;
-        padding: 14px 16px; border-radius: 12px;
-        margin-bottom: 14px; position: relative; overflow: hidden;
-      }
-      .glh-detail__header.is-best::before {
-        content: '🏆'; position: absolute; right: 8px; top: 4px;
-        font-size: 44px; opacity: .25;
-      }
-      .glh-detail__date { font-size: 11px; opacity: .8; }
-      .glh-detail__course {
-        font-size: 18px; font-weight: 700; margin: 4px 0 8px;
-      }
-      .glh-detail__stats {
-        display: flex; gap: 14px; align-items: baseline;
-      }
-      .glh-detail__total {
-        font-size: 34px; font-weight: 800; line-height: 1;
-      }
-      .glh-detail__diff { font-size: 18px; font-weight: 700; }
-
-      /* v2.7.19: 詳細画面のスコア表示切替トグル */
-      .glh-detail__toggle {
-        display: flex; background: #fff;
-        border: 1px solid #d5c98c; border-radius: 20px;
-        overflow: hidden; margin: 0 auto 10px;
-        width: max-content;
-      }
-      .glh-detail__toggle-btn {
-        background: transparent; border: none;
-        padding: 6px 16px; cursor: pointer;
-        color: ${COLOR_DARK}; font-weight: 700; font-size: 12px;
-        min-width: 60px;
-      }
-      .glh-detail__toggle-btn.active {
-        background: ${COLOR_DARK}; color: #fff;
-      }
-
-      .glh-card {
-        background: #fff; border-radius: 10px; padding: 8px;
-        margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.06);
-        overflow-x: auto;
-      }
-      .glh-card__title {
-        font-size: 12px; color: #666; font-weight: 700;
-        padding: 4px 6px 6px; letter-spacing: .5px;
-      }
-      table.glh-scorecard {
-        width: 100%; border-collapse: collapse; font-size: 12px;
-      }
-      .glh-scorecard th, .glh-scorecard td {
-        border: 1px solid #e6e0d0;
-        padding: 5px 3px; text-align: center;
-        min-width: 28px;
-      }
-      .glh-scorecard th {
-        background: #f5efd8; color: ${COLOR_DARK}; font-weight: 700;
-      }
-      .glh-scorecard .glh-sc-out, .glh-scorecard .glh-sc-in, .glh-scorecard .glh-sc-tot {
-        background: #ecf7ef; font-weight: 700; color: ${COLOR_DARK};
-      }
-      .glh-scorecard .glh-sc-label {
-        text-align: left; padding-left: 8px; font-weight: 700; background: #fbf7e6;
-      }
-      .glh-scorecard .glh-sc-par-row td { background: #f8f4e0; color: #666; font-size: 11px; }
-
-      /* v2.7.19: スコア色分け */
-      .glh-scorecard .glh-eagle  { color: #c0392b; font-weight: 800; }
-      .glh-scorecard .glh-birdie { color: #c0392b; font-weight: 700; }
-      .glh-scorecard .glh-bogey  { color: #444; }
-      .glh-scorecard .glh-dbogey { color: #666; }
-
-      /* 同伴者 */
-      .glh-comp {
-        display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px;
-      }
-      .glh-comp__item {
-        min-width: 130px; flex-shrink: 0;
-        background: #fff; border-radius: 8px; padding: 8px 10px;
-        box-shadow: 0 1px 3px rgba(0,0,0,.06);
-        border: 1px solid #e8e0cc;
-      }
-      .glh-comp__item.no-score {
-        background: #f7f5eb; opacity: .82;
-      }
-      .glh-comp__name { font-size: 13px; font-weight: 700; color: #333; }
-      .glh-comp__score { font-size: 20px; font-weight: 800; color: ${COLOR_DARK}; margin-top: 2px; }
-      .glh-comp__diff { font-size: 13px; font-weight: 700; margin-left: 4px; }
-      .glh-comp__nostore { font-size: 12px; color: #999; margin-top: 4px; font-weight: 600; }
-      .glh-comp__type { font-size: 10px; color: #999; margin-top: 2px; }
-
-      /* BEST モーダル */
-      .glh-best-modal {
-        position: fixed; inset: 0; z-index: 9999;
-        background: rgba(0,0,0,.65);
-        display: flex; align-items: center; justify-content: center;
-        opacity: 0; transition: opacity .3s;
-      }
-      .glh-best-modal.show { opacity: 1; }
-      .glh-best-modal__box {
-        background: linear-gradient(160deg, #faf6ec 0%, #fff9e6 100%);
-        padding: 30px 28px 22px; border-radius: 16px;
-        text-align: center; max-width: 320px; width: 84%;
-        box-shadow: 0 8px 40px rgba(0,0,0,.4);
-      }
-      .glh-best-modal__icon { font-size: 68px; line-height: 1; }
-      .glh-best-modal__title {
-        font-size: 22px; font-weight: 800; color: ${COLOR_ACCENT};
-        margin: 8px 0 4px;
-      }
-      .glh-best-modal__msg { font-size: 14px; color: #555; margin-bottom: 16px; }
-      .glh-best-modal__btn {
-        background: ${COLOR_DARK}; color: #fff; border: none;
-        padding: 10px 32px; border-radius: 22px;
-        font-size: 15px; font-weight: 700; cursor: pointer;
-      }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _applyPeriodFilter(rounds) {
@@ -412,7 +193,7 @@
         <div class="glh-empty">
           <div class="glh-empty__icon">📖</div>
           <div>まだ履歴がありません</div>
-          <div style="margin-top:6px;font-size:12px;color:#bbb;">ラウンドを終えると自動で保存されます</div>
+          <div class="gl-u-51">ラウンドを終えると自動で保存されます</div>
         </div>
       `
       : rounds.map((r) => {
@@ -619,16 +400,16 @@
           <div class="glh-detail__stats">
             <div>
               <div class="glh-detail__total">${_num(r.totalStrokes) || '-'}</div>
-              <div style="font-size:10px;opacity:.8;">TOTAL${totalPar ? ` (Par ${totalPar})` : ''}</div>
+              <div class="gl-u-52">TOTAL${totalPar ? ` (Par ${totalPar})` : ''}</div>
             </div>
             <div class="glh-detail__diff">${_num(r.totalStrokes) ? _diffStr(diff) : ''}</div>
-            <div style="margin-left:auto;text-align:right;font-size:11px;opacity:.9;">
+            <div class="gl-u-53">
               ${hasOut ? `OUT ${_num(r.outStrokes) || '-'}<br>` : ''}
               ${hasIn ? `IN ${_num(r.inStrokes) || '-'}<br>` : ''}
               Putts ${_num(r.totalPutts) || '-'}
             </div>
           </div>
-          ${r.lockerNumber ? `<div style="margin-top:8px;font-size:11px;opacity:.85;">ロッカー ${_escape(r.lockerNumber)}</div>` : ''}
+          ${r.lockerNumber ? `<div class="gl-u-54">ロッカー ${_escape(r.lockerNumber)}</div>` : ''}
         </div>
 
         ${toggleHTML}
@@ -655,29 +436,37 @@
 
   // ==== 2C: BEST 更新演出 ====
 
+  /**
+   * v3.0.0: BEST 更新演出モーダル（glModal.open ベース）
+   * - 文言「BEST 更新！」「やった！」、色、アイコン、内容は 100% 現行維持
+   * - .glh-best-modal / .glh-best-modal__box などのクラスは modal.css で継続サポート
+   * - 背景クリック / [data-close] で閉じる（従来仕様）
+   */
   function _showBestCelebration(snapshot) {
-    const modal = document.createElement('div');
-    modal.className = 'glh-best-modal';
-    modal.innerHTML = `
-      <div class="glh-best-modal__box">
-        <div class="glh-best-modal__icon">🏆✨</div>
-        <div class="glh-best-modal__title">BEST 更新！</div>
-        <div class="glh-best-modal__msg">
-          ${_escape(snapshot.courseName || 'このコース')}<br>
-          <b style="color:${COLOR_DARK};font-size:20px;">${_num(snapshot.totalStrokes)}</b>
-          <span style="color:#c0392b;font-weight:700;">${_diffStr(_num(snapshot.totalDiff))}</span>
-        </div>
-        <button class="glh-best-modal__btn" data-close>やった！</button>
-      </div>
-    `;
-    (document.getElementById('modal-root') || document.body).appendChild(modal);
-    requestAnimationFrame(() => modal.classList.add('show'));
-    const close = () => {
-      modal.classList.remove('show');
-      setTimeout(() => modal.remove(), 300);
-    };
-    modal.querySelector('[data-close]')?.addEventListener('click', close);
-    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    var body = ''
+      + '<div class="glh-best-modal__box">'
+      +   '<div class="glh-best-modal__icon">🏆✨</div>'
+      +   '<div class="glh-best-modal__title">BEST 更新！</div>'
+      +   '<div class="glh-best-modal__msg">'
+      +     _escape(snapshot.courseName || 'このコース') + '<br>'
+      +     '<b style="color:' + COLOR_DARK + ';font-size:20px;">' + _num(snapshot.totalStrokes) + '</b>'
+      +     '<span class="gl-u-55">' + _diffStr(_num(snapshot.totalDiff)) + '</span>'
+      +   '</div>'
+      +   '<button class="glh-best-modal__btn" data-close>やった！</button>'
+      + '</div>';
+
+    var handle = window.glModal.open({
+      body: body,
+      modalType: 'best-celebration',
+      variant: 'best',
+      dismissible: true, // 背景クリックで閉じる（従来仕様）
+      showClose: false,
+      bodyClass: 'glh-best-modal',
+      onBind: function (root) {
+        var closeBtn = root.querySelector('[data-close]');
+        if (closeBtn) closeBtn.addEventListener('click', function () { handle.close(); });
+      },
+    });
   }
 
   const glHistoryUI = {

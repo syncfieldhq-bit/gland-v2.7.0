@@ -12,99 +12,8 @@
   let isVisible = false;
 
   function _injectStyles() {
-    if (document.getElementById('gl-auth-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-auth-styles';
-    style.textContent = `
-      #gl-auth-screen {
-        position: fixed; inset: 0; z-index: 9800;
-        background: linear-gradient(135deg, #1a5f3f 0%, #2d8f5f 100%);
-        display: none; align-items: center; justify-content: center;
-        padding: 20px; overflow-y: auto;
-      }
-      #gl-auth-screen.show { display: flex; }
-      .gl-auth-card {
-        background: #fff;
-        border-radius: 20px;
-        padding: 32px 24px;
-        max-width: 400px;
-        width: 100%;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.2);
-        text-align: center;
-      }
-      .gl-auth-logo {
-        font-size: 40px;
-        font-weight: 800;
-        color: #1a5f3f;
-        letter-spacing: 4px;
-        margin-bottom: 4px;
-      }
-      .gl-auth-tag {
-        font-size: 12px;
-        color: #999;
-        margin-bottom: 24px;
-      }
-      .gl-auth-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #333;
-        margin: 0 0 12px;
-      }
-      .gl-auth-desc {
-        font-size: 13px;
-        color: #666;
-        line-height: 1.6;
-        margin-bottom: 24px;
-      }
-      .gl-auth-btn-google {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        width: 100%;
-        padding: 14px 20px;
-        background: #fff;
-        color: #333;
-        border: 1px solid #ddd;
-        border-radius: 12px;
-        font-size: 15px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: box-shadow .15s, transform .1s;
-      }
-      .gl-auth-btn-google:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-      .gl-auth-btn-google:active { transform: scale(.98); }
-      .gl-auth-btn-google:disabled {
-        opacity: .6; cursor: not-allowed;
-      }
-      .gl-auth-btn-google svg { width: 20px; height: 20px; }
-      .gl-auth-note {
-        margin-top: 20px;
-        font-size: 11px;
-        color: #999;
-        line-height: 1.5;
-      }
-      .gl-auth-error {
-        background: #fff3f3;
-        border: 1px solid #f8bcbc;
-        color: #c62828;
-        padding: 10px 12px;
-        border-radius: 8px;
-        font-size: 12px;
-        margin-top: 12px;
-        text-align: left;
-        display: none;
-      }
-      .gl-auth-error.show { display: block; }
-      .gl-auth-loading {
-        color: #666;
-        font-size: 13px;
-        margin-top: 16px;
-        display: none;
-      }
-      .gl-auth-loading.show { display: block; }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _render() {
@@ -134,7 +43,7 @@
           <p class="gl-auth-desc">
             ホーム画面のアプリからもログインできます。<br>
             下のボタンから Google 認証を進めてください。<br><br>
-            <span style="font-size:11px; color:#999;">
+            <span class="gl-u-19">
               認証後は自動的に G-LAND へ戻ります。
             </span>
           </p>
@@ -143,13 +52,12 @@
             Google でログイン
           </button>
 
-          <p style="font-size:11px; color:#999; line-height:1.5; margin-top:20px;">
+          <p class="gl-u-20">
             うまく戻れない場合の予備手段です。<br>
             下のボタンでURLをコピーしてSafariで開けます。
           </p>
 
-          <button class="gl-auth-btn-google" id="gl-auth-copy-url"
-                  style="margin-top:12px; background:#1a5f3f; color:#fff; border:none;">
+          <button class="gl-auth-btn-google gl-u-21" id="gl-auth-copy-url">
             URLをコピーして Safari で開く
           </button>
         </div>
@@ -213,7 +121,7 @@
         <p class="gl-auth-desc">
           スコアや履歴を安全に保存するため、<br>
           Google アカウントでログインしてください。<br>
-          <span style="color:#999; font-size:11px;">
+          <span class="gl-u-22">
             （どのGoogleアカウントでも、あなた専用のデータが保護されます）
           </span>
         </p>

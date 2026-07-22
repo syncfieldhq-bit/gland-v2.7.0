@@ -1,0 +1,645 @@
+/* =========================================================================
+   G-LAND v3.0.0 — modal.css
+   ---------------------------------------------------------------------------
+   glModal 共通基盤 + 各モーダル固有スタイルを集約。
+   iOS Safari PWA の位置ズレ根本解決:
+     - `.gl-modal` は 100vh ではなく dvh を優先し、safe-area を padding で加算
+     - align-items: center は "実表示エリア" 基準になる
+     - JS 側の _injectStyles() は全廃したため優先度戦争は自然消滅
+   ========================================================================= */
+
+/* ==== glModal 基盤（全モーダル共通） ==================================== */
+.gl-modal,
+#modal-root .gl-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(var(--gl-safe-top) + 20px)
+    calc(var(--gl-safe-right) + 20px)
+    calc(var(--gl-safe-bottom) + 20px)
+    calc(var(--gl-safe-left) + 20px);
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+}
+.gl-modal.show,
+#modal-root .gl-modal.show { display: flex; }
+
+.gl-modal__backdrop,
+#modal-root .gl-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.48);
+  z-index: 0;
+}
+
+.gl-modal__body,
+#modal-root .gl-modal__body {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 22px 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+}
+.gl-modal__body--wide { width: min(100%, 720px); }
+
+.gl-modal__title,
+#modal-root .gl-modal__title {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a5f3f;
+}
+
+.gl-modal__close,
+#modal-root .gl-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s;
+  z-index: 10;
+  padding: 0;
+}
+.gl-modal__close:hover,
+.gl-modal__close:active,
+#modal-root .gl-modal__close:hover,
+#modal-root .gl-modal__close:active {
+  background: rgba(0, 0, 0, 0.08);
+  color: #1a5f3f;
+}
+
+/* モーダル内の見出し・段落 */
+.gl-modal__body p,
+#modal-root .gl-modal__body p {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+.gl-modal__body h3,
+#modal-root .gl-modal__body h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a5f3f;
+  margin: 14px 0 8px;
+}
+
+/* モーダル内フォーム */
+.gl-modal__body input[type="text"],
+.gl-modal__body input[type="tel"],
+.gl-modal__body input[type="number"],
+.gl-modal__body input[type="email"],
+.gl-modal__body select,
+.gl-modal__body textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  box-sizing: border-box;
+  background: #fff;
+}
+.gl-modal__body input:focus,
+.gl-modal__body select:focus,
+.gl-modal__body textarea:focus {
+  border-color: #1a5f3f;
+  outline: none;
+}
+
+/* モーダル内 primary ボタン */
+.gl-modal .gl-btn-primary,
+#modal-root .gl-modal .gl-btn-primary {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  background: #1a5f3f;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(26, 95, 63, 0.25);
+}
+.gl-modal .gl-btn-primary:active,
+#modal-root .gl-modal .gl-btn-primary:active { background: #14472f; }
+.gl-modal .gl-btn-primary:disabled,
+#modal-root .gl-modal .gl-btn-primary:disabled { background: #999; cursor: default; }
+
+/* glModal 共通アクション行 */
+.gl-modal__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.gl-modal__btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.gl-modal__btn--primary { background: #1a5f3f; color: #fff; }
+.gl-modal__btn--primary:active { background: #14472f; }
+.gl-modal__btn--primary:disabled { background: #999; cursor: default; }
+.gl-modal__btn--secondary { background: #f5f5f5; color: #666; }
+.gl-modal__btn--secondary:active { background: #e8e8e8; }
+.gl-modal__btn--danger { background: #f44336; color: #fff; }
+.gl-modal__btn--danger:active { background: #c62828; }
+
+/* サブ見出し */
+.gl-modal__sub {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 18px;
+}
+
+/* ==== オンボーディング（プロフィール登録）：既存互換 ==================== */
+/* onboarding.js の gl-modal__sub, gl-form__* は components.css / base で吸収 */
+
+/* ==== 配布 QR モーダル（home.js） ======================================
+   従来は独自 overlay。glModal.open({modalType:'distqr'}) に置換。 */
+.gl-modal--distqr .gl-modal__body {
+  max-width: 340px;
+  text-align: center;
+  padding: 24px;
+}
+.gl-distqr-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1a5f3f;
+  margin-bottom: 8px;
+}
+.gl-distqr-desc {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 16px;
+}
+.gl-distqr-code {
+  background: #fff;
+  padding: 12px;
+  border-radius: 12px;
+  display: inline-block;
+  margin: 8px 0 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+.gl-distqr-code img,
+.gl-distqr-code canvas { display: block; margin: 0 auto; }
+.gl-distqr-url {
+  font-size: 12px;
+  color: #666;
+  word-break: break-all;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-family: monospace;
+}
+.gl-distqr-close {
+  width: 100%;
+  padding: 12px;
+  background: #1a5f3f;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ==== 招待モーダル（round.js） ========================================= */
+.gl-invite-box {
+  background: linear-gradient(135deg, #1a5f3f, #2d7a56);
+  color: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  text-align: center;
+  margin: 12px 0;
+}
+.gl-invite-box__code {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  margin: 10px 0;
+  font-family: monospace;
+}
+.gl-invite-box__qr {
+  background: #fff;
+  padding: 12px;
+  border-radius: 12px;
+  display: inline-block;
+  margin: 12px 0;
+  min-width: 200px;
+  min-height: 200px;
+}
+.gl-invite-box__hint {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 8px;
+}
+.gl-input-code {
+  width: 100%;
+  padding: 16px;
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  border: 2px solid #1a5f3f;
+  border-radius: 12px;
+  font-family: monospace;
+  box-sizing: border-box;
+}
+
+/* ==== 履歴：BEST 演出（history.js） ==================================== */
+.glh-best-modal .gl-modal__body { max-width: 380px; text-align: center; }
+.glh-best-modal__icon {
+  font-size: 64px;
+  animation: glh-best-pop 0.5s ease-out;
+}
+.glh-best-modal__title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #f9a825;
+  margin: 8px 0;
+}
+.glh-best-modal__sub { font-size: 14px; color: #666; margin-bottom: 14px; }
+.glh-best-modal__score {
+  font-size: 48px;
+  font-weight: 800;
+  color: #1a5f3f;
+  margin: 12px 0;
+}
+.glh-best-modal__diff { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+.glh-best-modal__close {
+  width: 100%;
+  padding: 14px;
+  background: #1a5f3f;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 12px;
+}
+@keyframes glh-best-pop {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ==== Classic テーマ内モーダル（classic.js） =========================== */
+/* 従来は .gl-cls-modal という独自クラス。glModal.open() に統合しつつ、
+   既存の見た目を維持するため .gl-modal--cls として同等スタイルを提供。 */
+.gl-modal--cls .gl-modal__body {
+  max-width: 420px;
+  padding: 20px;
+}
+.gl-modal--cls .gl-modal__title {
+  font-size: 18px;
+  color: #1a5f3f;
+  margin: 0 0 12px;
+}
+.gl-modal--cls .gl-modal__body input[type="tel"],
+.gl-modal--cls .gl-modal__body input[type="text"],
+.gl-modal--cls .gl-modal__body input[type="number"] {
+  width: 100%;
+  padding: 14px;
+  font-size: 20px;
+  text-align: center;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  box-sizing: border-box;
+  margin: 8px 0 12px;
+}
+.gl-cls-modal__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.gl-cls-modal__actions button { padding: 14px; border-radius: 8px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; }
+.gl-cls-modal__btn-cancel { background: #f5f5f5; color: #666; }
+.gl-cls-modal__btn-ok { background: #1a5f3f; color: #fff; }
+.gl-cls-modal__btn-clear { background: #fff4f4; color: #c62828; border: 1px solid #ffcdd2; }
+
+/* Classic 内: ふりがな表示 / 代理編集 / LINE 共有共通 */
+.gl-cls-modal__section {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+}
+.gl-cls-modal__section h3 {
+  font-size: 13px;
+  color: #5a4a30;
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+.gl-cls-modal__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+.gl-cls-modal__row:last-child { border: none; }
+
+/* Wheel picker（Afternoon start） */
+.gl-wheel-wrap {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 12px 0;
+  height: 200px;
+  position: relative;
+}
+.gl-wheel-scroller {
+  height: 200px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  width: 80px;
+  scrollbar-width: none;
+}
+.gl-wheel-scroller::-webkit-scrollbar { display: none; }
+.gl-wheel-item {
+  height: 40px;
+  line-height: 40px;
+  text-align: center;
+  font-size: 22px;
+  color: #999;
+  scroll-snap-align: center;
+  transition: color 0.15s, transform 0.15s;
+}
+.gl-wheel-item--active { color: #1a5f3f; font-weight: 800; transform: scale(1.15); }
+.gl-wheel-colon {
+  align-self: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: #1a5f3f;
+}
+.gl-wheel-highlight {
+  position: absolute;
+  top: 80px;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: rgba(26,95,63,0.06);
+  border-top: 2px solid #1a5f3f;
+  border-bottom: 2px solid #1a5f3f;
+  pointer-events: none;
+}
+
+/* LINE 共有ボタン */
+.gl-cls-line-btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: #06c755;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  margin: 8px 0;
+}
+.gl-cls-line-btn--outline {
+  background: #fff;
+  color: #06c755;
+  border: 2px solid #06c755;
+}
+.gl-cls-line-preview {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin: 8px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ==== 保存前確認モーダル (finish-confirm) =============================== */
+.gl-modal[data-modal-type="finish-confirm"] .gl-modal__body {
+  max-width: 480px;
+}
+.gl-finish-summary {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+}
+.gl-finish-summary__row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+}
+.gl-finish-summary__label { color: #666; }
+.gl-finish-summary__value { font-weight: 700; color: #333; }
+
+/* ==== 代理管理モーダル（proxy-manager） ================================ */
+.gl-modal[data-modal-type="proxy-manager"] .gl-modal__body { max-width: 440px; }
+.gl-proxy-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid #eee;
+}
+.gl-proxy-row__info { flex: 1; }
+.gl-proxy-row__name { font-weight: 700; color: #333; font-size: 15px; }
+.gl-proxy-row__kana { font-size: 12px; color: #888; }
+.gl-proxy-row__del {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* ==== コース選択 / 検索モーダル（course.js） =========================== */
+.gl-course-list {
+  max-height: 55vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 8px 0;
+}
+.gl-course-item {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.gl-course-item:active { background: #f5f5f5; }
+.gl-course-item__name { font-size: 15px; font-weight: 700; color: #333; }
+.gl-course-item__pref { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* ==== glScorePanel（bottom-sheet, 対象外だが CSS 移管必要） ============ */
+#gl-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0,0,0,0.35);
+  display: none;
+}
+#gl-panel-overlay.show { display: block; }
+
+#gl-panel-root {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  background: #fff;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.22);
+  padding: 20px 16px calc(var(--gl-safe-bottom) + 24px);
+  box-sizing: border-box;
+  display: none;
+  max-height: 88vh;
+  max-height: 88dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#gl-panel-root.show { display: block; }
+
+/* =========================================================================
+   元 index.html <style> 内モーダル内フォーム/ボタン詳細ルール
+   （<style> を完全撤去するため、ここへ漏れなく移管）
+   ========================================================================= */
+
+/* モーダル内の見出し h3/h4 は緑色でマージン統一 */
+#modal-root .gl-modal__body h3,
+#modal-root .gl-modal__body h4 {
+  margin: 12px 0 8px;
+  color: #1a5f3f;
+}
+
+/* モーダル内 input/textarea 詳細ルール（元 index.html） */
+#modal-root .gl-modal__body input,
+#modal-root .gl-modal__body textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid #d0d0d0;
+  border-radius: 10px;
+  background: #fff;
+  margin-bottom: 10px;
+}
+
+/* モーダル内 button デフォルト（グレー背景・緑文字） */
+#modal-root .gl-modal__body button {
+  display: inline-block;
+  min-height: 44px;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  background: #f2f4f3;
+  color: #1a5f3f;
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(26, 95, 63, 0.15);
+  touch-action: manipulation;
+}
+#modal-root .gl-modal__body button:active {
+  transform: scale(0.98);
+}
+
+/* 追加系ボタン（緑グラデ）：data-add or .gl-btn-primary */
+#modal-root .gl-modal__body button[data-add],
+#modal-root .gl-modal__body .gl-btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #1a5f3f, #2d7a56);
+  color: #fff;
+  margin-top: 6px;
+}
+
+/* 危険系ボタン（削除・赤）：data-del or .gl-btn-danger */
+#modal-root .gl-modal__body button[data-del],
+#modal-root .gl-modal__body .gl-btn-danger {
+  background: #d64545;
+  color: #fff;
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+/* 終了・確定系ボタン（緑）：data-confirm or .gl-btn-confirm */
+#modal-root .gl-modal__body button[data-confirm],
+#modal-root .gl-modal__body .gl-btn-confirm {
+  width: 100%;
+  background: #1a5f3f;
+  color: #fff;
+  margin-top: 8px;
+}
+
+/* 閉じるフッターボタン：data-close or .gl-btn-close */
+#modal-root .gl-modal__body button[data-close],
+#modal-root .gl-modal__body .gl-btn-close {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  background: #f2f4f3;
+  color: #444;
+  font-weight: 600;
+}
+
+/* モーダル内 label（既定・小さいグレー） */
+#modal-root .gl-modal__body label {
+  display: block;
+  font-size: 13px;
+  color: #666;
+  margin: 8px 0 4px;
+}
+
+/* リストの各アイテム（代理入力の名前カード：faf7ec 背景） */
+#modal-root .gl-modal__body .gl-form__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #faf7ec;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}

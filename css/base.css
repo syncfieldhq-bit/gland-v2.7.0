@@ -1,0 +1,61 @@
+/* =========================================================================
+   G-LAND v3.0.0 — base.css
+   ---------------------------------------------------------------------------
+   グローバルリセット、フォント、safe-area 基盤、view padding の単一権威定義。
+   ここで view padding を CSS 変数として一元化することで、
+   iOS Safari PWA の位置ズレを根本解決する。
+   ========================================================================= */
+
+/* ==== safe-area / view padding 変数（唯一の権威定義） ==== */
+:root {
+  --gl-safe-top:    env(safe-area-inset-top, 0px);
+  --gl-safe-right:  env(safe-area-inset-right, 0px);
+  --gl-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --gl-safe-left:   env(safe-area-inset-left, 0px);
+
+  /* 各画面共通の上下パディング。JS 側で二重定義しない。 */
+  --gl-view-pad-top:    calc(var(--gl-safe-top) + 4px);
+  --gl-view-pad-bottom: calc(var(--gl-safe-bottom) + 4px);
+}
+
+/* ==== グローバルリセット ==== */
+* { -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Meiryo", sans-serif;
+  background: #f8f9fa;
+  color: #222;
+  overscroll-behavior-y: contain;
+}
+
+/* iOS Safari で 100vh が実表示エリアを超える問題を緩和 */
+html { height: 100%; }
+body { min-height: 100%; min-height: -webkit-fill-available; }
+
+button { font-family: inherit; }
+input, textarea {
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+
+/* ==== 全 view 共通の padding（!important なし・単一定義） ==========
+   従来: index.html に !important、各 _injectStyles() にも同種指定 → 二重適用
+   ここでは !important を使わず、各画面 CSS 側で必要なら safely override 可能。 */
+#view-home,
+#view-golf,
+#view-score,
+#view-history,
+#view-mypage {
+  padding-top:    var(--gl-view-pad-top);
+  padding-bottom: var(--gl-view-pad-bottom);
+  box-sizing: border-box;
+}
+
+/* ==== モーダル open 時の body スクロール抑止 ==== */
+html.gl-modal-open,
+html.gl-modal-open body {
+  overflow: hidden;
+  -webkit-overflow-scrolling: auto;
+}

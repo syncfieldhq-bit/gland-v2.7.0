@@ -1,209 +1,211 @@
-# G-LAND v2.7.2 — クラシックテーマ完全版
+# G-LAND v3.0.0 — 世界標準構造リファクタ版
 
-ゴルフスコア共有 PWA アプリ  
-**v2.7.2 の目玉: クラシックテーマの実用機能を完全実装**
+ゴルフスコア共有 PWA アプリ
+**v3.0.0**: CSS 完全分離 + モーダル共通基盤化 + iOS Safari PWA 位置ズレ根本解決
 
----
-
-## 🎨 v2.7.2 の追加・修正機能
-
-### 🆕 新機能（3つ）
-
-| 機能 | 内容 |
-|---|---|
-| **⏰ 午後スタート時刻管理** | ハーフ後にマスター室で告げられる午後スタート時刻を設定。残り時間カウントダウン表示、過ぎたら現在時刻に戻る |
-| **🔑 貴重品ロッカー番号** | ラウンド後に忘れがちなロッカー番号を常時表示 |
-| **💚 LINE 途中経過共有** | シンプル/詳細を選んで LINE で友達に成績を共有（バーディー等ハイライト付き） |
-
-### 🔧 UX 改善（クラシックテーマ）
-
-| 項目 | 修正内容 |
-|---|---|
-| **入力パネル** | 保存 → 自動で次のプレイヤーへ切替、全員完了で自動的に次ホール移動 |
-| **共有プレイヤー** | 入力パネルで自動スキップ（本人のスマホから同期されるため） |
-| **過去ホール修正** | 単独パネル、保存後は現在ホール位置に自動復帰 |
-| **現在ホール表示** | 黄色背景 + 深緑文字（白抜き逆転）で視認性向上 |
-| **下部ナビ廃止** | 「前/次」ボタン削除、セル直接タップで移動 |
-| **上部マージン** | iPhone ノッチと重ならないよう safe-area 対応 |
-| **横画面** | ヘッダー・下部ボタン・パット行を完全非表示、スコア表を最大化 |
-| **入力方式** | ストローク+パット同時入力パネル（パット任意、未入力OK） |
+本番URL: https://gland-golf.web.app
 
 ---
 
-## 📋 現在ホールの自動判定ロジック
+## 🎯 v3.0.0 でやったこと（1文）
 
-「現在ホール」は state に固定せず、**全プレイヤーの入力状況から自動計算**します：
+v2.7.0 の全機能・全動作・全見た目を 100% 維持したまま、CSS を 5 レイヤーに分離し、
+全モーダルを共通基盤 `glModal.open()` に統一し、iOS Safari PWA の位置ズレを根本解決した。
 
-```
-「まだ入力が完了していない最小ホール」= 現在ホール
-```
-
-- HOLE 1〜3 まで全員入力済み → 現在ホール = 4
-- HOLE 4 で 佐藤(自分) と 田中(代理) だけ入力、加藤(代理) がまだ → 現在ホール = 4
-- 全員が HOLE 4 の入力を完了 → 現在ホール = 5
-
-**過去ホール修正時も、現在ホールは自動的に元の位置に戻る**（計算ベースなので位置ずれしない）。
+**機能追加ゼロ・機能削除ゼロ・仕様変更ゼロ・見た目維持（位置ズレのみ修正）**
 
 ---
 
 ## 📁 ディレクトリ構成
 
 ```
-gland-v2.7.2/
-├── README.md
-├── index.html
-├── sw.js                        (CACHE_VERSION='gland-v2.7.2')
-├── manifest.json
+gland-v3.0.0/
+├── README.md                        (このファイル)
+├── PATCH_NOTES.md                   (v3.0.0 変更点詳細)
 │
-├── gas/                         (Google Apps Script)
-│   ├── main.gs
-│   ├── schema.gs
-│   ├── api.gs
-│   └── db.gs
+├── index.html                       (<style> 完全撤去、CSS を <link> で 5 本読込)
+├── 404.html                         (無変更)
+├── manifest.json                    (無変更)
+├── firebase.json                    (無変更)
+├── sw.js                            (CACHE_VERSION 更新 + 新規6ファイル追加のみ)
+├── .firebaserc                      (無変更)
+├── .gitignore                       (無変更)
+├── .nojekyll                        (無変更)
+│
+├── css/                             ★ v3.0.0 新規
+│   ├── base.css                     (リセット、safe-area 変数、view padding 権威定義)
+│   ├── components.css               (toast, ads, gate, auth, form, spinner, pwa-guide)
+│   ├── modal.css                    (glModal 基盤 + 全モーダル固有スタイル)
+│   ├── screens.css                  (各 view と Classic テーマ画面)
+│   └── utilities.css                (固定 style="..." 属性を移管した gl-u-NN クラス)
+│
+├── icons/                           (無変更)
+│   ├── icon-192.png
+│   └── icon-512.png
+│
+├── gas/                             (無変更・GAS スクリプト)
+│   ├── main.gs                      (doPost/doGet エントリ + LockService)
+│   ├── api.gs                       (アクションディスパッチテーブル)
+│   ├── schema.gs                    (シート定義)
+│   └── db.gs                        (シート I/O)
 │
 └── js/
-    ├── api.js
-    ├── boot.js
+    ├── api.js                       (無変更)
+    ├── boot.js                      (無変更)
+    │
     ├── core/
-    │   ├── events.js
-    │   ├── storage.js
-    │   ├── state.js             (⭐ afternoonStart / lockerNumber 追加)
-    │   ├── net.js
-    │   ├── errors.js
-    │   └── queue.js
+    │   ├── modal.js                 ★ v3.0.0 新規 (glModal 共通基盤)
+    │   ├── events.js                (無変更)
+    │   ├── storage.js               (無変更)
+    │   ├── state.js                 (無変更)
+    │   ├── net.js                   (無変更)
+    │   ├── errors.js                (無変更)
+    │   ├── queue.js                 (無変更)
+    │   └── firebase.js              (無変更)
     │
-    ├── domain/
-    │   ├── profile.js
-    │   ├── round.js
-    │   ├── score.js
-    │   ├── history.js
-    │   ├── course.js
-    │   └── ads.js
+    ├── domain/                      (全ファイル無変更)
+    │   ├── profile.js / round.js / score.js / history.js
+    │   ├── course.js / ads.js / auth.js
     │
-    └── ui/
-        ├── toast.js
-        ├── gate.js
-        ├── onboarding.js
-        ├── ads.js
-        ├── home.js
-        ├── round.js
-        ├── score.js
-        ├── score/
-        │   ├── simple.js
-        │   └── classic.js       (⭐⭐⭐ 全面書き直し・全18機能統合)
-        ├── history.js
-        ├── mypage.js
-        └── course.js
+    └── ui/                          (_injectStyles を no-op 化、モーダル生成を glModal.open へ)
+        ├── toast.js                 (_injectStyles no-op 化のみ)
+        ├── gate.js                  (_injectStyles no-op 化のみ)
+        ├── auth.js                  (_injectStyles no-op 化のみ)
+        ├── ads.js                   (_injectStyles no-op 化のみ)
+        ├── onboarding.js            (glModal 移行: 初回プロフィール登録)
+        ├── home.js                  (glModal 移行: 配布用QR)
+        ├── round.js                 (glModal 移行: 汎用/招待/代理/スタート選択/離脱等)
+        ├── mypage.js                (glModal 移行: プロフィール編集)
+        ├── history.js               (glModal 移行: BEST 更新演出)
+        ├── course.js                (glModal 移行: マイコース/検索/新規作成/依頼)
+        ├── _debugbar.js             (対象外・現行仕様維持)
+        ├── pwa-guide.js             (対象外・現行仕様維持)
+        └── score/
+            ├── _panel.js            (_injectStyles no-op 化のみ)
+            ├── simple.js            (_injectStyles no-op 化のみ)
+            ├── classic.js           (glModal 移行: ふりがな/代理編集/午後/ロッカー/LINE/保存前確認)
+            ├── score.js は js/ui/ 直下
+            └── README.md            (score テーマ設計思想・v2.7.10 のまま無変更)
 ```
 
-**⭐ = v2.7.2 で修正されたファイル**
+---
+
+## 🎨 CSS 5 レイヤー構成の設計思想
+
+CSS 読込順は以下で固定（`index.html` で `<link>` の順序として反映済み）：
+
+```
+base.css        ← リセット・変数・safe-area・view padding 権威定義
+  ↓
+components.css  ← 共通コンポーネント（toast, form primitives, ボタン, spinner ...）
+  ↓
+modal.css       ← モーダル基盤 + 各モーダル固有クラス
+  ↓
+screens.css     ← 各 view の画面レイアウトと Classic テーマ全 CSS
+  ↓
+utilities.css   ← 固定インライン style を移管したユーティリティクラス群
+```
+
+この順序でセレクタ優先度と cascade が成立するため、旧 `!important` は全廃した。
 
 ---
 
-## 🎯 クラシックテーマ 全18機能一覧
+## 🧩 モーダル共通基盤 (`glModal`) の使い方
 
-| # | 機能 | 状態 |
-|---|---|---|
-| 1 | 22列スコアカード表 | ✅ |
-| 2 | 3モードタブ（ストローク/±/記号） | ✅ |
-| 3 | 左右列固定 + 中央スクロール | ✅ |
-| 4 | 現在ホールハイライト（白抜き逆転） | ✅ v2.7.2 修正 |
-| 5 | セル直接タップ入力 | ✅ v2.7.2 全面刷新 |
-| 6 | 代理入力プレイヤー最大3名 | ✅ |
-| 7 | 共有プレイヤー ふりがな表示 | ✅ |
-| 8 | 横画面 閲覧専用モード | ✅ v2.7.2 改良 |
-| 9 | 記号モード（○─△等） | ✅ |
-| 10 | 老眼配慮の大きめセル | ✅ |
-| 11 | 上部マージン調整（ノッチ対応） | 🆕 |
-| 12 | 下部ナビ廃止 | 🆕 |
-| 13 | 入力パネル自動プレイヤー切替 | 🆕 |
-| 14 | 全員完了で自動次ホール移動 | 🆕 |
-| 15 | 過去修正フロー（元位置に戻る） | 🆕 |
-| 16 | ⏰ 午後スタート時刻管理 | 🆕 |
-| 17 | 🔑 ロッカー番号記録 | 🆕 |
-| 18 | 💚 LINE 途中経過共有 | 🆕 |
+```javascript
+const handle = window.glModal.open({
+  title: '📤 招待',                     // 省略可
+  body: '<div>...</div>',                // 文字列 or HTMLElement
+  modalType: 'invite',                   // data-modal-type 属性
+  variant: '',                           // 'cls' / 'best' / 'distqr' 等
+  showClose: false,                      // × ボタン表示
+  dismissible: true,                     // 背景クリック / Esc で閉じるか
+  onBind:  (root, handle) => {...},      // レンダ完了後
+  onClose: () => {...},                  // 閉じた後
+});
+
+handle.close();                          // プログラムから閉じる
+handle.rerender(newBody);                // 中身を差し替え（部分更新）
+handle.root;                             // モーダル要素（内部の querySelector 用）
+```
 
 ---
 
-## 🚀 デプロイ手順（v2.7.1 → v2.7.2 差分適用）
+## 🚀 デプロイ手順（v2.7.0 → v3.0.0）
 
-**GAS 側は変更なし。フロントエンドのみ:**
-
-1. 以下ファイルを上書き:
-   - `js/ui/score/classic.js` （メイン修正・53KB）
-   - `js/core/state.js`
-   - `sw.js`
-   - `README.md`
-
-2. iPhone/Android で キャッシュクリア + PWA 再インストール:
-   ```javascript
-   caches.keys().then(k => Promise.all(k.map(x => caches.delete(x))));
-   navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
-   location.reload();
+1. 既存の `gland-v2.7.0` ディレクトリはそのまま置いておく（rollback 用）
+2. ZIP を展開: `~/Desktop/gland-v3.0.0/`
+3. Firebase Hosting へデプロイ:
+   ```bash
+   cd ~/Desktop/gland-v3.0.0
+   firebase deploy --only hosting
    ```
+4. iPhone / Android で PWA を再起動（Service Worker が旧キャッシュを自動削除）
+
+Service Worker の `CACHE_VERSION` が `'gland-v3.0.0-css-modal-split'` に上がっているため、
+古い CSS/JS はブラウザキャッシュから自動的にパージされる。
+
+もし手動でクリアしたい場合：
+```javascript
+caches.keys().then(k => Promise.all(k.map(x => caches.delete(x))));
+navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+location.reload();
+```
 
 ---
 
 ## ✅ 動作確認チェックリスト
 
-### 上部情報バー
-- [ ] ⏰ に現在時刻が表示される（未設定時）
-- [ ] ⏰ をタップ → 時刻設定モーダル、デフォルト値が現在時刻+45分
-- [ ] 保存すると「午後 12:30 (あと 45分)」形式で表示
-- [ ] 30秒ごとに残り時間が更新される
-- [ ] 設定時刻を過ぎると自動的に現在時刻表示に戻る
-- [ ] 🔑 をタップ → ロッカー番号入力モーダル
-- [ ] 保存すると「🔑 ロッカー: 127」と常時表示
+### CSS 分離の健全性
+- [ ] iPhone Safari PWA でホーム画面から起動 → 上マージンが適正（ノッチと重ならず、過剰余白なし）
+- [ ] 履歴画面の上マージンが適正
+- [ ] マイページの上マージンが適正
+- [ ] Chrome (PC) / Android Chrome / iOS 通常 Safari で見た目が v2.7.0 と一致
 
-### 入力パネル（現在ホール）
-- [ ] HOLE 4 のセルをタップ → 入力パネルが下から出る
-- [ ] 「HOLE 4 - 1/3人目 - 佐藤(自分)」と表示
-- [ ] ストローク + パット を入力
-- [ ] 「✓ 保存 → 次の人」ボタン
-- [ ] 保存後、自動で「田中(共有)」をスキップし「坪江(代理)」に切替
-- [ ] 坪江の入力後、「加藤(代理)」に切替
-- [ ] 加藤の入力後、「✓ 保存 → 次ホール」ボタン
-- [ ] 保存後、パネル自動クローズ、現在ホールが HOLE 5 へハイライト移動
+### モーダル動作（17 箇所）
+- [ ] オンボーディング（未登録初回起動）: 苗字・ひらがな 2 項目登録 → home 遷移
+- [ ] ホーム: 「配布用QR」タップ → QR 表示 → URL コピー → 閉じる
+- [ ] ラウンド: 「新しいラウンドを開始」→ コース選択 → スタート選択 → 最終確認 → 開始
+- [ ] ラウンド: 「招待コードで合流」→ 4桁コード入力 → 合流
+- [ ] ラウンド: 「招待」→ QR + 4桁コード表示 → 閉じる
+- [ ] ラウンド: 「代理入力プレイヤー」→ 追加・削除（部分更新で閉じずに連続追加）
+- [ ] ラウンド: 「ラウンドを終了」→ 終了確認
+- [ ] マイページ: 「プロフィールを編集」→ 保存
+- [ ] 履歴: BEST 更新時の 🏆 モーダル
+- [ ] コース: マイコース / 検索 / 新規作成 / 運営依頼
+- [ ] スコア (Classic): 共有プレイヤー名タップ → ふりがな表示
+- [ ] スコア (Classic): 代理プレイヤー名タップ → 編集モーダル
+- [ ] スコア (Classic): ⏰ アイコン → 午後スタート時刻 wheel picker
+- [ ] スコア (Classic): 🔑 アイコン → ロッカー番号
+- [ ] スコア (Classic): LINE 共有ボタン → シンプル/詳細選択
+- [ ] スコア (Classic): 「保存する」→ 保存前確認モーダル → 保存
 
-### 入力パネル（過去修正）
-- [ ] 現在ホール = 5 の状態で、HOLE 2 の自分セルをタップ
-- [ ] 「HOLE 2 修正」と表示、単独パネル
-- [ ] 保存後、パネル自動クローズ
-- [ ] 現在ホールは HOLE 5 のまま（元位置に復帰）
+### 全モーダル共通確認
+- [ ] 背景クリックで閉じる（onboarding のみ閉じない）
+- [ ] Esc で閉じる（dismissible: true のもの）
+- [ ] iOS Safari PWA でモーダルが実表示エリア基準で中央配置される
+- [ ] モーダル open 中は body scroll がロックされる
 
-### 現在ホール表示
-- [ ] ホール番号セルが黄色背景 + 深緑文字
-- [ ] Par セルも同様
-- [ ] スコアセルは薄い黄色 + オレンジ枠
-
-### 横画面
-- [ ] ヘッダー・情報バー・下部ボタン 全部非表示
-- [ ] パット行 非表示
-- [ ] 3モードタブ + スコア表本体のみ表示
-- [ ] タップ無効（閲覧専用）
-- [ ] 9ホールずつ横スクロール
-
-### LINE 共有
-- [ ] 💚 LINE共有 ボタンをタップ
-- [ ] シンプル / 詳細 選択モーダル
-- [ ] LINE アプリが開き、選択形式のメッセージが入っている
-- [ ] ハイライト（バーディー等）が絵文字付きで含まれる
+### データ整合性
+- [ ] GAS 通信が全アクションで成功（既存エンドポイントに一切変更なし）
+- [ ] Firebase 認証（Google ログイン）
+- [ ] ラウンド開始 → スコア入力 → 保存 → 履歴反映
+- [ ] オフライン → オンライン復帰時のキュー自動 flush
 
 ---
 
-## 🎯 アーキテクチャ原則（v2.7.0 継承）
+## 🚫 v3.0.0 で "触っていない" もの
 
-1. **5層レイヤー構造** — External / Infrastructure / Domain / UI / Bootstrap
-2. **PubSub 疎結合** — 全モジュール間通信は `glEvents` 経由
-3. **楽観的UI** — スコア入力は state 即反映 → キュー永続化 → 非同期API
-4. **三重ストレージ** — localStorage + Cookie + sessionStorage
-5. **alert 完全撲滅** — toast + 振動で代替
-6. **UI テーマ交換可能** — `js/ui/score/` にファイルを追加するだけで新テーマが増やせる
-7. **既存モジュール不変** — v2.7.2 の修正は classic.js と state.js のみで完結
+- `gas/*.gs` (4 ファイル)
+- `firebase.json` / `.firebaserc` / `manifest.json` / `404.html`
+- `js/api.js` / `js/boot.js`
+- `js/core/*.js` の従来 7 ファイル（modal.js のみ新規）
+- `js/domain/*.js` (7 ファイル全て)
+- 見た目 (色・フォント・サイズ・余白・レイアウト — 位置ズレの根本修正だけ)
 
 ---
 
-**Version**: v2.7.2 (build: 20260710)  
-**Status**: FIX — クラシックテーマ完全版  
-**Base Version**: v2.7.1  
-**Repository**: https://github.com/syncfieldhq-bit/gland-v1.0.0
+## 📞 サポート
+
+問題が発生した場合は、この README と `PATCH_NOTES.md` を確認のうえ、
+デプロイ前の `gland-v2.7.0` に rollback してください。

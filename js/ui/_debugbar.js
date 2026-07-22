@@ -60,7 +60,7 @@
 
     const header = document.createElement('div');
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px dashed #0f0;margin-bottom:4px;';
-    header.innerHTML = '<b style="color:#fff;">🔍 DEBUG</b>';
+    header.innerHTML = '<b class="gl-u-18">🔍 DEBUG</b>';
 
     const btnClear = document.createElement('button');
     btnClear.textContent = 'CLR';

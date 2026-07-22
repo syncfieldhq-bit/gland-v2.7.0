@@ -35,44 +35,8 @@
   }
 
   function _injectStyles() {
-    if (document.getElementById('gl-gate-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-gate-styles';
-    style.textContent = `
-      body.gl-gate-active { overflow: hidden; }
-      #install-gate {
-        position: fixed; inset: 0; z-index: 9990;
-        background: linear-gradient(135deg, #1a5f3f 0%, #2d7a56 100%);
-        color: #fff; display: none; overflow-y: auto;
-        padding: 24px 20px;
-      }
-      #install-gate.show { display: block; }
-      .gl-gate__inner { max-width: 480px; margin: 0 auto; padding-top: 24px; }
-      .gl-gate__logo { text-align: center; font-size: 42px; font-weight: 800; letter-spacing: 2px; margin-bottom: 8px; }
-      .gl-gate__sub { text-align: center; font-size: 15px; opacity: .9; margin-bottom: 24px; }
-      .gl-gate__panel {
-        background: #fff; color: #222; border-radius: 16px;
-        padding: 20px 18px; margin-bottom: 16px;
-        box-shadow: 0 8px 24px rgba(0,0,0,.2);
-      }
-      .gl-gate__panel h3 { margin: 0 0 12px; font-size: 18px; color: #1a5f3f; }
-      .gl-gate__panel p { font-size: 15px; line-height: 1.7; margin: 0 0 12px; }
-      .gl-gate__panel ol { padding-left: 22px; font-size: 15px; line-height: 1.9; margin: 0 0 8px; }
-      .gl-gate__btn {
-        display: block; width: 100%; padding: 14px 16px;
-        background: #1a5f3f; color: #fff; border: none;
-        border-radius: 10px; font-size: 16px; font-weight: 700;
-        cursor: pointer; margin-top: 8px;
-      }
-      .gl-gate__btn--secondary { background: #666; }
-      .gl-gate__url {
-        background: #f5f5f5; padding: 10px; border-radius: 8px;
-        font-size: 12px; word-break: break-all; margin: 8px 0;
-        color: #333;
-      }
-      .gl-gate__icon { font-size: 32px; text-align: center; margin-bottom: 8px; }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _renderPanel(env) {
@@ -88,9 +52,9 @@
           <button class="gl-gate__btn" id="gl-gate-install" data-install-status="waiting">
             📥 アプリをインストール
           </button>
-          <div id="gl-gate-fallback" style="display:none;margin-top:12px;font-size:13px;color:#666;text-align:left;">
-            <p style="margin-bottom:6px;">自動インストールができない場合：</p>
-            <ol style="padding-left:24px;margin:0;">
+          <div id="gl-gate-fallback" class="gl-u-46">
+            <p class="gl-u-47">自動インストールができない場合：</p>
+            <ol class="gl-u-48">
               <li>Chromeの右上メニュー <b>⋮</b> をタップ</li>
               <li>「<b>アプリをインストール</b>」を選択</li>
             </ol>
@@ -105,12 +69,12 @@
           <div class="gl-gate__icon">📱</div>
           <h3>ホーム画面に追加</h3>
           <ol>
-            <li>下の <b>共有ボタン</b> <span style="font-size:20px;">⬆️</span> をタップ</li>
+            <li>下の <b>共有ボタン</b> <span class="gl-u-08">⬆️</span> をタップ</li>
             <li>メニューを下にスクロール</li>
             <li>「<b>ホーム画面に追加</b>」をタップ</li>
             <li>右上の「追加」をタップ</li>
           </ol>
-          <p style="margin-top:12px;color:#1a5f3f;font-weight:600;">
+          <p class="gl-u-49">
             追加したアイコンからアプリを開いてください
           </p>
         </div>
@@ -125,7 +89,7 @@
           <p>G-LAND を iPhone にインストールするには、<b>Safariブラウザ</b>で開く必要があります。</p>
           <div class="gl-gate__url" id="gl-gate-url">${currentUrl}</div>
           <button class="gl-gate__btn" id="gl-gate-copy">📋 URLをコピー</button>
-          <p style="margin-top:12px;font-size:13px;color:#666;">
+          <p class="gl-u-50">
             コピー後、Safariのアドレスバーに貼り付けて開いてください
           </p>
         </div>

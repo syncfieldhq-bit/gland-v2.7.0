@@ -16,249 +16,17 @@
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="icon" href="./icons/icon-192.png">
 
-  <!-- ベーススタイル -->
-  <style>
-    * { -webkit-tap-highlight-color: transparent; }
-    html, body {
-      margin: 0; padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Meiryo", sans-serif;
-      background: #f8f9fa; color: #222;
-      overscroll-behavior-y: contain;
-    }
-    button { font-family: inherit; }
-    input, textarea { font-family: inherit; -webkit-appearance: none; }
-      /* ==========================================================
-     共通モーダル：招待・代理入力・ラウンド終了などで共通使用
-     必ず画面中央に固定表示する
-     ========================================================== */
-
-  #modal-root .gl-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 
-    calc(env(safe-area-inset-top, 0px) + 20px)
-    20px
-    calc(env(safe-area-inset-bottom, 0px) + 20px)
-    20px;
-    box-sizing: border-box;
-    overscroll-behavior: contain;
-  }
-
-  #modal-root .gl-modal.show {
-    display: flex;
-  }
-
-  #modal-root .gl-modal__backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.48);
-    z-index: 0;
-  }
-
-  #modal-root .gl-modal__body {
-    position: relative;
-    z-index: 1;
-    width: min(100%, 520px);
-    max-height: 85vh;
-    max-height: 85dvh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    box-sizing: border-box;
-    background: #ffffff;
-    border-radius: 18px;
-    padding: 22px 18px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
-  }
-
-  #modal-root .gl-modal__title {
-    margin: 0 0 12px;
-    font-size: 20px;
-    font-weight: 800;
-    color: #1a5f3f;
-  }
-
-#modal-root .gl-modal__close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: transparent;
-  font-size: 24px;
-  line-height: 1;
-  color: #666;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background 0.15s;
-  z-index: 10;
-  padding: 0;
-}
-
-#modal-root .gl-modal__close:hover,
-#modal-root .gl-modal__close:active {
-  background: rgba(0, 0, 0, 0.08);
-  color: #1a5f3f;
-}
-
- 
-    /* --- モーダル内の見出し・段落・入力欄・ボタン --- */
-
-  #modal-root .gl-modal__body p {
-    font-size: 14px;
-    color: #555;
-    line-height: 1.6;
-    margin: 0 0 12px;
-  }
-
-  #modal-root .gl-modal__body h3,
-  #modal-root .gl-modal__body h4 {
-    margin: 12px 0 8px;
-    color: #1a5f3f;
-  }
-
-  #modal-root .gl-modal__body input,
-  #modal-root .gl-modal__body textarea {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 12px 14px;
-    font-size: 15px;
-    border: 1px solid #d0d0d0;
-    border-radius: 10px;
-    background: #fff;
-    margin-bottom: 10px;
-  }
-
-  #modal-root .gl-modal__body button {
-    display: inline-block;
-    min-height: 44px;
-    padding: 12px 18px;
-    font-size: 15px;
-    font-weight: 700;
-    border: none;
-    border-radius: 12px;
-    background: #f2f4f3;
-    color: #1a5f3f;
-    cursor: pointer;
-    -webkit-tap-highlight-color: rgba(26, 95, 63, 0.15);
-    touch-action: manipulation;
-  }
-
-  #modal-root .gl-modal__body button:active {
-    transform: scale(0.98);
-  }
-
-  /* 追加系ボタン（緑） */
-  #modal-root .gl-modal__body button[data-add],
-  #modal-root .gl-modal__body .gl-btn-primary {
-    width: 100%;
-    background: linear-gradient(135deg, #1a5f3f, #2d7a56);
-    color: #fff;
-    margin-top: 6px;
-  }
-
-  /* 危険系ボタン（削除） */
-  #modal-root .gl-modal__body button[data-del],
-  #modal-root .gl-modal__body .gl-btn-danger {
-    background: #d64545;
-    color: #fff;
-    min-height: 36px;
-    padding: 8px 14px;
-    font-size: 13px;
-    border-radius: 8px;
-  }
-
-  /* 終了・確定系ボタン */
-  #modal-root .gl-modal__body button[data-confirm],
-  #modal-root .gl-modal__body .gl-btn-confirm {
-    width: 100%;
-    background: #1a5f3f;
-    color: #fff;
-    margin-top: 8px;
-  }
-
-  /* 閉じる用のフッターボタン */
-  #modal-root .gl-modal__body button[data-close],
-  #modal-root .gl-modal__body .gl-btn-close {
-    display: block;
-    width: 100%;
-    margin-top: 14px;
-    background: #f2f4f3;
-    color: #444;
-    font-weight: 600;
-  }
-
-  /* ラベル */
-  #modal-root .gl-modal__body label {
-    display: block;
-    font-size: 13px;
-    color: #666;
-    margin: 8px 0 4px;
-  }
-
-  /* リストの各アイテム（代理入力の名前カード） */
-  #modal-root .gl-modal__body .gl-form__row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #faf7ec;
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #333;
-  }
-
-   /* ==========================================================
-     iPhoneのノッチ対応：すべてのビューの上端に安全な余白を確保
-     各画面ごとの個別CSSに負けないよう !important で強制
-     ========================================================== */
-
-  #view-home,
-  #view-golf,
-  #view-score,
-  #view-history,
-  #view-mypage {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 4px) !important;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
-  box-sizing: border-box;
-  }
-
-    /* ==========================================================================
-   スコア画面上部のインジケータ：数字だけ老眼対策で大きく
-========================================================================== */
-
-/* 数字（06:24 / 72 など）だけ拡大 */
-#view-score .gl-cls-info-item__value {
-  font-size: 20px !important;
-  font-weight: 700 !important;
-}
-
-/* 未設定時（「--」表示など）も同じサイズ感で */
-#view-score .gl-cls-info-item__value--empty {
-  font-size: 20px !important;
-}
-
-
-/* v2.8.22: 🔄最新取得ボタンのスピナー */
-.spinner {
-  display: inline-block;
-  animation: gl-spin 1s linear infinite;
-}
-@keyframes gl-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-  </style>
+  <!-- ==== v3.0.0: CSS 4 レイヤー分離 ==================================
+       読込順は「base → components → modal → screens」で固定。
+       この順序でセレクタ優先度と cascade を成立させる。
+       元 index.html <style> と各 js/ui/*.js の _injectStyles() は
+       全てここへ移管済み。ワイルドカード禁止・個別列挙。
+       ================================================================= -->
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/modal.css">
+  <link rel="stylesheet" href="./css/screens.css">
+  <link rel="stylesheet" href="./css/utilities.css">
 
   <!-- ⬇️⬇️⬇️ GAS URL 設定（デプロイ時に必ず埋める！）⬇️⬇️⬇️ -->
   <script>
@@ -284,7 +52,7 @@
   <!-- QRコード生成ライブラリ（招待用） -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
 </head>
-<body style="overscroll-behavior-y: contain;">
+<body class="gl-u-10">
 
   <!-- ==== ビュー骨格（全て初期非表示。UI層が制御） ==== -->
   <div id="install-gate"></div>
@@ -308,6 +76,8 @@
   <script src="js/core/net.js"></script>
   <script src="js/core/errors.js"></script>
   <script src="js/core/queue.js"></script>
+  <!-- v3.0.0: モーダル共通基盤（core の最後に配置。domain/ui からは window.glModal 参照） -->
+  <script src="js/core/modal.js"></script>
 
   <!-- Layer 1: External -->
   <script src="js/api.js"></script>

@@ -12,58 +12,8 @@
   const carousels = new Map(); // slotId => {timer, index, ads, root}
 
   function _injectStyles() {
-    if (document.getElementById('gl-ads-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-ads-styles';
-    style.textContent = `
-      .gl-ads-carousel {
-        position: relative; width: 100%; overflow: hidden;
-        border-radius: 12px; background: #f5f5f5;
-      }
-      .gl-ads-carousel__track {
-        display: flex; transition: transform .4s ease-out;
-        will-change: transform;
-      }
-      .gl-ads-carousel__slide {
-        flex: 0 0 100%; min-width: 100%;
-        cursor: pointer; position: relative;
-      }
-      .gl-ads-carousel__slide img {
-        width: 100%; height: 100%; object-fit: cover;
-        display: block; user-select: none; -webkit-user-drag: none;
-      }
-      .gl-ads-carousel__badge {
-        position: absolute; top: 8px; left: 8px;
-        background: rgba(0,0,0,.6); color: #fff;
-        padding: 3px 8px; border-radius: 4px;
-        font-size: 11px; font-weight: 600;
-      }
-      .gl-ads-carousel__dots {
-        position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-        display: flex; gap: 6px;
-      }
-      .gl-ads-carousel__dot {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: rgba(255,255,255,.5);
-      }
-      .gl-ads-carousel__dot.active { background: #fff; }
-      .gl-ads-carousel--empty {
-        min-height: 120px; display: flex; align-items: center; justify-content: center;
-        color: #999; font-size: 13px;
-      }
-      .gl-ads-carousel--home {
-        aspect-ratio: 16/10;
-        max-height: 45vh;
-      }
-      .gl-ads-carousel--score-landscape {
-        aspect-ratio: 21/6;
-        max-height: 15vh;
-      }
-      .gl-ads-carousel--mypage {
-        aspect-ratio: 16/8;
-      }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _render(container, slot, ads) {

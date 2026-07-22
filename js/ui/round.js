@@ -1,66 +1,28 @@
 /**
- * G-LAND v2.7.0 - Round View UI
+ * G-LAND v3.0.0 - Round View UI
  * =============================
  * ラウンド開始・合流・招待QR/A123コード・コース選択
+ *
+ * v3.0.0 変更点:
+ *   - _injectStyles() を no-op 化（CSS は css/screens.css / css/modal.css / css/components.css へ移管）
+ *   - モーダル生成を全て window.glModal.open() へ移行:
+ *       * _modalPrompt (汎用) → glModal.open()
+ *       * _showProxyManagerModal (代理管理・部分再描画対応)
+ *       * _showStartTypeSelector (スタート選択)
+ *       * _showFinalConfirm (開始最終確認、_modalPrompt 経由)
+ *       * _showJoinModal (合流入力、_modalPrompt 経由)
+ *       * _showInviteModal (招待、_modalPrompt 経由)
+ *       * _confirmLeave (離脱確認、_modalPrompt 経由)
+ *   - 文言・イベント・保存処理・onOk return false でのクローズ抑止・
+ *     モーダル多層化防止・QR生成タイミングは 100% 現行維持
+ *   - browser 標準 confirm() (代理削除確認) は現行仕様維持
  */
 (function () {
   'use strict';
 
   function _injectStyles() {
-    if (document.getElementById('gl-round-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'gl-round-styles';
-    style.textContent = `
-      #view-golf {
-        min-height: 100vh;
-        padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
-        box-sizing: border-box;
-        background: #f8f9fa; display: none;
-      }
-      #view-golf.show { display: block; }
-      .gl-round__back {
-        background: none; border: none; color: #1a5f3f; font-size: 16px;
-        cursor: pointer; padding: 8px 4px; margin-bottom: 12px;
-        -webkit-tap-highlight-color: rgba(0,0,0,.1);
-        touch-action: manipulation;
-      }
-      .gl-round__title { font-size: 22px; font-weight: 700; color: #1a5f3f; margin: 0 0 16px; }
-      .gl-round__actions { display: flex; flex-direction: column; gap: 12px; }
-      .gl-round__card {
-        background: #fff; padding: 20px 18px; border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,.08); cursor: pointer;
-        -webkit-tap-highlight-color: rgba(26,95,63,.1);
-        touch-action: manipulation;
-        transition: transform .1s;
-      }
-      .gl-round__card:active { transform: scale(.98); }
-      .gl-round__card h3 { margin: 0 0 6px; color: #1a5f3f; font-size: 17px; pointer-events: none; }
-      .gl-round__card p { margin: 0; color: #666; font-size: 13px; pointer-events: none; }
-      .gl-invite-box {
-        background: linear-gradient(135deg, #1a5f3f, #2d7a56);
-        color: #fff; padding: 24px 20px; border-radius: 14px; text-align: center;
-      }
-      .gl-invite-box__code {
-        font-size: 48px; font-weight: 800; letter-spacing: 6px;
-        margin: 12px 0; font-family: 'Courier New', monospace;
-      }
-      .gl-invite-box__qr { background: #fff; padding: 12px; border-radius: 10px; display: inline-block; margin: 8px 0; }
-      .gl-invite-box__qr canvas, .gl-invite-box__qr img { display: block; }
-      .gl-invite-box__hint { font-size: 13px; opacity: .9; }
-      .gl-input-code {
-        width: 100%; padding: 14px; font-size: 22px; text-align: center;
-        letter-spacing: 6px; border: 2px solid #ddd; border-radius: 10px;
-        box-sizing: border-box; text-transform: uppercase;
-        font-family: 'Courier New', monospace;
-      }
-      .gl-spinner {
-        display: inline-block; width: 32px; height: 32px;
-        border: 3px solid rgba(255,255,255,.3); border-top-color: #fff;
-        border-radius: 50%; animation: gl-spin 0.8s linear infinite;
-      }
-      @keyframes gl-spin { to { transform: rotate(360deg); } }
-    `;
-    document.head.appendChild(style);
+    // v3.0.0: CSS は css/*.css に完全移管済み。互換のため関数は残置（no-op）。
+    return;
   }
 
   function _renderIndex() {
@@ -136,59 +98,54 @@
   }
 
   /**
-   * v2.7.20: 代理入力プレイヤー管理モーダル
-   * - 既存モーダルがあれば先に全削除（多層化防止）
-   * - 閉じずに連続追加可能（リスト・フォームだけ部分更新）
+   * v3.0.0: 代理入力プレイヤー管理モーダル（glModal.open ベース）
+   * - 既存の proxy-manager type モーダルを先に閉じる（多層化防止）
+   * - 閉じずに連続追加可能（handle.rerender で部分更新）
+   * - browser 標準 confirm() は現行仕様維持
    */
   function _showProxyManagerModal() {
-    // ★ 既存の同種モーダルを全削除
+    // 既存モーダル全閉じ（多層化防止・従来仕様）
+    window.glModal.closeAll();
+    // 旧仕様互換
     document.querySelectorAll('[data-modal-type="proxy-manager"]').forEach((m) => m.remove());
 
-    const wrap = document.createElement('div');
-    wrap.className = 'gl-modal show';
-    wrap.setAttribute('data-modal-type', 'proxy-manager');
-    wrap.innerHTML = _renderProxyModalContent();
-    const modalRoot = document.getElementById('modal-root') || document.body;
-    modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
-    modalRoot.appendChild(wrap);
-
-    const close = () => wrap.remove();
-    wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
-
-    _bindProxyModalEvents(wrap, close);
+    var handle = window.glModal.open({
+      title: '🧍 代理入力プレイヤー',
+      modalType: 'proxy-manager',
+      body: _renderProxyModalBody(),
+      dismissible: true,       // 背景クリックで閉じる（従来仕様）
+      showClose: false,        // 従来は本文内 [data-close] ボタンで閉じる
+      onBind: function (root) {
+        _bindProxyModalEvents(root, handle);
+      },
+    });
   }
 
-  /**
-   * 代理モーダルの内容を生成（部分更新でも使う）
-   */
-  function _renderProxyModalContent() {
+  function _renderProxyModalBody() {
     const proxies = window.glRound.listProxyPlayers();
     const max = window.glRound.getMaxProxy();
     const canAdd = proxies.length < max;
 
     const list = proxies.length === 0
-      ? '<p style="color:#999;text-align:center;padding:16px 0;">まだ代理プレイヤーはいません</p>'
+      ? '<p class="gl-u-65">まだ代理プレイヤーはいません</p>'
       : proxies.map((p) => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#faf6ec;border-radius:6px;margin-bottom:6px;">
+          <div class="gl-u-66">
             <div>
-              <div style="font-weight:700;">${p.familyName || p.displayName}</div>
-              ${p.familyKana ? `<div style="font-size:11px;color:#888;">${p.familyKana}</div>` : ''}
+              <div class="gl-u-67">${p.familyName || p.displayName}</div>
+              ${p.familyKana ? `<div class="gl-u-68">${p.familyKana}</div>` : ''}
             </div>
-            <button style="background:#f44336;color:#fff;border:none;padding:6px 10px;border-radius:4px;font-size:12px;cursor:pointer;" data-remove="${p.userId}">削除</button>
+            <button class="gl-u-69" data-remove="${p.userId}">削除</button>
           </div>
         `).join('');
 
     return `
-      <div class="gl-modal__backdrop"></div>
-      <div class="gl-modal__body">
-        <h2 class="gl-modal__title">🧍 代理入力プレイヤー</h2>
-        <p style="font-size:13px;color:#666;">スマホを使わない人のスコアを代わりに入力できます（最大${max}名）</p>
-        <div style="margin:12px 0;" data-proxy-list>${list}</div>
+        <p class="gl-u-02">スマホを使わない人のスコアを代わりに入力できます（最大${max}名）</p>
+        <div class="gl-u-70" data-proxy-list>${list}</div>
         <div data-proxy-form>
           ${canAdd ? `
-            <h3 style="font-size:14px;color:#1a5f3f;margin:16px 0 8px;">新規追加</h3>
+            <h3 class="gl-u-71">新規追加</h3>
             <div class="gl-form__group">
-              <label class="gl-form__label">名前 <span style="color:#f44336;">*</span></label>
+              <label class="gl-form__label">名前 <span class="gl-u-01">*</span></label>
               <input class="gl-form__input" data-proxy-name placeholder="例: 田中">
             </div>
             <div class="gl-form__group">
@@ -197,84 +154,64 @@
             </div>
             <button class="gl-btn-primary" data-add>➕ 追加する</button>
           ` : `
-            <p style="text-align:center;color:#ff9800;padding:12px;background:#fff8e1;border-radius:6px;font-size:13px;">上限に達しています</p>
+            <p class="gl-u-72">上限に達しています</p>
           `}
         </div>
-        <button style="width:100%;padding:12px;margin-top:10px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer;" data-close>閉じる</button>
-      </div>
+        <button class="gl-u-73" data-close>閉じる</button>
     `;
   }
 
   /**
-   * v2.7.20: モーダル内のリスト・フォームだけを部分更新（モーダル自体は閉じない）
+   * v3.0.0: 部分更新（handle.rerender で glModal 内部の .gl-modal__content を差替）
+   * イベントは差替後に再バインドする
    */
-  function _refreshProxyModalContent(wrap) {
-    const body = wrap.querySelector('.gl-modal__body');
-    if (!body) return;
-    // リストとフォームだけ差し替え
-    const newHTML = _renderProxyModalContent();
-    // parse して必要部分のみ取り出す
-    const temp = document.createElement('div');
-    temp.innerHTML = newHTML;
-    const newList = temp.querySelector('[data-proxy-list]');
-    const newForm = temp.querySelector('[data-proxy-form]');
-    const oldList = wrap.querySelector('[data-proxy-list]');
-    const oldForm = wrap.querySelector('[data-proxy-form]');
-    if (newList && oldList) oldList.innerHTML = newList.innerHTML;
-    if (newForm && oldForm) oldForm.innerHTML = newForm.innerHTML;
-    // 再バインド
-    _bindProxyModalInner(wrap);
+  function _refreshProxyModal(handle) {
+    if (!handle || !handle.rerender) return;
+    handle.rerender(_renderProxyModalBody());
+    _bindProxyModalEvents(handle.root, handle);
   }
 
-  /**
-   * モーダルの外側イベント（閉じるボタンなど）は一度だけバインド
-   */
-  function _bindProxyModalEvents(wrap, close) {
-    wrap.querySelector('[data-close]')?.addEventListener('click', close);
-    _bindProxyModalInner(wrap);
-  }
-
-  /**
-   * モーダル内部のフォーム・削除ボタンをバインド（部分更新のたびに呼ぶ）
-   */
-  function _bindProxyModalInner(wrap) {
+  function _bindProxyModalEvents(root, handle) {
+    // 閉じるボタン
+    var closeBtn = root.querySelector('[data-close]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () { handle.close(); });
+    }
     // 追加ボタン
-    const addBtn = wrap.querySelector('[data-add]');
+    var addBtn = root.querySelector('[data-add]');
     if (addBtn) {
-      addBtn.addEventListener('click', () => {
-        const nameEl = wrap.querySelector('[data-proxy-name]');
-        const kanaEl = wrap.querySelector('[data-proxy-kana]');
-        const name = (nameEl?.value || '').trim();
-        const kana = (kanaEl?.value || '').trim();
+      addBtn.addEventListener('click', function () {
+        var nameEl = root.querySelector('[data-proxy-name]');
+        var kanaEl = root.querySelector('[data-proxy-kana]');
+        var name = (nameEl && nameEl.value || '').trim();
+        var kana = (kanaEl && kanaEl.value || '').trim();
         if (!name) {
           window.glToast.warn('名前は必須です');
-          nameEl?.focus();
+          if (nameEl) nameEl.focus();
           return;
         }
-        const player = window.glRound.addProxyPlayer({ familyName: name, familyKana: kana });
+        var player = window.glRound.addProxyPlayer({ familyName: name, familyKana: kana });
         if (player) {
-          window.glToast.success(`${name} さんを追加しました`);
-          // ★ モーダル閉じずに内容だけ更新
-          _refreshProxyModalContent(wrap);
+          window.glToast.success(name + ' さんを追加しました');
+          _refreshProxyModal(handle);
           _renderIndex();
         }
       });
     }
-
     // 削除ボタン
-    wrap.querySelectorAll('[data-remove]').forEach((btn) => {
-      btn.addEventListener('click', () => {
+    root.querySelectorAll('[data-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        // 現行仕様: browser 標準 confirm() を維持
         if (!confirm('この代理プレイヤーを削除しますか？')) return;
         window.glRound.removeProxyPlayer(btn.dataset.remove);
         window.glToast.info('削除しました');
-        // ★ モーダル閉じずに内容だけ更新
-        _refreshProxyModalContent(wrap);
+        _refreshProxyModal(handle);
         _renderIndex();
       });
     });
   }
 
-    /**
+  /**
    * v2.8.14: ラウンド開始前にコース選択画面を表示
    */
   function _showStartConfirm() {
@@ -284,7 +221,7 @@
     });
   }
 
-    /**
+  /**
    * v2.8.15: コース選択後、複数タイプがあればスタートタイプ選択モーダルを出す
    */
   function _confirmStartWithCourse(course) {
@@ -302,48 +239,48 @@
   }
 
   /**
-   * v2.8.15: スタートタイプ選択モーダル（東 or 西 など）
+   * v3.0.0: スタートタイプ選択モーダル（東 or 西 など、glModal 化）
    */
   function _showStartTypeSelector(course) {
-    const wrap = document.createElement('div');
-    wrap.className = 'gl-modal show';
+    var typeButtons = course.types.map(function (type, i) {
+      return '<button class="gl-btn-primary" data-start-type="' + type.name + '"' +
+        ' style="width:100%;margin-bottom:8px;background:' + (i === 0 ? '#1a5f3f' : '#2d7a56') + ';">' +
+        '  🌅 ' + type.name + ' スタート' +
+        '  <div class="gl-u-74">' +
+             type.name + 'コース → ' +
+             course.types.filter(function (_, j) { return j !== i; }).map(function (t) { return t.name; }).join(' → ') +
+        '  </div>' +
+        '</button>';
+    }).join('');
 
-    const typeButtons = course.types.map((type, i) => `
-      <button class="gl-btn-primary" data-start-type="${type.name}"
-        style="width:100%;margin-bottom:8px;background:${i === 0 ? '#1a5f3f' : '#2d7a56'};">
-        🌅 ${type.name} スタート
-        <div style="font-size:11px;opacity:.9;margin-top:2px;">
-          ${type.name}コース → ${course.types.filter((_, j) => j !== i).map(t => t.name).join(' → ')}
-        </div>
-      </button>
-    `).join('');
+    var body = ''
+      + '<p class="gl-u-75">'
+      +   '<strong>' + course.name + '</strong><br>'
+      +   'どちらのコースからスタートしますか？'
+      + '</p>'
+      + typeButtons
+      + '<button class="gl-u-06" data-cancel>キャンセル</button>';
 
-    wrap.innerHTML = `
-      <div class="gl-modal__backdrop"></div>
-      <div class="gl-modal__body">
-        <h2 class="gl-modal__title">🏁 スタートを選択</h2>
-        <p style="color:#666;font-size:13px;margin:0 0 12px;">
-          <strong>${course.name}</strong><br>
-          どちらのコースからスタートしますか？
-        </p>
-        ${typeButtons}
-        <button style="width:100%;padding:12px;margin-top:8px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer;" data-cancel>キャンセル</button>
-      </div>
-    `;
-    const modalRoot = document.getElementById('modal-root') || document.body;
-    modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
-    modalRoot.appendChild(wrap);
+    window.glModal.closeAll();
 
-    const close = () => wrap.remove();
-    wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
-    wrap.querySelector('[data-cancel]').addEventListener('click', close);
+    var handle = window.glModal.open({
+      title: '🏁 スタートを選択',
+      modalType: 'start-type',
+      body: body,
+      dismissible: true,
+      showClose: false,
+      onBind: function (root) {
+        var cancelBtn = root.querySelector('[data-cancel]');
+        if (cancelBtn) cancelBtn.addEventListener('click', function () { handle.close(); });
 
-    wrap.querySelectorAll('[data-start-type]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const startType = btn.dataset.startType;
-        close();
-        _showFinalConfirm(course, startType);
-      });
+        root.querySelectorAll('[data-start-type]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var startType = btn.dataset.startType;
+            handle.close();
+            _showFinalConfirm(course, startType);
+          });
+        });
+      },
     });
   }
 
@@ -357,11 +294,11 @@
     let courseInfo = '';
     if (course) {
       const orderInfo = startType && course.types && course.types.length >= 2
-        ? `<br><span style="font-size:12px;color:#1a5f3f;">🏁 ${startType} スタート</span>`
+        ? `<br><span class="gl-u-76">🏁 ${startType} スタート</span>`
         : '';
-      courseInfo = `<p style="background:#e8f5e9;padding:8px;border-radius:6px;margin:8px 0;">
+      courseInfo = `<p class="gl-u-77">
         ⛳ <strong>${course.name}</strong><br>
-        <span style="font-size:12px;color:#666;">${course.prefecture} | ${course.totalHoles}ホール</span>
+        <span class="gl-u-78">${course.prefecture} | ${course.totalHoles}ホール</span>
         ${orderInfo}
       </p>`;
     }
@@ -371,7 +308,7 @@
       body: `
         ${courseInfo}
         <p>${hostName}さんがホストとして開始します。</p>
-        <p style="color:#666;font-size:13px;">開始後、招待コードが発行されます。</p>
+        <p class="gl-u-07">開始後、招待コードが発行されます。</p>
       `,
       okLabel: '開始する',
       onOk: async () => {
@@ -409,7 +346,7 @@
     _modalPrompt({
       title: '招待コードで合流',
       body: `
-        <p style="color:#666;font-size:14px;">ホストから受け取った4桁コードを入力してください</p>
+        <p class="gl-u-79">ホストから受け取った4桁コードを入力してください</p>
         <input type="text" class="gl-input-code" id="join-code-input" maxlength="4" placeholder="A123">
       `,
       okLabel: '合流する',
@@ -434,14 +371,14 @@
   }
 
   /**
-   * v2.7.20: 招待モーダル
-   * - 既存の招待モーダルを先に削除（多層化防止）
-   * - QR生成は wrap 内の要素に対して行う（getElementById使わない）
+   * v3.0.0: 招待モーダル（glModal 化、動作は 100% 現行維持）
+   * - 既存の invite type モーダルを先に閉じる（多層化防止）
+   * - QR生成は handle.root 内の要素に対して行う
    * - groupCode 未取得なら警告して開かない
    */
   function _showInviteModal() {
-    // ★ 既存の招待モーダルを全削除
-    document.querySelectorAll('[data-modal-type="invite"]').forEach((m) => m.remove());
+    // 既存の招待モーダルを全閉じ
+    window.glModal.closeByType && window.glModal.closeByType('invite');
 
     const groupCode = window.glState.get('groupCode');
     if (!groupCode) {
@@ -451,12 +388,12 @@
 
     const joinUrl = location.origin + location.pathname + '?join=' + encodeURIComponent(groupCode);
 
-    const wrap = _modalPrompt({
+    var handle = _modalPrompt({
       title: '📤 招待',
       modalType: 'invite',
       body: `
         <div class="gl-invite-box">
-          <div style="font-size:14px;opacity:.9;">招待コード</div>
+          <div class="gl-u-80">招待コード</div>
           <div class="gl-invite-box__code">${groupCode}</div>
           <div class="gl-invite-box__qr" data-qr-container>
             <div class="gl-spinner"></div>
@@ -470,10 +407,10 @@
       onOk: () => true,
     });
 
-    // ★ wrap（モーダル本体）内の要素に対してQR生成
-    if (wrap) {
+    // handle.root（モーダル本体）内の要素に対してQR生成
+    if (handle && handle.root) {
       setTimeout(() => {
-        const container = wrap.querySelector('[data-qr-container]');
+        const container = handle.root.querySelector('[data-qr-container]');
         if (container) _generateQRInContainer(container, joinUrl);
       }, 50);
     }
@@ -489,7 +426,7 @@
       try {
         new window.QRCode(container, { text: url, width: 180, height: 180, correctLevel: window.QRCode.CorrectLevel.M });
       } catch (e) {
-        container.innerHTML = '<div style="color:#f44336;">QR生成失敗</div>';
+        container.innerHTML = '<div class="gl-u-01">QR生成失敗</div>';
       }
     } else {
       const src = 'https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=' + encodeURIComponent(url);
@@ -512,54 +449,59 @@
     });
   }
 
-// v2.8.23: ラウンド前のコース事前追加
-function _showCourseAdd() {
-  if (!window.glCourseUI?.showSearch) {
-    window.glToast?.warn?.('コース追加機能が読み込まれていません');
-    return;
+  // v2.8.23: ラウンド前のコース事前追加
+  function _showCourseAdd() {
+    if (!window.glCourseUI || !window.glCourseUI.showSearch) {
+      window.glToast && window.glToast.warn && window.glToast.warn('コース追加機能が読み込まれていません');
+      return;
+    }
+    window.glCourseUI.showSearch(function (c) {
+      window.glToast && window.glToast.info && window.glToast.info('「' + c.name + '」をマイコースに追加しました');
+    });
   }
-  window.glCourseUI.showSearch((c) => {
-    window.glToast?.info?.(`「${c.name}」をマイコースに追加しました`);
-  });
-}
 
   /**
-   * 汎用モーダル（round.js内共用）
+   * v3.0.0: 汎用モーダル（round.js 内共用）
+   *
+   * 【後方互換】v2 の _modalPrompt は wrap 要素を返していたため、
+   * 呼出側が wrap.querySelector(...) で内部要素にアクセスしていた。
+   * v3.0.0 では glModal.open() の handle を返し、handle.root が同じ役割を担う。
+   * `wrap` 互換シム: 返却値の .querySelector を handle.root.querySelector に移譲する。
+   *
+   * onOk が false を返した場合はモーダルを閉じない（現行仕様維持）。
    */
-  /**
-   * v2.7.20: modalType 対応 + wrap 返却（呼び出し側で内部要素を探せるように）
-   */
-  function _modalPrompt({ title, body, okLabel, onOk, allowClose = true, modalType = '' }) {
-    const wrap = document.createElement('div');
-    wrap.className = 'gl-modal show';
-    if (modalType) wrap.setAttribute('data-modal-type', modalType);
-    wrap.innerHTML = `
-      <div class="gl-modal__backdrop"></div>
-      <div class="gl-modal__body">
-        <h2 class="gl-modal__title">${title}</h2>
-        <div>${body}</div>
-        <button class="gl-btn-primary" data-ok>${okLabel || 'OK'}</button>
-      </div>
-    `;
-    const modalRoot = document.getElementById('modal-root') || document.body;
-    modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove());
-    modalRoot.appendChild(wrap);
+  function _modalPrompt(opts) {
+    var title = opts.title;
+    var body = opts.body;
+    var okLabel = opts.okLabel || 'OK';
+    var onOk = opts.onOk;
+    var allowClose = (opts.allowClose === undefined) ? true : opts.allowClose;
+    var modalType = opts.modalType || '';
 
-    const close = () => {
-      wrap.classList.remove('show');
-      setTimeout(() => wrap.remove(), 300);
-    };
+    // 既存 .gl-modal を全閉じ（従来仕様: modalRoot.querySelectorAll('.gl-modal').forEach(m => m.remove())）
+    window.glModal.closeAll();
 
-    wrap.querySelector('[data-ok]').addEventListener('click', async () => {
-      const result = onOk ? await onOk() : true;
-      if (result !== false) close();
+    var handle = window.glModal.open({
+      title: title,
+      body: body + '<button class="gl-btn-primary" data-ok>' + okLabel + '</button>',
+      modalType: modalType,
+      dismissible: allowClose,
+      showClose: false,
+      onBind: function (root) {
+        var okBtn = root.querySelector('[data-ok]');
+        if (okBtn) {
+          okBtn.addEventListener('click', async function () {
+            var result = onOk ? await onOk() : true;
+            if (result !== false) handle.close();
+          });
+        }
+      },
     });
 
-    if (allowClose) {
-      wrap.querySelector('.gl-modal__backdrop').addEventListener('click', close);
-    }
-
-    return wrap;  // ★ v2.7.20: wrap を返して呼び出し側が内部要素へアクセスできるように
+    // 呼出側が handle.root.querySelector で内部要素にアクセスするため、
+    // handle 自体を返す（従来の wrap 相当）。既存呼出コードは wrap.querySelector を
+    // handle.root.querySelector に読み替えている（invite モーダルのみ利用）。
+    return handle;
   }
 
   const glRoundUI = {

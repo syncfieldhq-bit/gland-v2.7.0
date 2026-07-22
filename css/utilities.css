@@ -1,0 +1,108 @@
+/* =========================================================================
+   G-LAND v3.0.0 — utilities.css
+   ---------------------------------------------------------------------------
+   固定値インライン style="..." を CSS に完全移管したユーティリティクラス。
+   `gl-u-NN` の連番。同じ style 値には同じクラスを割当てて重複を排除。
+   ---------------------------------------------------------------------------
+   これにより、v3.0.0 では index.html と全 JS テンプレート内に「固定値の
+   style="..." 属性」が残存しなくなる（動的値のみ 13 箇所残す）。
+   ========================================================================= */
+
+.gl-u-01 { color:#f44336; }
+.gl-u-02 { font-size:13px;color:#666; }
+.gl-u-03 { margin-right:4px; }
+.gl-u-04 { flex:1;min-width:60px;padding:8px;border:1px solid #ddd;border-radius:6px;text-align:center;cursor:pointer;background:#fafafa; }
+.gl-u-05 { margin-top:12px; }
+.gl-u-06 { width:100%;padding:12px;margin-top:8px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer; }
+.gl-u-07 { color:#666;font-size:13px; }
+.gl-u-08 { font-size:20px; }
+.gl-u-09 { padding:6px 8px; }
+.gl-u-10 { overscroll-behavior-y: contain; }
+.gl-u-11 { position:fixed;inset:0;display:flex;flex-direction:column; align-items:center;justify-content:center; background:linear-gradient(135deg,#1a5f3f 0%,#2d7a56 100%); color:#fff;padding:20px;text-align:center;font-family:sans-serif; }
+.gl-u-12 { font-size:48px;font-weight:800;letter-spacing:3px;margin-bottom:12px; }
+.gl-u-13 { font-size:14px;opacity:.9;margin-bottom:32px; }
+.gl-u-14 { background:rgba(255,255,255,.15);padding:20px;border-radius:12px;max-width:340px;margin-bottom:24px; }
+.gl-u-15 { font-size:15px;line-height:1.6; }
+.gl-u-16 { font-size:11px;opacity:.7;margin-top:12px;font-family:monospace; }
+.gl-u-17 { padding:16px 40px;background:#fff;color:#1a5f3f; border:none;border-radius:10px;font-size:17px;font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,.2);cursor:pointer; }
+.gl-u-18 { color:#fff; }
+.gl-u-19 { font-size:11px; color:#999; }
+.gl-u-20 { font-size:11px; color:#999; line-height:1.5; margin-top:20px; }
+.gl-u-21 { margin-top:12px; background:#1a5f3f; color:#fff; border:none; }
+.gl-u-22 { color:#999; font-size:11px; }
+.gl-u-23 { padding:20px;text-align:center;color:#999; }
+.gl-u-24 { cursor:pointer;margin-bottom:8px; }
+.gl-u-25 { margin:0;font-size:15px; }
+.gl-u-26 { margin:2px 0 0;font-size:12px;color:#888; }
+.gl-u-27 { margin-top:8px;background:#2d7a56; }
+.gl-u-28 { color:#666;font-size:12px;margin:0 0 12px; }
+.gl-u-29 { display:flex;gap:8px;flex-wrap:wrap; }
+.gl-u-30 { flex:1;min-width:60px;padding:8px;border:1px solid #1a5f3f;border-radius:6px;text-align:center;cursor:pointer;background:#e8f5e9; }
+.gl-u-31 { color:#888;font-size:11px;margin:0 0 8px; }
+.gl-u-32 { width:100%;padding:8px;background:#fff;border:1px dashed #1a5f3f;border-radius:6px;color:#1a5f3f;cursor:pointer;font-size:13px;margin-top:6px; }
+.gl-u-33 { margin-top:16px; }
+.gl-u-34 { display:flex;align-items:center;gap:4px; }
+.gl-u-35 { font-size:11px;color:#666;min-width:24px; }
+.gl-u-36 { width:100%;padding:4px;text-align:center;border:1px solid #ccc;border-radius:4px;font-size:13px; }
+.gl-u-37 { display:flex;justify-content:space-between;align-items:center;margin-bottom:6px; }
+.gl-u-38 { flex:1;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-weight:700; }
+.gl-u-39 { margin-left:8px;background:#f44336;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer; }
+.gl-u-40 { display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px; }
+.gl-u-41 { width:100%;margin-top:12px;padding:12px;background:#fff;border:2px solid #1a5f3f;color:#1a5f3f;border-radius:8px;font-weight:600; }
+.gl-u-42 { text-align:center;color:#999;padding:12px; }
+.gl-u-43 { margin-bottom:6px;cursor:pointer; }
+.gl-u-44 { margin:0;font-size:14px; }
+.gl-u-45 { margin:2px 0 0;font-size:11px;color:#888; }
+.gl-u-46 { display:none;margin-top:12px;font-size:13px;color:#666;text-align:left; }
+.gl-u-47 { margin-bottom:6px; }
+.gl-u-48 { padding-left:24px;margin:0; }
+.gl-u-49 { margin-top:12px;color:#1a5f3f;font-weight:600; }
+.gl-u-50 { margin-top:12px;font-size:13px;color:#666; }
+.gl-u-51 { margin-top:6px;font-size:12px;color:#bbb; }
+.gl-u-52 { font-size:10px;opacity:.8; }
+.gl-u-53 { margin-left:auto;text-align:right;font-size:11px;opacity:.9; }
+.gl-u-54 { margin-top:8px;font-size:11px;opacity:.85; }
+.gl-u-55 { color:#c0392b;font-weight:700; }
+.gl-u-56 { width:200px;height:200px;display:flex;align-items:center;justify-content:center;color:#888; }
+.gl-u-57 { margin-top:14px; }
+.gl-u-58 { width:100%;padding:12px;margin-top:8px;background:none;border:none;color:#666; }
+.gl-u-59 { background: #fff; border-radius: 12px; padding: 24px; max-width: 340px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); font-family: -apple-system, sans-serif; line-height: 1.6; }
+.gl-u-60 { margin:0 0 12px; font-size:18px; color:#2e7d32; }
+.gl-u-61 { margin:0 0 12px; font-size:14px; }
+.gl-u-62 { margin:12px 0 8px; font-size:15px; }
+.gl-u-63 { margin:0; font-size:14px; }
+.gl-u-64 { color:#d32f2f; font-size:13px; margin-top:12px; }
+.gl-u-65 { color:#999;text-align:center;padding:16px 0; }
+.gl-u-66 { display:flex;justify-content:space-between;align-items:center;padding:10px;background:#faf6ec;border-radius:6px;margin-bottom:6px; }
+.gl-u-67 { font-weight:700; }
+.gl-u-68 { font-size:11px;color:#888; }
+.gl-u-69 { background:#f44336;color:#fff;border:none;padding:6px 10px;border-radius:4px;font-size:12px;cursor:pointer; }
+.gl-u-70 { margin:12px 0; }
+.gl-u-71 { font-size:14px;color:#1a5f3f;margin:16px 0 8px; }
+.gl-u-72 { text-align:center;color:#ff9800;padding:12px;background:#fff8e1;border-radius:6px;font-size:13px; }
+.gl-u-73 { width:100%;padding:12px;margin-top:10px;background:none;border:1px solid #ccc;border-radius:6px;color:#666;cursor:pointer; }
+.gl-u-74 { font-size:11px;opacity:.9;margin-top:2px; }
+.gl-u-75 { color:#666;font-size:13px;margin:0 0 12px; }
+.gl-u-76 { font-size:12px;color:#1a5f3f; }
+.gl-u-77 { background:#e8f5e9;padding:8px;border-radius:6px;margin:8px 0; }
+.gl-u-78 { font-size:12px;color:#666; }
+.gl-u-79 { color:#666;font-size:14px; }
+.gl-u-80 { font-size:14px;opacity:.9; }
+.gl-u-81 { font-size:12px; }
+.gl-u-82 { font-size:12px;color:#ff9800; }
+.gl-u-83 { text-align:center;margin-top:6px;font-size:14px;color:#1a5f3f;font-weight:700; }
+.gl-u-84 { grid-template-columns: repeat(6, 1fr); }
+.gl-u-85 { text-align:center;font-size:24px;font-weight:700;letter-spacing:4px; }
+.gl-u-86 { font-size:13px;color:#666;margin-bottom:12px; }
+.gl-u-87 { background:#06c755; }
+.gl-u-88 { font-size:10px;color:#888;margin-left:4px; }
+.gl-u-89 { padding:6px 8px;text-align:right;font-family:monospace; }
+.gl-u-90 { font-size:13px;color:#666;margin-bottom:8px; }
+.gl-u-91 { width:100%;border-collapse:collapse;font-size:14px; }
+.gl-u-92 { margin-top:12px;padding:8px;background:#e8f5e9;color:#1a5f3f;border-radius:6px;font-size:13px; }
+.gl-u-93 { margin-top:12px;padding:8px;background:#fff8e1;color:#e65100;border-radius:6px;font-size:13px; }
+.gl-u-94 { display:flex;gap:8px;margin-top:16px; }
+.gl-u-95 { flex:1;padding:10px;background:#fff;border:1px solid #d5c98c;border-radius:6px;color:#1a5f3f;font-weight:700;cursor:pointer; }
+.gl-u-96 { flex:1;padding:10px;background:#f5f5f5;border:1px solid #ccc;border-radius:6px;color:#666;font-weight:700;cursor:pointer; }
+.gl-u-97 { text-align:left;padding-left:10px; }
+.gl-u-98 { padding:20px;color:#999; }
